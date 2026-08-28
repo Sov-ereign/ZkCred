@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  proof-server:
+    image: midnightntwrk/proof-server:0.31.1
+    ports:
+      - "6300:6300"
+    environment:
+      - PROOF_SERVER_PORT=6300
+    volumes:
+      - proof-server-cache:/root/.cache/proof-server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6300/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  proof-server-cache:
