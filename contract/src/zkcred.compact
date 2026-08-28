@@ -1,7 +1,15 @@
-pragma language_version 0.23;
-
 // =============================================================================
 // ZkCred (AegisID) — Privacy-First Credit & Compliance Verification
+// Language: Compact v0.23 | Target: Midnight Network Preprod
+// =============================================================================
+//
+// Privacy Architecture:
+// ┌───────────────────────────┐      ┌───────────────────────────┐
+// │   PRIVATE WITNESS (LOCAL) │ ──── │  SELECTIVE DISCLOSURE     │
+// │   - creditScore           │      │  disclose(isEligible)     │
+// │   - annualIncome          │      │         ↓                 │
+// │   - userSalt              │      │  PUBLIC LEDGER STATE      │
+// └───────────────────────────┘      └───────────────────────────┘
 // =============================================================================
 //
 // This contract implements zero-knowledge credit score and income verification.
