@@ -281,6 +281,36 @@
           </div>
 
           <div class="input-group">
+            <label for="age-slider" class="input-label">
+              Age (Years)
+              <span class="privacy-tag" aria-label="This field is private">PRIVATE · AGE GATE</span>
+            </label>
+            <div class="slider-container">
+              <input
+                type="range"
+                id="age-slider"
+                min="18"
+                max="80"
+                value="24"
+                step="1"
+                class="zk-slider"
+                aria-valuemin="18"
+                aria-valuemax="80"
+                aria-valuenow="24"
+                aria-valuetext="Age: 24 years"
+              />
+            </div>
+            <div class="slider-display">
+              <span class="slider-min">18 yrs</span>
+              <div class="slider-value-box">
+                <span class="slider-value" id="age-display" aria-live="polite">24</span>
+                <span class="slider-unit">years</span>
+              </div>
+              <span class="slider-max">80 yrs</span>
+            </div>
+          </div>
+
+          <div class="input-group">
             <label for="credit-score-slider" class="input-label">
               Credit Score
               <span class="privacy-tag" aria-label="This field is private">PRIVATE</span>
@@ -342,18 +372,27 @@
 
           <div class="threshold-display" role="complementary" aria-label="Current thresholds">
             <div class="threshold-item">
-              <span class="threshold-label">Min Score Required</span>
+              <span class="threshold-label">Min Age</span>
+              <span class="threshold-value" id="threshold-age">21 yrs</span>
+            </div>
+            <div class="threshold-divider" aria-hidden="true"></div>
+            <div class="threshold-item">
+              <span class="threshold-label">Min Score</span>
               <span class="threshold-value" id="threshold-score">700</span>
             </div>
             <div class="threshold-divider" aria-hidden="true"></div>
             <div class="threshold-item">
-              <span class="threshold-label">Min Income Required</span>
+              <span class="threshold-label">Min Income</span>
               <span class="threshold-value" id="threshold-income">$50,000</span>
             </div>
           </div>
 
           <div class="eligibility-preview" id="eligibility-preview" aria-live="polite" role="status">
             <div class="preview-checks">
+              <div class="check-item" id="check-age">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span class="check-text">Age Gate <span id="check-age-val">24 ≥ 21 yrs</span></span>
+              </div>
               <div class="check-item" id="check-score">
                 <span class="check-icon" aria-hidden="true">✓</span>
                 <span class="check-text">Credit Score <span id="check-score-val">720 ≥ 700</span></span>

@@ -8,6 +8,7 @@
 const STATE = {
   minCreditScore: 700,
   minAnnualIncome: 5_000_000, // cents = $50,000
+  minAge: 21, // Option 2 Age Gate
   verificationCount: 0,
   contractAddress: 'mn1qzkcred11f1a534eef79173c4d2d7425855122c',
   isGenerating: false,
@@ -17,12 +18,16 @@ const STATE = {
 
 // ─── DOM References ───────────────────────────────────────────────────────────
 
+const ageSlider        = document.getElementById('age-slider');
 const creditSlider     = document.getElementById('credit-score-slider');
 const incomeSlider     = document.getElementById('income-slider');
+const ageDisplay       = document.getElementById('age-display');
 const creditDisplay    = document.getElementById('credit-score-display');
 const incomeDisplay    = document.getElementById('income-display');
+const checkAge         = document.getElementById('check-age');
 const checkScore       = document.getElementById('check-score');
 const checkIncome      = document.getElementById('check-income');
+const checkAgeVal      = document.getElementById('check-age-val');
 const checkScoreVal    = document.getElementById('check-score-val');
 const checkIncomeVal   = document.getElementById('check-income-val');
 const generateBtn      = document.getElementById('generate-proof-btn');
@@ -61,6 +66,23 @@ function randomHex(len) {
 
 // ─── Slider Updates ───────────────────────────────────────────────────────────
 
+function updateAge() {
+  if (!ageSlider) return;
+  const val = parseInt(ageSlider.value);
+  const min = parseInt(ageSlider.min);
+  const max = parseInt(ageSlider.max);
+  const pct = ((val - min) / (max - min)) * 100;
+
+  ageSlider.style.setProperty('--fill', `${pct}%`);
+  ageSlider.setAttribute('aria-valuenow', val);
+  ageSlider.setAttribute('aria-valuetext', `Age: ${val} years`);
+  if (ageDisplay) ageDisplay.textContent = val;
+
+  updateEligibilityPreview();
+}
+
+// ─── Slider Updates ───────────────────────────────────────────────────────────
+
 function updateCreditScore() {
   const val = parseInt(creditSlider.value);
   const min = parseInt(creditSlider.min);
@@ -91,10 +113,20 @@ function updateIncome() {
 }
 
 function updateEligibilityPreview() {
+  const age = ageSlider ? parseInt(ageSlider.value) : 24;
   const score = parseInt(creditSlider.value);
   const income = parseInt(incomeSlider.value);
+  
+  const agePass = age >= STATE.minAge;
   const scorePass = score >= STATE.minCreditScore;
   const incomePass = income >= STATE.minAnnualIncome;
+
+  // Age check
+  if (checkAge && checkAgeVal) {
+    checkAge.className = `check-item ${agePass ? 'pass' : 'fail'}`;
+    checkAge.querySelector('.check-icon').textContent = agePass ? '✓' : '✗';
+    checkAgeVal.textContent = `${age} ${agePass ? '≥' : '<'} ${STATE.minAge} yrs`;
+  }
 
   // Score check
   checkScore.className = `check-item ${scorePass ? 'pass' : 'fail'}`;
@@ -108,7 +140,7 @@ function updateEligibilityPreview() {
 
   // Button state
   if (!STATE.isGenerating) {
-    const allPass = scorePass && incomePass;
+    const allPass = agePass && scorePass && incomePass;
     generateBtn.style.background = allPass
       ? 'linear-gradient(135deg, #6d28d9, #7c3aed)'
       : 'linear-gradient(135deg, #7c3aed, #a21caf)';
@@ -120,10 +152,10 @@ function updateEligibilityPreview() {
 const PROOF_STEPS = [
   'Initializing ZK circuit...',
   'Loading private witness data...',
-  'Evaluating credit threshold...',
-  'Evaluating income threshold...',
-  'Computing eligibility...',
-  'Generating ZK proof via proof-server...',
+  'Evaluating Age Gate threshold (Option 2)...',
+  'Evaluating Credit Score threshold...',
+  'Evaluating Income threshold...',
+  'Generating PLONK ZK proof via proof-server...',
   'Building transaction...',
   'Submitting to Midnight Preprod...',
   'Awaiting confirmation...',
@@ -137,9 +169,11 @@ async function generateProof() {
   if (STATE.isGenerating) return;
   STATE.isGenerating = true;
 
+  const age = ageSlider ? parseInt(ageSlider.value) : 24;
   const score = parseInt(creditSlider.value);
   const income = parseInt(incomeSlider.value);
-  const eligible = score >= STATE.minCreditScore && income >= STATE.minAnnualIncome;
+
+  const eligible = age >= STATE.minAge && score >= STATE.minCreditScore && income >= STATE.minAnnualIncome;
 
   // ── UI: Start generating state
   generateBtn.disabled = true;
@@ -375,6 +409,7 @@ function setupCardGlow() {
 
 function init() {
   // Sliders
+  if (ageSlider) ageSlider.addEventListener('input', updateAge);
   creditSlider.addEventListener('input', updateCreditScore);
   incomeSlider.addEventListener('input', updateIncome);
 
@@ -382,6 +417,7 @@ function init() {
   generateBtn.addEventListener('click', generateProof);
 
   // Initial UI state
+  updateAge();
   updateCreditScore();
   updateIncome();
 
