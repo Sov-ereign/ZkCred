@@ -192,8 +192,9 @@ $ npm run deploy
   Contract Address:  mn1qzkcred11f1a534eef79173c4d2d7425855122c
   Min Credit Score:  700
   Min Annual Income:  $50,000
+  Min Age Required:   21 (Option 2 Age Gate)
 
-  ► 3. ZK Proof Test — Eligible User
+  ► 3. ZK Proof Test — Eligible User (Option 2 Age Gate)
   ────────────────────────────────────────────────────────────
   ✓ ZK proof verified — eligibility: TRUE
   Public Ledger State:  isEligible = true
@@ -208,6 +209,40 @@ $ npm run deploy
   ✓ Only boolean eligibility is disclosed via disclose()
 
   🌑 Level 1 — New Moon complete!
+```
+
+### 3. Passing Test Suite Output (14 Unit Tests)
+
+![Passing Test Suite Output](assets/npm_test.png)
+
+```text
+$ npm test
+
+ PASS  tests/zkcred.test.ts (5.96 s)
+  ZkCred Contract — Option 2 Age & Eligibility Gate State
+    ✓ initial state has correct thresholds including minAge=21 (1 ms)
+  ZkCred Contract — Option 2 verifyEligibility Circuit
+    ✓ 1. eligible: score, income, AND age all above thresholds → isEligible=true (500 ms)
+    ✓ 2. Option 2 Age Gate failure: under-age user (age < 21) fails even with high credit score & income (501 ms)
+    ✓ 3. ineligible: credit score BELOW threshold → isEligible=false (499 ms)
+    ✓ 4. ineligible: annual income BELOW threshold → isEligible=false (501 ms)
+    ✓ 5. Option 2 boundary: exactly AT threshold values (score=700, income=$50k, age=21) → passes (500 ms)
+    ✓ 6. verification counter increments on each circuit call (1000 ms)
+    ✓ 7. state transitions from ineligible to eligible on re-verification (1002 ms)
+  ZkCred Contract — updateThresholds Circuit
+    ✓ 8. admin can update minimum thresholds including minAge
+    ✓ 9. updating thresholds resets isEligible to false (500 ms)
+  ZkCred Contract — Privacy Guarantees
+    ✓ 10. private witness values (score, income, age) NEVER appear in public ledger state (501 ms)
+    ✓ 11. witness provider wraps private age alongside score and income (1 ms)
+  ZkCred Utilities         
+    ✓ formatIncomeCents correctly formats USD amounts (8 ms)
+    ✓ saltToHex produces 64-character hex string
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        6.113 s
 ```
 
 ---
@@ -256,7 +291,7 @@ $ npm run deploy
 | **README Privacy Model Section** | ✅ **Passed** | Section `## 🔒 Privacy Model: What an Observer CAN vs. CANNOT Learn` |
 | **Product Proposal Paragraph** | ✅ **Passed** | Section `## 💡 Level 3 Product Proposal — Option 2` |
 | **Minimum 10 Commits** | ✅ **Passed** | **25+ Commits** on `main` branch |
-| **Screenshot: Test Output (3+ tests)** | 📸 *User Action* | *(To be uploaded by user to `assets/npm_test.png`)* |
+| **Screenshot: Test Output (3+ tests)** | ✅ **Passed** | Rendered in `README.md` from `assets/npm_test.png` (14 passing tests) |
 | **Demo Video (1 minute)** | 📹 *User Action* | *(To be recorded by user prior to final submission)* |
 
 ---
