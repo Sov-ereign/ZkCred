@@ -1,0 +1,6 @@
+{
+  "name": "zkcred-contract",
+  "version": "1.0.0",
+  "description": "ZkCred Compact smart contract",
+  "private": true
+}
