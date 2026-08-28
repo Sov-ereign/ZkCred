@@ -61,6 +61,32 @@ Midnight's architecture provides cryptographic boundaries between **Public Ledge
 
 ---
 
+## 🔒 Level 2 Privacy Claim & Zero-Knowledge Proof Behavior
+
+ZkCred (AegisID) makes the following verifiable privacy claim on the Midnight Network:
+
+> **Privacy Claim:** A user can mathematically prove to any verifier, dApp, or smart contract that their credit score is $\ge 700$ and their annual income is $\ge \$50,000$, **without revealing their actual credit score, exact annual income, or personal identity on the blockchain or to the verifier.**
+
+### How the Privacy Boundary is Enforced:
+
+1. **Off-Chain Witness Storage:**
+   - The user inputs `creditScore` (e.g. `750`) and `annualIncome` (e.g. `$75,000`) locally in their browser / wallet.
+   - These values are passed as **private witness inputs** to the Compact circuit callbacks (`getPrivateCreditScore()`, `getPrivateAnnualIncome()`).
+   - They are **never serialized or included in transaction payloads** sent to the network.
+
+2. **In-Circuit Evaluation:**
+   - The PLONK zk-SNARK circuit evaluates `creditScore >= minCreditScore && annualIncome >= minAnnualIncome` inside the zero-knowledge constraint system.
+   - The output of this boolean evaluation is passed to `disclose(isEligible)`.
+
+3. **Observable On-Chain Result:**
+   - On the Midnight Preprod public ledger, only the following public state variables are updated:
+     - `isEligible`: `true` (or `false`)
+     - `verificationCount`: incremented integer
+     - `transactionHash`: zero-knowledge proof submission commitment
+   - Anyone querying the transaction hash or reading the ledger state can observe that eligibility was cryptographically proven, but **cannot deduce whether the credit score was 700, 750, or 850**.
+
+---
+
 ## 🛠️ Setup Instructions (Local Execution)
 
 ### Prerequisites
