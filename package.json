@@ -1,0 +1,49 @@
+{
+  "name": "zkcred-aegisid",
+  "version": "1.0.0",
+  "description": "ZkCred (AegisID) — Privacy-first zero-knowledge credit verification on Midnight Network",
+  "private": true,
+  "workspaces": [
+    "contract",
+    "."
+  ],
+  "type": "module",
+  "scripts": {
+    "compile": "compact compile contract/src/zkcred.compact -o src/managed",
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit",
+    "deploy": "tsx src/index.ts",
+    "ui": "cd ui && npx serve . -p 3000",
+    "dev": "npm run compile && npm test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.0.0",
+    "jest": "^29.7.0",
+    "serve": "^14.2.4",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "extensionsToTreatAsEsm": [".ts"],
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.ts"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
+    }
+  },
+  "keywords": ["midnight", "zero-knowledge", "privacy", "compact", "zk-proofs", "defi", "credit"],
+  "author": "ZkCred Team",
+  "license": "MIT"
+}
