@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "outputDirectory": "ui",
+  "cleanUrls": true,
+  "trailingSlash": false
+}
