@@ -1260,9 +1260,21 @@ body {
   color: var(--text-muted);
 }
 
-/* ─── Utility ────────────────────────────────────────────── */
-.mono { font-family: var(--font-mono); }
-[hidden] { display: none !important; }
+/* Keyboard shortcut badge */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--purple-400);
+  outline-offset: 2px;
+}
 
 /* ─── Responsive ─────────────────────────────────────────── */
 @media (max-width: 1024px) {
