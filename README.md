@@ -1,20 +1,37 @@
 # ZkCred (AegisID) — Privacy-First Credit & Compliance Verification
 
-![Level 2 - Prize Track](https://img.shields.io/badge/Midnight_Hackathon-Level_2_Crescent-7c3aed?style=for-the-badge&logo=moon)
+![Level 3 - Half Moon](https://img.shields.io/badge/Midnight_Hackathon-Level_3_Half_Moon-7c3aed?style=for-the-badge&logo=moon)
+![Option 2 - Age & Eligibility Gate](https://img.shields.io/badge/Track-Option_2_Age_%26_Eligibility_Gate-06b6d4?style=for-the-badge)
+[![CI/CD Pipeline](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg)](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml)
 ![Live Demo](https://img.shields.io/badge/Live_Demo-zk--cred.vercel.app-06b6d4?style=for-the-badge&logo=vercel)
-![Compact](https://img.shields.io/badge/Language-Compact_0.23-06b6d4?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-> **ZkCred (AegisID)** is a privacy-preserving financial identity & compliance verification protocol built on the **Midnight Network** using zero-knowledge smart contracts written in **Compact**.
+> **ZkCred (AegisID)** is a privacy-preserving zero-knowledge multi-attribute Age & Financial Eligibility Gate built on the **Midnight Network** using Compact smart contracts.
 >
 > 🌐 **Live Demo:** [https://zk-cred.vercel.app](https://zk-cred.vercel.app)
 > 📦 **GitHub Repo:** [https://github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred)
 
 ---
 
-## 💡 Initial Product Idea
+## 💡 Level 3 Product Proposal — Option 2: Age & Eligibility Gate
 
-ZkCred (AegisID) enables users to prove to DeFi protocols, lenders, or Web3 applications that they meet specific financial thresholds (such as credit score requirements or accredited income minimums) without disclosing raw bank statements, income figures, or personal identity details. Using Compact smart contracts, the user's financial metrics remain stored locally as a private witness. The contract evaluates eligibility using zero-knowledge proofs and selective disclosure (`disclose()`), outputting only a verified compliance boolean (`isEligible`) and a cryptographic commitment to the public ledger state. This eliminates financial data exposure while unlocking compliant, privacy-first DeFi workflows.
+**ZkCred (AegisID)** implements an **Option 2 Age & Financial Eligibility Gate** protocol on the Midnight Network. Modern web applications, DeFi lending protocols, and restricted services frequently require users to prove that they meet age limits (e.g. $\ge 21$) and financial eligibility thresholds (such as creditworthiness or accredited investor status) prior to granting access. Traditional verification methods force users to upload unencrypted government IDs, bank statements, or salary slips to third-party servers.
+
+ZkCred eliminates this privacy leak by evaluating all sensitive user attributes—Age, Credit Score, and Annual Income—as a **private off-chain witness** inside a Compact smart contract. The PLONK zk-SNARK circuit evaluates the threshold condition (`age >= minAge && creditScore >= minCreditScore && annualIncome >= minAnnualIncome`) entirely within local zero-knowledge constraint systems. The contract selectively discloses (`disclose()`) **only a binary verification outcome (`isEligible`)** and an incremented verification counter to the public ledger state. This allows services to enforce compliance without learning the user's birthdate, exact credit score, income, or identity.
+
+---
+
+## 🔒 Privacy Model: What an Observer CAN vs. CANNOT Learn
+
+The table below details the privacy guarantees enforced by Midnight's cryptographic boundary in ZkCred:
+
+| What an Observer CAN Learn (Public Ledger State) | What an Observer CANNOT Learn (Private Witness) |
+| :--- | :--- |
+| **Eligibility Boolean:** `isEligible` (`true` / `false`) | **User's Exact Age:** Whether the user is 21, 24, or 65 |
+| **Public Criteria:** `minAge: 21`, `minCreditScore: 700`, `minIncome: $50,000` | **Exact Credit Score:** Whether the score was 700, 750, or 850 |
+| **Verification Count:** Total number of proof verifications completed | **Exact Salary/Income:** Whether income was $50k, $75k, or $500k |
+| **Transaction Hash:** Zero-knowledge proof submission commitment | **User Identity / PII:** No linkable address, SSN, or personal data |
+| **Network Timestamp:** Time block when proof was verified | **Witness Salt:** 32-byte private salt preventing replay attacks |
 
 ---
 
@@ -227,18 +244,20 @@ $ npm run deploy
 
 ---
 
-## 📋 Level 2 Submission Checklist Assessment
+## 📋 Level 3 Submission Checklist Assessment (Option 2 — Age / Eligibility Gate)
 
-| Submission Item | Status | Verification Link / Details |
+| Submission Item | Status | Location / Details |
 | :--- | :---: | :--- |
-| **Public GitHub Repository** | ✅ **Passed** | [github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred) |
-| **Live Demo Link** | ✅ **Passed** | [https://zk-cred.vercel.app](https://zk-cred.vercel.app) |
-| **Deployed Preprod Address** | ✅ **Passed** | `mn1qzkcred11f1a534eef79173c4d2d7425855122c` |
-| **Lace Wallet Connect / Disconnect** | ✅ **Passed** | Implemented in dApp navbar & `ui/app.js` |
-| **Circuit Called from Frontend** | ✅ **Passed** | Triggered via `Generate ZK Proof` button |
-| **Observable Privacy Claim** | ✅ **Passed** | Documented in `README.md` (credit score & income remain 100% private) |
-| **Minimum 8 Commits** | ✅ **Passed** | **21+ Commits** on `main` branch |
-| **Demo Video** | 📹 *Pending* | *(Recording to be uploaded prior to final level submission)* |
+| **Public GitHub Repository with README** | ✅ **Passed** | [github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred) |
+| **Approved Option Selected** | ✅ **Passed** | **Option 2: Age / Eligibility Gate** |
+| **Fully Functional Privacy dApp** | ✅ **Passed** | Live on Vercel: [https://zk-cred.vercel.app](https://zk-cred.vercel.app) |
+| **Passing Test Suite (Min 3)** | ✅ **Passed** | **14 passing tests** (`npm test`) |
+| **CI/CD Pipeline Running** | ✅ **Passed** | GitHub Actions `.github/workflows/ci.yml` + live status badge |
+| **README Privacy Model Section** | ✅ **Passed** | Section `## 🔒 Privacy Model: What an Observer CAN vs. CANNOT Learn` |
+| **Product Proposal Paragraph** | ✅ **Passed** | Section `## 💡 Level 3 Product Proposal — Option 2` |
+| **Minimum 10 Commits** | ✅ **Passed** | **25+ Commits** on `main` branch |
+| **Screenshot: Test Output (3+ tests)** | 📸 *User Action* | *(To be uploaded by user to `assets/npm_test.png`)* |
+| **Demo Video (1 minute)** | 📹 *User Action* | *(To be recorded by user prior to final submission)* |
 
 ---
 
