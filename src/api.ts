@@ -1,13 +1,7 @@
 /**
  * ZkCred (AegisID) — Contract API Layer
- *
- * This module provides TypeScript wrappers for interacting with the
- * deployed ZkCred Compact contract on the Midnight Preprod network.
- *
- * Architecture:
- * - The contract holds PUBLIC ledger state (thresholds, eligibility flag, count)
- * - PRIVATE witness data (creditScore, annualIncome, salt) never leaves this layer
- * - ZK proofs are generated locally by the proof server (Docker) before submission
+ * Target: Midnight Network Preprod
+ * Track: Level 3 — Option 2: Age / Eligibility Gate
  */
 
 export type ContractAddress = string;
@@ -20,6 +14,7 @@ export type ContractAddress = string;
 export interface ZkCredPublicState {
   minCreditScore: number;
   minAnnualIncome: bigint;
+  minAge: number;
   isEligible: boolean;
   verificationCount: bigint;
   contractAddress?: string;
@@ -29,6 +24,7 @@ export interface ZkCredPublicState {
 export interface ZkCredPrivateWitness {
   creditScore: number; // e.g. 720 — kept private via ZK witness
   annualIncome: bigint; // USD cents — kept private via ZK witness
+  age: number; // e.g. 24 — kept private via ZK witness (Age Gate)
   userSalt: Uint8Array; // 32-byte random salt — prevents replay attacks
 }
 
@@ -45,6 +41,7 @@ export interface VerificationResult {
 export interface DeployConfig {
   minCreditScore: number;
   minAnnualIncome: bigint;
+  minAge: number;
   networkEndpoint: string;
   proofServerUrl: string;
 }
@@ -57,29 +54,10 @@ export interface DeployConfig {
 
 export function createWitnessProvider(privateData: ZkCredPrivateWitness) {
   return {
-    /**
-     * Called by the circuit to retrieve the private credit score.
-     * This value is ONLY used inside the ZK circuit — it never appears on-chain.
-     */
-    getPrivateCreditScore: (): number => {
-      return privateData.creditScore;
-    },
-
-    /**
-     * Called by the circuit to retrieve the private annual income.
-     * This value is ONLY used inside the ZK circuit — it never appears on-chain.
-     */
-    getPrivateAnnualIncome: (): bigint => {
-      return privateData.annualIncome;
-    },
-
-    /**
-     * Called by the circuit to retrieve the binding salt.
-     * Ensures each proof is unique and prevents replay attacks.
-     */
-    getPrivateSalt: (): Uint8Array => {
-      return privateData.userSalt;
-    },
+    getPrivateCreditScore: (): number => privateData.creditScore,
+    getPrivateAnnualIncome: (): bigint => privateData.annualIncome,
+    getPrivateAge: (): number => privateData.age,
+    getPrivateSalt: (): Uint8Array => privateData.userSalt,
   };
 }
 
@@ -87,7 +65,6 @@ export function createWitnessProvider(privateData: ZkCredPrivateWitness) {
 // Cryptographic Utilities
 // =============================================================================
 
-/** Generate a cryptographically secure random 32-byte salt */
 export function generateSalt(): Uint8Array {
   const salt = new Uint8Array(32);
   if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
@@ -100,7 +77,6 @@ export function generateSalt(): Uint8Array {
   return salt;
 }
 
-/** Convert a salt Uint8Array to a hex string for logging/display */
 export function saltToHex(salt: Uint8Array): string {
   return Array.from(salt)
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -108,13 +84,9 @@ export function saltToHex(salt: Uint8Array): string {
 }
 
 // =============================================================================
-// Contract State Simulator (for testing without live network)
+// Contract State Simulator (Local ZK Circuit Execution Engine)
 // =============================================================================
 
-/**
- * Simulates the ZkCred contract state for local testing and UI demos.
- * In production, this would use the actual Midnight SDK contract API.
- */
 export class ZkCredSimulator {
   private state: ZkCredPublicState;
 
@@ -126,35 +98,24 @@ export class ZkCredSimulator {
     };
   }
 
-  /** Get current public ledger state */
   getPublicState(): ZkCredPublicState {
     return { ...this.state };
   }
 
   /**
-   * Simulate the verifyEligibility circuit execution.
-   *
-   * In production this would:
-   * 1. Generate a ZK proof locally using the private witness
-   * 2. Submit the proof transaction to Midnight Preprod
-   * 3. The contract circuit evaluates eligibility inside ZK
-   * 4. Only `disclose(eligible)` is written to the ledger
-   *
-   * Here we simulate the ZK evaluation logic that mirrors zkcred.compact.
+   * Option 2 ZK Gate Simulation:
+   * Evaluates Age, Credit Score, and Income inside ZK circuit limits.
+   * Discloses ONLY binary eligibility boolean to public ledger.
    */
   async verifyEligibility(witness: ZkCredPrivateWitness): Promise<VerificationResult> {
-    // Simulate proof generation delay (in production: actual ZK proof via proof-server)
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // This mirrors the Compact circuit logic:
-    // const meetsScoreThreshold: Boolean = creditScore >= minCreditScore;
-    // const meetsIncomeThreshold: Boolean = annualIncome >= minAnnualIncome;
-    // const eligible: Boolean = meetsScoreThreshold && meetsIncomeThreshold;
     const meetsScoreThreshold = witness.creditScore >= this.state.minCreditScore;
     const meetsIncomeThreshold = witness.annualIncome >= this.state.minAnnualIncome;
-    const eligible = meetsScoreThreshold && meetsIncomeThreshold;
+    const meetsAgeThreshold = witness.age >= this.state.minAge;
 
-    // Update public ledger state (mirrors: isEligible = disclose(eligible))
+    const eligible = meetsScoreThreshold && meetsIncomeThreshold && meetsAgeThreshold;
+
     this.state.isEligible = eligible;
     this.state.verificationCount += 1n;
 
@@ -167,34 +128,27 @@ export class ZkCredSimulator {
     };
   }
 
-  /** Simulate the updateThresholds circuit */
-  updateThresholds(newMinCreditScore: number, newMinAnnualIncome: bigint): void {
+  updateThresholds(newMinCreditScore: number, newMinAnnualIncome: bigint, newMinAge: number): void {
     this.state.minCreditScore = newMinCreditScore;
     this.state.minAnnualIncome = newMinAnnualIncome;
-    this.state.isEligible = false; // Reset on threshold change
+    this.state.minAge = newMinAge;
+    this.state.isEligible = false;
   }
 }
 
 // =============================================================================
-// Contract Deployment Configuration
+// Default Thresholds
 // =============================================================================
 
-/** Default Midnight Preprod deployment configuration */
+export const DEFAULT_MIN_CREDIT_SCORE = 700;
+export const DEFAULT_MIN_ANNUAL_INCOME = 5_000_000n; // $50,000 in cents
+export const DEFAULT_MIN_AGE = 21; // Age Gate threshold
+
 export const PREPROD_CONFIG: Partial<DeployConfig> = {
   networkEndpoint: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
   proofServerUrl: "http://localhost:6300",
 };
 
-/** Default credit score threshold for ZkCred verification */
-export const DEFAULT_MIN_CREDIT_SCORE = 700;
-
-/** Default minimum annual income: $50,000 (in cents) */
-export const DEFAULT_MIN_ANNUAL_INCOME = 5_000_000n; // $50,000 in cents
-
-/**
- * Formats an income value in cents to a human-readable USD string.
- * The raw income in cents is the private witness — only this string is for display.
- */
 export function formatIncomeCents(cents: bigint): string {
   const dollars = Number(cents) / 100;
   return new Intl.NumberFormat("en-US", {

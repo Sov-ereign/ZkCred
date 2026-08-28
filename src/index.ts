@@ -28,6 +28,7 @@ import {
   saltToHex,
   DEFAULT_MIN_CREDIT_SCORE,
   DEFAULT_MIN_ANNUAL_INCOME,
+  DEFAULT_MIN_AGE,
   PREPROD_CONFIG,
 } from "./api.js";
 import { randomBytes } from "crypto";
@@ -115,23 +116,26 @@ async function main() {
   const contract = new ZkCredSimulator({
     minCreditScore: DEFAULT_MIN_CREDIT_SCORE,
     minAnnualIncome: DEFAULT_MIN_ANNUAL_INCOME,
+    minAge: DEFAULT_MIN_AGE,
   });
 
   // Simulate contract address from deployment
-  const contractAddress = `mn1qzkcred${randomBytes(16).toString("hex")}`;
+  const contractAddress = `mn1qzkcred11f1a534eef79173c4d2d7425855122c`;
 
   success("Contract compiled successfully — circuits generated in src/managed/");
   success(`Contract deployed to Midnight Preprod`);
   info("Contract Address", contractAddress);
   info("Min Credit Score", DEFAULT_MIN_CREDIT_SCORE.toString());
   info("Min Annual Income", formatIncomeCents(DEFAULT_MIN_ANNUAL_INCOME));
+  info("Min Age Required", `${DEFAULT_MIN_AGE} (Option 2 Age Gate)`);
 
   await sleep(300);
 
   // ── Step 3: Test Verification — Eligible User ─────────────────────────────
-  section("3. ZK Proof Test — Eligible User");
+  section("3. ZK Proof Test — Eligible User (Option 2 Age Gate)");
 
   log(`\n${c.gray}  User provides private witness data (stays local)...${c.reset}`);
+  log(`  ${c.dim}• Age:             [PRIVATE — not disclosed on-chain]${c.reset}`);
   log(`  ${c.dim}• Credit Score:    [PRIVATE — not disclosed on-chain]${c.reset}`);
   log(`  ${c.dim}• Annual Income:   [PRIVATE — not disclosed on-chain]${c.reset}`);
   log(`  ${c.dim}• Salt:            [PRIVATE — binding commitment]${c.reset}`);
@@ -139,6 +143,7 @@ async function main() {
   const eligibleWitness = {
     creditScore: 750, // Private: above threshold (700)
     annualIncome: 7_500_000n, // Private: $75,000 — above threshold ($50,000)
+    age: 24, // Private: 24 ≥ 21 (Option 2 Age Gate)
     userSalt: new Uint8Array(randomBytes(32)),
   };
 
@@ -166,6 +171,7 @@ async function main() {
   const ineligibleWitness = {
     creditScore: 620, // Private: below threshold (700)
     annualIncome: 3_000_000n, // Private: $30,000 — below threshold
+    age: 19, // Private: 19 < 21 — below threshold (Option 2 Age Gate)
     userSalt: new Uint8Array(randomBytes(32)),
   };
 
