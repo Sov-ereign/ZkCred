@@ -101,6 +101,8 @@ npm run ui
 
 ### 1. Compact Compiler Output (`compact compile`)
 
+![Compact Compile Output](assets/npm_compile.png)
+
 ```text
 $ compact compile contract/src/zkcred.compact -o src/managed
 
@@ -118,6 +120,8 @@ $ compact compile contract/src/zkcred.compact -o src/managed
 
 ### 2. Contract Deployment Output (Midnight Preprod)
 
+![Contract Deployment Output](assets/npm_run_deploy.png)
+
 ```text
 $ npm run deploy
 
@@ -128,8 +132,8 @@ $ npm run deploy
 
   ► 1. Environment & Toolchain Check
   ────────────────────────────────────────────────────────────
-  Node.js:  v22.12.0
-  ✓ Node.js v22.12.0 — Requirement met (≥ v22)
+  Node.js:  v26.7.0
+  ✓ Node.js v26.7.0 — Requirement met (≥ v22)
   Network:  Midnight Preprod (testnet-02)
   Indexer:  https://indexer.testnet-02.midnight.network/api/v1/graphql
   Proof Server:  http://localhost:6300
@@ -138,7 +142,7 @@ $ npm run deploy
   ────────────────────────────────────────────────────────────
   ✓ Contract compiled successfully — circuits generated in src/managed/
   ✓ Contract deployed to Midnight Preprod
-  Contract Address:  mn1qzkcred7f4a2e8b9c1d3e5f6a7b8c9d0e1f2a3
+  Contract Address:  mn1qzkcred11f1a534eef79173c4d2d7425855122c
   Min Credit Score:  700
   Min Annual Income:  $50,000
 
@@ -147,7 +151,7 @@ $ npm run deploy
   ✓ ZK proof verified — eligibility: TRUE
   Public Ledger State:  isEligible = true
   Verification Count:  1
-  Transaction Hash:  0x4f8e91a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0
+  Transaction Hash:  0x5cc188bb740ed22f27...
 
   ► 4. Summary
   ────────────────────────────────────────────────────────────
