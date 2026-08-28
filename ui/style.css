@@ -206,6 +206,46 @@ body {
   box-shadow: var(--glow-purple);
 }
 
+/* Lace Wallet Connect Button */
+.btn-wallet-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--purple-400);
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-wallet-connect:hover {
+  background: rgba(124, 58, 237, 0.22);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: var(--glow-purple);
+  transform: translateY(-1px);
+}
+.btn-wallet-connect.connected {
+  color: var(--green-400);
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.15);
+}
+.wallet-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--purple-400);
+  transition: var(--transition);
+}
+.btn-wallet-connect.connected .wallet-dot {
+  background: var(--green-400);
+  box-shadow: 0 0 8px var(--green-400);
+}
+
 /* ─── Hero Section ───────────────────────────────────────── */
 .hero {
   position: relative;

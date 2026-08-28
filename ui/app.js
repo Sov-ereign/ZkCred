@@ -9,8 +9,10 @@ const STATE = {
   minCreditScore: 700,
   minAnnualIncome: 5_000_000, // cents = $50,000
   verificationCount: 0,
-  contractAddress: 'mn1qzkcred7f4a2e8b9c1d3e5f6a7b8c9d0e1f2a3',
+  contractAddress: 'mn1qzkcred11f1a534eef79173c4d2d7425855122c',
   isGenerating: false,
+  walletConnected: false,
+  walletAddress: null,
 };
 
 // ─── DOM References ───────────────────────────────────────────────────────────
@@ -238,7 +240,59 @@ function observeSection(selector, callback) {
   els.forEach(el => observer.observe(el));
 }
 
-// ─── Copy Buttons ─────────────────────────────────────────────────────────────
+// ─── Lace Wallet Connector ───────────────────────────────────────────────────
+
+function initWalletConnect() {
+  const walletBtn = document.getElementById('wallet-connect-btn');
+  const walletBtnText = document.getElementById('wallet-btn-text');
+  const walletDot = document.getElementById('wallet-dot');
+
+  if (!walletBtn) return;
+
+  walletBtn.addEventListener('click', async () => {
+    if (STATE.walletConnected) {
+      // Disconnect flow
+      STATE.walletConnected = false;
+      STATE.walletAddress = null;
+      walletBtn.classList.remove('connected');
+      walletBtnText.textContent = 'Connect Lace Wallet';
+      console.log('Lace Wallet disconnected.');
+      return;
+    }
+
+    // Connect flow
+    walletBtnText.textContent = 'Connecting...';
+
+    try {
+      // Check for Midnight / Lace provider in window object
+      const laceProvider = window.midnight?.lace || window.cardano?.lace;
+
+      if (laceProvider && typeof laceProvider.enable === 'function') {
+        const api = await laceProvider.enable();
+        const unusedAddresses = await api.getUnusedAddresses?.();
+        const address = unusedAddresses?.[0] || STATE.contractAddress;
+
+        STATE.walletConnected = true;
+        STATE.walletAddress = address;
+      } else {
+        // Simulated connection if browser extension is not present
+        await new Promise(r => setTimeout(r, 600));
+        STATE.walletConnected = true;
+        STATE.walletAddress = 'mn1qzkcred11f1a534eef79173c4d2d7425855122c';
+      }
+
+      // Update UI button to connected state
+      walletBtn.classList.add('connected');
+      const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
+      walletBtnText.textContent = `${shortAddr} (Connected)`;
+      console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
+    } catch (err) {
+      console.error('Wallet connection failed:', err);
+      walletBtnText.textContent = 'Connect Lace Wallet';
+      STATE.walletConnected = false;
+    }
+  });
+}
 
 function setupCopyButtons() {
   document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -360,6 +414,7 @@ function init() {
   });
 
   // Features
+  initWalletConnect();
   setupCopyButtons();
   setupSmoothScroll();
   setupParallax();
