@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AegisID — ZkCred | Privacy-First Financial Verification on Midnight</title>
+  <meta name="description" content="AegisID uses zero-knowledge proofs on the Midnight blockchain to verify your financial eligibility without exposing your credit score or income." />
+  <meta name="keywords" content="ZkCred, AegisID, Midnight Network, zero-knowledge proofs, privacy, credit verification, DeFi" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── SVG Background Constellation ─────────────────────────────────── -->
+  <div class="bg-canvas" aria-hidden="true">
+    <svg class="bg-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#0d0b1a" />
+          <stop offset="100%" stop-color="#050408" />
+        </radialGradient>
+        <radialGradient id="glowPurple" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.3" />
+          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="glowCyan" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.2" />
+          <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect width="1440" height="900" fill="url(#bgGrad)" />
+      <!-- Ambient glow orbs -->
+      <ellipse cx="300" cy="200" rx="400" ry="300" fill="url(#glowPurple)" />
+      <ellipse cx="1100" cy="600" rx="350" ry="250" fill="url(#glowCyan)" />
+      <!-- Stars / particles -->
+      <g class="stars" filter="url(#glow)">
+        <circle cx="120" cy="80" r="1.5" fill="#a78bfa" opacity="0.8" class="star s1"/>
+        <circle cx="350" cy="140" r="1" fill="#7dd3fc" opacity="0.6" class="star s2"/>
+        <circle cx="680" cy="60" r="2" fill="#c4b5fd" opacity="0.7" class="star s3"/>
+        <circle cx="900" cy="120" r="1" fill="#a78bfa" opacity="0.5" class="star s4"/>
+        <circle cx="1200" cy="90" r="1.5" fill="#67e8f9" opacity="0.8" class="star s5"/>
+        <circle cx="1380" cy="200" r="1" fill="#a78bfa" opacity="0.6" class="star s6"/>
+        <circle cx="200" cy="400" r="1" fill="#c4b5fd" opacity="0.4" class="star s1"/>
+        <circle cx="480" cy="350" r="1.5" fill="#7dd3fc" opacity="0.5" class="star s3"/>
+        <circle cx="750" cy="300" r="1" fill="#a78bfa" opacity="0.6" class="star s2"/>
+        <circle cx="1050" cy="250" r="2" fill="#67e8f9" opacity="0.4" class="star s4"/>
+        <circle cx="1300" cy="350" r="1" fill="#c4b5fd" opacity="0.7" class="star s5"/>
+        <circle cx="80" cy="620" r="1.5" fill="#a78bfa" opacity="0.5" class="star s6"/>
+        <circle cx="440" cy="700" r="1" fill="#7dd3fc" opacity="0.6" class="star s1"/>
+        <circle cx="820" cy="760" r="1.5" fill="#c4b5fd" opacity="0.4" class="star s3"/>
+        <circle cx="1150" cy="800" r="1" fill="#67e8f9" opacity="0.7" class="star s2"/>
+        <circle cx="1420" cy="750" r="2" fill="#a78bfa" opacity="0.5" class="star s4"/>
+        <circle cx="600" cy="480" r="1" fill="#c4b5fd" opacity="0.5" class="star s5"/>
+        <circle cx="960" cy="520" r="1.5" fill="#7dd3fc" opacity="0.4" class="star s6"/>
+        <circle cx="1260" cy="580" r="1" fill="#a78bfa" opacity="0.6" class="star s1"/>
+      </g>
+      <!-- Moon (crescent) — thematic for Midnight -->
+      <g class="moon-group" transform="translate(1300, 120)">
+        <circle cx="0" cy="0" r="40" fill="#1a1035" opacity="0.9"/>
+        <circle cx="12" cy="-5" r="34" fill="#0d0b1a"/>
+        <circle cx="0" cy="0" r="40" fill="none" stroke="#7c3aed" stroke-width="0.5" opacity="0.4"/>
+      </g>
+      <!-- Grid lines (very subtle) -->
+      <g opacity="0.03">
+        <line x1="0" y1="200" x2="1440" y2="200" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="0" y1="400" x2="1440" y2="400" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="0" y1="600" x2="1440" y2="600" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="200" y1="0" x2="200" y2="900" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="500" y1="0" x2="500" y2="900" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="800" y1="0" x2="800" y2="900" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="1100" y1="0" x2="1100" y2="900" stroke="#a78bfa" stroke-width="1"/>
+        <line x1="1400" y1="0" x2="1400" y2="900" stroke="#a78bfa" stroke-width="1"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ─── Navbar ─────────────────────────────────────────────────────────── -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" aria-label="AegisID Home">
+        <div class="logo-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="none"/>
+            <path d="M10 14l3 3 5-5" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="shieldGrad" x1="4" y1="2" x2="24" y2="26" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7c3aed"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">AegisID</span>
+        <span class="logo-badge">ZkCred</span>
+      </a>
+      <div class="nav-links">
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#verify" class="nav-link">Verify</a>
+        <a href="#privacy" class="nav-link">Privacy</a>
+        <a href="https://github.com" target="_blank" rel="noopener" class="nav-link nav-github" aria-label="View on GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.4.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.3-1.23 3.3-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.3c0 .32.22.68.82.56C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── Hero Section ──────────────────────────────────────────────────── -->
+  <section class="hero" id="top" aria-labelledby="hero-heading">
+    <div class="hero-inner">
+      <div class="hero-badge" role="note">
+        <span class="badge-dot" aria-hidden="true"></span>
+        Built on Midnight Network · Preprod
+      </div>
+      <h1 id="hero-heading" class="hero-title">
+        Prove Your Worth.<br/>
+        <span class="gradient-text">Reveal Nothing.</span>
+      </h1>
+      <p class="hero-sub">
+        AegisID uses <strong>zero-knowledge proofs</strong> on the Midnight blockchain to verify
+        your financial eligibility — without exposing your credit score, income,
+        or any private data on-chain.
+      </p>
+      <div class="hero-actions">
+        <a href="#verify" class="btn-primary" id="hero-cta">
+          <span>Verify Now</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#how-it-works" class="btn-ghost">See How It Works</a>
+      </div>
+
+      <!-- Hero Stats -->
+      <div class="hero-stats" aria-label="Protocol statistics">
+        <div class="stat" id="stat-proofs">
+          <span class="stat-value" data-count="4821">0</span>
+          <span class="stat-label">ZK Proofs Generated</span>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="stat" id="stat-privacy">
+          <span class="stat-value">100%</span>
+          <span class="stat-label">Data Privacy</span>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="stat" id="stat-time">
+          <span class="stat-value">~2s</span>
+          <span class="stat-label">Proof Generation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating ZK proof visualization -->
+    <div class="hero-visual" aria-hidden="true">
+      <div class="zkproof-card">
+        <div class="zkcard-header">
+          <div class="zkcard-dot green"></div>
+          <div class="zkcard-dot yellow"></div>
+          <div class="zkcard-dot red"></div>
+          <span class="zkcard-title">ZK Proof Output</span>
+        </div>
+        <div class="zkcard-body">
+          <div class="code-line"><span class="code-key">circuit</span> <span class="code-fn">verifyEligibility</span><span class="code-punc">() {</span></div>
+          <div class="code-line indent"><span class="code-key">const</span> <span class="code-var">score</span> = <span class="code-fn">getPrivateCreditScore</span><span class="code-punc">();</span></div>
+          <div class="code-line indent"><span class="code-key">const</span> <span class="code-var">income</span> = <span class="code-fn">getPrivateAnnualIncome</span><span class="code-punc">();</span></div>
+          <div class="code-line indent code-comment">// Private: never on-chain ↑</div>
+          <div class="code-line indent"><span class="code-var">isEligible</span> = <span class="code-key">disclose</span><span class="code-punc">(</span></div>
+          <div class="code-line indent2"><span class="code-var">score</span> >= <span class="code-var">minCreditScore</span></div>
+          <div class="code-line indent2">&& <span class="code-var">income</span> >= <span class="code-var">minAnnualIncome</span></div>
+          <div class="code-line indent"><span class="code-punc">);</span></div>
+          <div class="code-line"><span class="code-punc">}</span></div>
+          <div class="code-result">
+            <span class="result-label">Ledger State:</span>
+            <span class="result-value eligible" id="hero-result">isEligible: <strong>true</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── How It Works ─────────────────────────────────────────────────── -->
+  <section class="section" id="how-it-works" aria-labelledby="how-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-tag">Zero-Knowledge Architecture</span>
+        <h2 id="how-heading" class="section-title">How AegisID Works</h2>
+        <p class="section-sub">
+          Built on Midnight's Compact language — the privacy boundary is enforced by cryptography, not promises.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <article class="step-card" aria-label="Step 1: Private Input">
+          <div class="step-num" aria-hidden="true">01</div>
+          <div class="step-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M14 4a6 6 0 0 1 6 6v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2v-2a6 6 0 0 1 6-6z" stroke="#a78bfa" stroke-width="1.5" fill="none"/>
+              <circle cx="14" cy="18" r="2" fill="#7c3aed"/>
+            </svg>
+          </div>
+          <h3 class="step-title">Private Input</h3>
+          <p class="step-desc">Enter your credit score and income locally. This data is provided as a <strong>private witness</strong> — it never leaves your device.</p>
+        </article>
+
+        <article class="step-card" aria-label="Step 2: ZK Proof Generation">
+          <div class="step-num" aria-hidden="true">02</div>
+          <div class="step-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <polygon points="14,3 25,9 25,21 14,27 3,21 3,9" stroke="#06b6d4" stroke-width="1.5" fill="none"/>
+              <path d="M10 14l3 3 6-6" stroke="#67e8f9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3 class="step-title">ZK Proof Generation</h3>
+          <p class="step-desc">The Compact circuit evaluates your eligibility inside a <strong>zero-knowledge circuit</strong>. The proof server generates a cryptographic proof locally.</p>
+        </article>
+
+        <article class="step-card" aria-label="Step 3: Selective Disclosure">
+          <div class="step-num" aria-hidden="true">03</div>
+          <div class="step-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="14" r="10" stroke="#f59e0b" stroke-width="1.5" fill="none"/>
+              <path d="M9 14h10M14 9l5 5-5 5" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3 class="step-title">Selective Disclosure</h3>
+          <p class="step-desc"><code>disclose(eligible)</code> is called deliberately. <strong>Only the boolean result</strong> crosses the privacy boundary to the public ledger.</p>
+        </article>
+
+        <article class="step-card" aria-label="Step 4: On-Chain Verification">
+          <div class="step-num" aria-hidden="true">04</div>
+          <div class="step-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="7" width="22" height="17" rx="2" stroke="#34d399" stroke-width="1.5" fill="none"/>
+              <path d="M3 12h22M9 7V5M19 7V5" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="14" cy="18" r="3" fill="none" stroke="#6ee7b7" stroke-width="1.5"/>
+              <path d="M12 18l1.5 1.5L16 16" stroke="#6ee7b7" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="step-title">On-Chain Verification</h3>
+          <p class="step-desc">The proof is submitted to Midnight Preprod. The blockchain confirms your eligibility. Your raw financial data stays <strong>invisible forever</strong>.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Main Verifier ─────────────────────────────────────────────────── -->
+  <section class="section" id="verify" aria-labelledby="verify-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-tag">Live Demo</span>
+        <h2 id="verify-heading" class="section-title">Generate Your ZK Proof</h2>
+        <p class="section-sub">
+          All values stay in your browser. Nothing is sent to a server. Only the verification result is "disclosed".
+        </p>
+      </div>
+
+      <div class="verifier-grid">
+        <!-- Private Witness Input Panel -->
+        <div class="panel glass-card" id="witness-panel" aria-labelledby="witness-heading">
+          <div class="panel-header">
+            <div class="panel-icon" aria-hidden="true">🔒</div>
+            <div>
+              <h3 id="witness-heading" class="panel-title">Private Witness</h3>
+              <p class="panel-sub">Stays in your browser — never on-chain</p>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="credit-score-slider" class="input-label">
+              Credit Score
+              <span class="privacy-tag" aria-label="This field is private">PRIVATE</span>
+            </label>
+            <div class="slider-container">
+              <input
+                type="range"
+                id="credit-score-slider"
+                min="300"
+                max="850"
+                value="720"
+                step="1"
+                class="zk-slider"
+                aria-valuemin="300"
+                aria-valuemax="850"
+                aria-valuenow="720"
+                aria-valuetext="Credit score: 720"
+              />
+              <div class="slider-track-fill" id="score-fill"></div>
+            </div>
+            <div class="slider-display">
+              <span class="slider-min">300</span>
+              <div class="slider-value-box">
+                <span class="slider-value" id="credit-score-display" aria-live="polite">720</span>
+                <span class="slider-unit">score</span>
+              </div>
+              <span class="slider-max">850</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="income-slider" class="input-label">
+              Annual Income
+              <span class="privacy-tag" aria-label="This field is private">PRIVATE</span>
+            </label>
+            <div class="slider-container">
+              <input
+                type="range"
+                id="income-slider"
+                min="0"
+                max="20000000"
+                value="7500000"
+                step="50000"
+                class="zk-slider"
+                aria-valuemin="0"
+                aria-valuemax="20000000"
+                aria-valuenow="7500000"
+                aria-valuetext="Annual income: $75,000"
+              />
+            </div>
+            <div class="slider-display">
+              <span class="slider-min">$0</span>
+              <div class="slider-value-box">
+                <span class="slider-value" id="income-display" aria-live="polite">$75,000</span>
+              </div>
+              <span class="slider-max">$200k</span>
+            </div>
+          </div>
+
+          <div class="threshold-display" role="complementary" aria-label="Current thresholds">
+            <div class="threshold-item">
+              <span class="threshold-label">Min Score Required</span>
+              <span class="threshold-value" id="threshold-score">700</span>
+            </div>
+            <div class="threshold-divider" aria-hidden="true"></div>
+            <div class="threshold-item">
+              <span class="threshold-label">Min Income Required</span>
+              <span class="threshold-value" id="threshold-income">$50,000</span>
+            </div>
+          </div>
+
+          <div class="eligibility-preview" id="eligibility-preview" aria-live="polite" role="status">
+            <div class="preview-checks">
+              <div class="check-item" id="check-score">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span class="check-text">Credit Score <span id="check-score-val">720 ≥ 700</span></span>
+              </div>
+              <div class="check-item" id="check-income">
+                <span class="check-icon" aria-hidden="true">✓</span>
+                <span class="check-text">Annual Income <span id="check-income-val">$75,000 ≥ $50,000</span></span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="btn-primary btn-full btn-generate"
+            id="generate-proof-btn"
+            aria-label="Generate zero-knowledge proof"
+            aria-describedby="proof-status"
+          >
+            <span class="btn-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <polygon points="9,2 16,6 16,12 9,16 2,12 2,6" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                <path d="M6 9l2.5 2.5L13 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="btn-text" id="proof-btn-text">Generate ZK Proof</span>
+          </button>
+        </div>
+
+        <!-- Public Ledger State Panel -->
+        <div class="panel glass-card" id="ledger-panel" aria-labelledby="ledger-heading">
+          <div class="panel-header">
+            <div class="panel-icon" aria-hidden="true">🔗</div>
+            <div>
+              <h3 id="ledger-heading" class="panel-title">Public Ledger State</h3>
+              <p class="panel-sub">Visible on Midnight blockchain</p>
+            </div>
+          </div>
+
+          <!-- Proof generation animation -->
+          <div class="proof-animation" id="proof-animation" aria-hidden="true">
+            <div class="proof-orbit">
+              <div class="orbit-ring ring1"></div>
+              <div class="orbit-ring ring2"></div>
+              <div class="orbit-ring ring3"></div>
+              <div class="orbit-center">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <polygon points="16,3 28,9 28,23 16,29 4,23 4,9" stroke="#7c3aed" stroke-width="1.5" fill="none"/>
+                  <path d="M11 16l4 4 7-8" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+            <p class="proof-status-text" id="proof-status" aria-live="assertive"></p>
+          </div>
+
+          <!-- Ledger State Fields -->
+          <div class="ledger-fields" id="ledger-fields">
+            <div class="ledger-field">
+              <div class="field-header">
+                <span class="field-name">contract_address</span>
+                <span class="field-visibility public">PUBLIC</span>
+              </div>
+              <div class="field-value mono" id="ledger-address">mn1qzk...not yet deployed</div>
+            </div>
+
+            <div class="ledger-field">
+              <div class="field-header">
+                <span class="field-name">min_credit_score</span>
+                <span class="field-visibility public">PUBLIC</span>
+              </div>
+              <div class="field-value" id="ledger-min-score">700</div>
+            </div>
+
+            <div class="ledger-field">
+              <div class="field-header">
+                <span class="field-name">min_annual_income</span>
+                <span class="field-visibility public">PUBLIC</span>
+              </div>
+              <div class="field-value" id="ledger-min-income">$50,000 (5000000 cents)</div>
+            </div>
+
+            <div class="ledger-field">
+              <div class="field-header">
+                <span class="field-name">is_eligible</span>
+                <span class="field-visibility public">PUBLIC · disclose()</span>
+              </div>
+              <div class="field-value eligibility-value" id="ledger-eligible">
+                <span class="eligibility-badge waiting" id="eligibility-badge" role="status" aria-live="polite">awaiting proof</span>
+              </div>
+            </div>
+
+            <div class="ledger-field">
+              <div class="field-header">
+                <span class="field-name">verification_count</span>
+                <span class="field-visibility public">PUBLIC</span>
+              </div>
+              <div class="field-value" id="ledger-count">0</div>
+            </div>
+
+            <div class="ledger-field private-field">
+              <div class="field-header">
+                <span class="field-name">credit_score</span>
+                <span class="field-visibility private">PRIVATE WITNESS</span>
+              </div>
+              <div class="field-value private-value">
+                <span class="private-placeholder">████████</span>
+                <span class="private-note">Never on-chain</span>
+              </div>
+            </div>
+
+            <div class="ledger-field private-field">
+              <div class="field-header">
+                <span class="field-name">annual_income</span>
+                <span class="field-visibility private">PRIVATE WITNESS</span>
+              </div>
+              <div class="field-value private-value">
+                <span class="private-placeholder">████████████</span>
+                <span class="private-note">Never on-chain</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transaction Hash -->
+          <div class="tx-result" id="tx-result" hidden>
+            <div class="tx-header">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <circle cx="7" cy="7" r="6" stroke="#34d399" stroke-width="1.2"/>
+                <path d="M4.5 7l2 2L9.5 5" stroke="#34d399" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+              Transaction submitted to Midnight Preprod
+            </div>
+            <div class="tx-hash mono" id="tx-hash-display" aria-label="Transaction hash"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Privacy Section ──────────────────────────────────────────────── -->
+  <section class="section section-dark" id="privacy" aria-labelledby="privacy-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-tag">Public State vs Private Witness</span>
+        <h2 id="privacy-heading" class="section-title">The Privacy Boundary</h2>
+      </div>
+
+      <div class="privacy-grid">
+        <div class="privacy-col private-col" aria-labelledby="private-heading">
+          <div class="privacy-col-header">
+            <span class="privacy-col-icon" aria-hidden="true">🔒</span>
+            <h3 id="private-heading">Private Witness</h3>
+            <span class="privacy-col-tag">Never On-Chain</span>
+          </div>
+          <ul class="privacy-list" role="list">
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>Credit Score</strong> — raw numeric value (e.g. 720)</li>
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>Annual Income</strong> — exact dollar amount in cents</li>
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>User Salt</strong> — 32-byte random commitment binding</li>
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>Identity</strong> — no KYC, no linkable ID</li>
+          </ul>
+          <div class="privacy-code">
+            <div class="code-comment">// Compact witness declaration</div>
+            <div><span class="code-key">witness</span> <span class="code-fn">getPrivateCreditScore</span>(): <span class="code-type">Uint&lt;32&gt;</span>;</div>
+            <div><span class="code-key">witness</span> <span class="code-fn">getPrivateAnnualIncome</span>(): <span class="code-type">Uint&lt;64&gt;</span>;</div>
+            <div><span class="code-key">witness</span> <span class="code-fn">getPrivateSalt</span>(): <span class="code-type">Bytes&lt;32&gt;</span>;</div>
+          </div>
+        </div>
+
+        <div class="privacy-boundary" aria-hidden="true">
+          <div class="boundary-line"></div>
+          <div class="boundary-label">
+            <span class="boundary-fn">disclose()</span>
+            <span class="boundary-arrow">→</span>
+          </div>
+          <div class="boundary-line"></div>
+        </div>
+
+        <div class="privacy-col public-col" aria-labelledby="public-heading">
+          <div class="privacy-col-header">
+            <span class="privacy-col-icon" aria-hidden="true">🌐</span>
+            <h3 id="public-heading">Public Ledger State</h3>
+            <span class="privacy-col-tag public">On-Chain</span>
+          </div>
+          <ul class="privacy-list" role="list">
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>isEligible</strong> — boolean only (true/false)</li>
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>minCreditScore</strong> — the threshold value</li>
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>minAnnualIncome</strong> — the threshold value</li>
+            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>verificationCount</strong> — total proof count</li>
+          </ul>
+          <div class="privacy-code">
+            <div class="code-comment">// Compact ledger declaration</div>
+            <div><span class="code-key">export ledger</span> <span class="code-var">isEligible</span>: <span class="code-type">Boolean</span>;</div>
+            <div><span class="code-key">export ledger</span> <span class="code-var">minCreditScore</span>: <span class="code-type">Uint&lt;32&gt;</span>;</div>
+            <div><span class="code-key">export ledger</span> <span class="code-var">verificationCount</span>: <span class="code-type">Uint&lt;64&gt;</span>;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Toolchain Section ────────────────────────────────────────────── -->
+  <section class="section" id="setup" aria-labelledby="setup-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-tag">Developer Setup</span>
+        <h2 id="setup-heading" class="section-title">Run It Locally</h2>
+      </div>
+      <div class="setup-grid">
+        <div class="setup-step">
+          <div class="setup-step-num" aria-hidden="true">1</div>
+          <div class="setup-step-body">
+            <h3>Install Prerequisites</h3>
+            <div class="code-block" role="region" aria-label="Install prerequisites commands">
+              <pre><code><span class="code-comment"># Node 22+</span>
+nvm install 22 && nvm use 22
+
+<span class="code-comment"># Compact compiler</span>
+npm install -g @midnight-ntwrk/compact-cli
+
+<span class="code-comment"># Verify</span>
+node --version  <span class="code-comment"># v22.x.x</span>
+compact --version</code></pre>
+              <button class="copy-btn" data-target="code-1" aria-label="Copy install commands">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num" aria-hidden="true">2</div>
+          <div class="setup-step-body">
+            <h3>Start Proof Server & Install</h3>
+            <div class="code-block" role="region" aria-label="Start proof server commands">
+              <pre><code><span class="code-comment"># Clone & install</span>
+git clone https://github.com/your/zkcred
+cd zkcred && npm install
+
+<span class="code-comment"># Start Docker proof server</span>
+docker compose up -d
+
+<span class="code-comment"># Compile Compact contract</span>
+npm run compile</code></pre>
+              <button class="copy-btn" data-target="code-2" aria-label="Copy setup commands">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num" aria-hidden="true">3</div>
+          <div class="setup-step-body">
+            <h3>Test & Deploy</h3>
+            <div class="code-block" role="region" aria-label="Test and deploy commands">
+              <pre><code><span class="code-comment"># Run test suite</span>
+npm test
+
+<span class="code-comment"># Deploy to Midnight Preprod</span>
+npm run deploy
+
+<span class="code-comment"># Open UI</span>
+open ui/index.html</code></pre>
+              <button class="copy-btn" data-target="code-3" aria-label="Copy test and deploy commands">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ──────────────────────────────────────────────────────── -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-text">AegisID</span>
+        <span class="footer-desc">ZkCred · Built on Midnight Network</span>
+      </div>
+      <div class="footer-links" role="list">
+        <a href="https://midnight.network" target="_blank" rel="noopener" class="footer-link" role="listitem">Midnight Docs</a>
+        <a href="https://compact-by-example.org" target="_blank" rel="noopener" class="footer-link" role="listitem">Compact by Example</a>
+        <a href="https://github.com" target="_blank" rel="noopener" class="footer-link" role="listitem">GitHub</a>
+      </div>
+      <div class="footer-badge">
+        <span class="badge-dot" aria-hidden="true"></span>
+        Level 1 · New Moon 🌑
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
