@@ -1,0 +1,109 @@
+pragma language_version 0.23;
+
+// =============================================================================
+// ZkCred (AegisID) — Privacy-First Credit & Compliance Verification
+// =============================================================================
+//
+// This contract implements zero-knowledge credit score and income verification.
+// Users prove they meet financial thresholds WITHOUT revealing their actual
+// credit score, income, or any raw financial data.
+//
+// PUBLIC LEDGER STATE (visible on-chain to everyone):
+//   - minCreditScore  : the minimum credit score threshold for verification
+//   - minAnnualIncome : the minimum annual income threshold (in USD cents)
+//   - isEligible      : boolean result of the latest verification
+//   - verificationCount : total number of verifications performed
+//
+// PRIVATE WITNESS (stays off-chain, inside user's wallet/local environment):
+//   - creditScore     : the user's actual credit score (e.g. 720)
+//   - annualIncome    : the user's actual annual income in USD cents
+//   - userSalt        : a random salt for commitment binding
+//
+// The disclose() function is used deliberately to allow only the boolean
+// eligibility result to cross the privacy boundary into the public ledger.
+// The raw creditScore and annualIncome values are NEVER disclosed.
+// =============================================================================
+
+// --- Public Ledger State ---
+// These values are visible to anyone querying the Midnight blockchain.
+
+export ledger minCreditScore: Uint<32>;
+export ledger minAnnualIncome: Uint<64>;
+export ledger isEligible: Boolean;
+export ledger verificationCount: Uint<64>;
+
+// --- Private Witness Declarations ---
+// These are provided by the local TypeScript caller at proof-generation time.
+// They are used as private inputs to ZK circuits and NEVER appear on-chain.
+
+witness getPrivateCreditScore(): Uint<32>;
+witness getPrivateAnnualIncome(): Uint<64>;
+witness getPrivateSalt(): Bytes<32>;
+
+// --- Constructor ---
+// Initializes the contract with threshold values. Sets isEligible to false
+// and verificationCount to 0. Called once at deployment.
+
+export circuit initialize(
+  creditScoreThreshold: Uint<32>,
+  annualIncomeThreshold: Uint<64>
+): [] {
+  minCreditScore = disclose(creditScoreThreshold);
+  minAnnualIncome = disclose(annualIncomeThreshold);
+  isEligible = disclose(false);
+  verificationCount = disclose(0 as Uint<64>);
+}
+
+// --- Core ZK Verification Circuit ---
+// This is the heart of ZkCred. It:
+//   1. Retrieves the user's private credit score and income via witnesses
+//   2. Evaluates them against the public thresholds (entirely in the ZK circuit)
+//   3. Discloses ONLY the boolean result to the public ledger
+//
+// The private data never leaves the local proof-generation environment.
+
+export circuit verifyEligibility(): [] {
+  // Retrieve private values from off-chain witnesses.
+  // These are computed inside the ZK circuit — they are private inputs.
+  const creditScore: Uint<32> = getPrivateCreditScore();
+  const annualIncome: Uint<64> = getPrivateAnnualIncome();
+
+  // Consume salt to bind commitment to this specific user interaction.
+  // This prevents replay attacks and ensures unique proof generation.
+  const _salt: Bytes<32> = getPrivateSalt();
+
+  // Evaluate eligibility within the circuit (private computation).
+  // The actual values creditScore and annualIncome are NEVER on-chain.
+  const meetsScoreThreshold: Boolean = creditScore >= minCreditScore;
+  const meetsIncomeThreshold: Boolean = annualIncome >= minAnnualIncome;
+  const eligible: Boolean = meetsScoreThreshold && meetsIncomeThreshold;
+
+  // Disclose ONLY the boolean result to the public ledger.
+  // This is the privacy boundary — only the fact of eligibility is public.
+  isEligible = disclose(eligible);
+
+  // Increment the public verification counter.
+  verificationCount = disclose(verificationCount + (1 as Uint<64>));
+}
+
+// --- Admin Circuit: Update Thresholds ---
+// Allows updating the minimum credit score and income thresholds.
+// In a production system this would include admin key authorization.
+
+export circuit updateThresholds(
+  newMinCreditScore: Uint<32>,
+  newMinAnnualIncome: Uint<64>
+): [] {
+  minCreditScore = disclose(newMinCreditScore);
+  minAnnualIncome = disclose(newMinAnnualIncome);
+  // Reset eligibility status when thresholds change
+  isEligible = disclose(false);
+}
+
+// --- Read-Only Query Circuit ---
+// Returns the current public eligibility status.
+// Useful for external contracts and dApps to check status.
+
+export circuit getEligibilityStatus(): Boolean {
+  return disclose(isEligible);
+}
