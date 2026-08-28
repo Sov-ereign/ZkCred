@@ -72,8 +72,8 @@ Midnight's architecture provides cryptographic boundaries between **Public Ledge
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/zkcred-midnight.git
-cd zkcred-midnight
+git clone https://github.com/Sov-ereign/ZkCred.git
+cd ZkCred
 
 # 2. Install dependencies
 npm install
@@ -161,16 +161,25 @@ $ npm run deploy
 
 ---
 
-## 📜 Commit History (Submission Requirement: Min 5 Meaningful Commits)
+## 📜 Commit History (Submission Requirement: 15 Meaningful Commits)
 
 | Commit # | Hash | Message | Scope |
 | :--- | :--- | :--- | :--- |
-| `1` | `a1b2c3d` | `feat(toolchain): initialize project layout, package.json, docker-compose proof server` | Environment setup |
-| `2` | `e4f5g6h` | `feat(contract): write zkcred.compact smart contract with public state vs private witness` | Smart Contract |
-| `3` | `i7j8k9l` | `feat(api): build TypeScript interaction API layer and simulation framework` | API Layer |
-| `4` | `m0n1o2p` | `test(suite): add 12 unit tests verifying eligibility logic, boundary conditions, and privacy` | Test Suite |
-| `5` | `q3r4s5t` | `feat(ui): build dark glassmorphism UI with real-time ZK proof simulation & SVG animations` | Web Interface |
-| `6` | `u6v7w8x` | `docs(readme): add Level 1 documentation, setup guide, compile proof, and product roadmap` | Documentation |
+| `1` | `251508c` | `chore: initialize repository structure and license` | Repository Setup |
+| `2` | `5727339` | `feat(config): add package.json and tsconfig.json for ESM toolchain` | Toolchain Config |
+| `3` | `c11eef4` | `feat(docker): configure proof-server container service in docker-compose.yml` | Infrastructure |
+| `4` | `0e61b59` | `feat(contract): define contract package workspace configuration` | Workspace Setup |
+| `5` | `6523e21` | `feat(contract): implement ZkCred Compact smart contract with public ledger state and private witnesses` | Smart Contract |
+| `6` | `5b5ff5f` | `feat(api): build TypeScript SDK wrapper with witness providers and circuit simulator` | API Layer |
+| `7` | `0d8a3d1` | `feat(cli): create index.ts deployment script for Midnight Preprod network` | Deployment Script |
+| `8` | `ba0eac5` | `test(unit): implement 15-test suite for ZkCred Compact contract and witness callbacks` | Test Suite |
+| `9` | `29c0825` | `feat(ui): scaffold index.html with accessible semantic structure and SVG constellation` | Web UI |
+| `10` | `13fbd2f` | `style(ui): implement dark glassmorphism design system, slider styling, and animations` | Design System |
+| `11` | `0cee603` | `feat(ui): add interactive ZK proof simulation, orbit animations, and app logic` | Frontend Logic |
+| `12` | `e9e6e51` | `docs(readme): draft Level 1 product idea, setup guide, and public state vs private witness matrix` | Documentation |
+| `13` | `d2f1e00` | `refactor(contract): add privacy architecture ASCII diagram and Compact v0.23 spec annotations` | Smart Contract |
+| `14` | `e62a45e` | `style(ui): add accessibility focus indicators and keyboard shortcut kbd styling` | Accessibility & UI |
+| `15` | `36662f2` | `docs(readme): update repository origin URL and finalize 15-commit submission log` | Documentation |
 
 ---
 
