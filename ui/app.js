@@ -231,6 +231,9 @@ async function generateProof() {
     heroResult.innerHTML = `isEligible: <strong>${eligible}</strong>`;
     heroResult.style.color = eligible ? 'var(--green-400)' : 'var(--red-400)';
   }
+
+  // Update Profile Page state & Audit Log table
+  updateProfileState(eligible, txHash, age, score, income);
 }
 
 // ─── Stats Counter Animation ──────────────────────────────────────────────────
@@ -274,56 +277,191 @@ function observeSection(selector, callback) {
   els.forEach(el => observer.observe(el));
 }
 
+// ─── Profile & Audit Log Updates ─────────────────────────────────────────────
+
+function updateProfileState(eligible, txHash, age, score, income) {
+  // Update proof count in profile
+  const countEl = document.getElementById('profile-proof-count');
+  if (countEl) {
+    countEl.textContent = `${STATE.verificationCount} Proof${STATE.verificationCount === 1 ? '' : 's'}`;
+  }
+
+  // Update passport card attributes
+  const passAge = document.getElementById('pass-age-val');
+  const passCredit = document.getElementById('pass-credit-val');
+  const passIncome = document.getElementById('pass-income-val');
+
+  const agePass = age >= STATE.minAge;
+  const scorePass = score >= STATE.minCreditScore;
+  const incomePass = income >= STATE.minAnnualIncome;
+
+  if (passAge) {
+    passAge.textContent = agePass ? `≥ ${STATE.minAge} Years Verified` : `Under-Age (${age} < ${STATE.minAge})`;
+    passAge.className = `attr-val ${agePass ? 'pass' : 'fail'}`;
+  }
+  if (passCredit) {
+    passCredit.textContent = scorePass ? `≥ ${STATE.minCreditScore} Score Verified` : `Below Threshold (${score})`;
+    passCredit.className = `attr-val ${scorePass ? 'pass' : 'fail'}`;
+  }
+  if (passIncome) {
+    passIncome.textContent = incomePass ? `≥ $50,000 Verified` : `Below Threshold`;
+    passIncome.className = `attr-val ${incomePass ? 'pass' : 'fail'}`;
+  }
+
+  // Prepend entry to Audit Log table
+  const tbody = document.getElementById('audit-table-body');
+  if (tbody) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><span class="circuit-tag">verifyEligibility()</span></td>
+      <td><span class="badge-status ${eligible ? 'eligible' : 'ineligible'}">${eligible ? '✓ true' : '✗ false'}</span></td>
+      <td><span class="witness-protected">Age, Score, Income Shielded</span></td>
+      <td class="mono hash-cell">${txHash.slice(0, 18)}...${txHash.slice(-4)}</td>
+      <td class="time-cell">Just now</td>
+    `;
+    tbody.insertBefore(row, tbody.firstChild);
+  }
+}
+
 // ─── Lace Wallet Connector ───────────────────────────────────────────────────
 
 function initWalletConnect() {
-  const walletBtn = document.getElementById('wallet-connect-btn');
-  const walletBtnText = document.getElementById('wallet-btn-text');
-  const walletDot = document.getElementById('wallet-dot');
+  const walletBtns = [
+    document.getElementById('wallet-connect-btn'),
+    document.getElementById('mobile-wallet-connect-btn')
+  ].filter(Boolean);
 
-  if (!walletBtn) return;
+  const walletTexts = [
+    document.getElementById('wallet-btn-text'),
+    document.getElementById('mobile-wallet-btn-text')
+  ].filter(Boolean);
 
-  walletBtn.addEventListener('click', async () => {
-    if (STATE.walletConnected) {
-      // Disconnect flow
-      STATE.walletConnected = false;
-      STATE.walletAddress = null;
-      walletBtn.classList.remove('connected');
-      walletBtnText.textContent = 'Connect Lace Wallet';
-      console.log('Lace Wallet disconnected.');
-      return;
-    }
+  const profileWalletTitle = document.getElementById('profile-wallet-title');
+  const profileWalletAddr = document.getElementById('profile-wallet-addr');
+  const profileStatusDot = document.getElementById('profile-status-dot');
 
-    // Connect flow
-    walletBtnText.textContent = 'Connecting...';
+  walletBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (STATE.walletConnected) {
+        // Disconnect flow
+        STATE.walletConnected = false;
+        STATE.walletAddress = null;
+        
+        walletBtns.forEach(b => b.classList.remove('connected'));
+        walletTexts.forEach(t => t.textContent = 'Connect Lace Wallet');
 
-    try {
-      // Check for Midnight / Lace provider in window object
-      const laceProvider = window.midnight?.lace || window.cardano?.lace;
+        if (profileWalletTitle) profileWalletTitle.textContent = 'Lace Wallet Disconnected';
+        if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress;
+        if (profileStatusDot) profileStatusDot.style.background = 'var(--red-400)';
 
-      if (laceProvider && typeof laceProvider.enable === 'function') {
-        const api = await laceProvider.enable();
-        const unusedAddresses = await api.getUnusedAddresses?.();
-        const address = unusedAddresses?.[0] || STATE.contractAddress;
-
-        STATE.walletConnected = true;
-        STATE.walletAddress = address;
-      } else {
-        // Simulated connection if browser extension is not present
-        await new Promise(r => setTimeout(r, 600));
-        STATE.walletConnected = true;
-        STATE.walletAddress = 'mn1qzkcred11f1a534eef79173c4d2d7425855122c';
+        console.log('Lace Wallet disconnected.');
+        return;
       }
 
-      // Update UI button to connected state
-      walletBtn.classList.add('connected');
-      const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
-      walletBtnText.textContent = `${shortAddr} (Connected)`;
-      console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
+      // Connect flow
+      walletTexts.forEach(t => t.textContent = 'Connecting...');
+
+      try {
+        const laceProvider = window.midnight?.lace || window.cardano?.lace;
+
+        if (laceProvider && typeof laceProvider.enable === 'function') {
+          const api = await laceProvider.enable();
+          const unusedAddresses = await api.getUnusedAddresses?.();
+          STATE.walletAddress = unusedAddresses?.[0] || STATE.contractAddress;
+        } else {
+          // Simulated connection if browser extension is not present
+          await new Promise(r => setTimeout(r, 600));
+          STATE.walletAddress = 'mn1qzkcred11f1a534eef79173c4d2d7425855122c';
+        }
+
+        STATE.walletConnected = true;
+
+        const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
+        walletBtns.forEach(b => b.classList.add('connected'));
+        walletTexts.forEach(t => t.textContent = `${shortAddr} (Connected)`);
+
+        if (profileWalletTitle) profileWalletTitle.textContent = 'Lace Wallet Connected';
+        if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
+        if (profileStatusDot) profileStatusDot.style.background = 'var(--green-400)';
+
+        console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
+      } catch (err) {
+        console.error('Wallet connection failed:', err);
+        walletTexts.forEach(t => t.textContent = 'Connect Lace Wallet');
+        STATE.walletConnected = false;
+      }
+    });
+  });
+}
+
+// ─── Mobile Menu Drawer Toggle ───────────────────────────────────────────────
+
+function initMobileDrawer() {
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const drawer = document.getElementById('mobile-drawer');
+  const closeBtn = document.getElementById('mobile-drawer-close');
+  const drawerLinks = document.querySelectorAll('.mobile-drawer-link');
+
+  if (!menuBtn || !drawer) return;
+
+  function openDrawer() {
+    drawer.classList.add('active');
+    drawer.setAttribute('aria-hidden', 'false');
+    menuBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('active');
+    drawer.setAttribute('aria-hidden', 'true');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+  drawer.addEventListener('click', e => {
+    if (e.target === drawer) closeDrawer();
+  });
+
+  drawerLinks.forEach(link => {
+    link.addEventListener('click', closeDrawer);
+  });
+}
+
+// ─── Export ZK Attestation ───────────────────────────────────────────────────
+
+function initExportAttestation() {
+  const exportBtn = document.getElementById('export-attestation-btn');
+  const exportToast = document.getElementById('export-toast');
+
+  if (!exportBtn) return;
+
+  exportBtn.addEventListener('click', async () => {
+    const attestation = {
+      protocol: "AegisID ZkCred",
+      version: "Compact v0.23",
+      network: "Midnight Preprod (testnet-02)",
+      contractAddress: STATE.contractAddress,
+      circuit: "verifyEligibility",
+      disclosedOutcome: {
+        isEligible: true,
+        verificationCount: STATE.verificationCount,
+      },
+      proofSystem: "PLONK ZK-SNARK",
+      witnessProtection: "100% Zero-Knowledge Witness (Age, Credit Score, Income shielded)",
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(attestation, null, 2));
+      if (exportToast) {
+        exportToast.hidden = false;
+        setTimeout(() => { exportToast.hidden = true; }, 3000);
+      }
     } catch (err) {
-      console.error('Wallet connection failed:', err);
-      walletBtnText.textContent = 'Connect Lace Wallet';
-      STATE.walletConnected = false;
+      console.error('Export attestation failed:', err);
     }
   });
 }
@@ -442,7 +580,7 @@ function init() {
     { threshold: 0.1 }
   );
 
-  document.querySelectorAll('.step-card, .panel, .privacy-col, .setup-step').forEach(el => {
+  document.querySelectorAll('.step-card, .panel, .privacy-col, .setup-step, .profile-card, .passport-card').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(20px)';
     el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
@@ -451,6 +589,8 @@ function init() {
 
   // Features
   initWalletConnect();
+  initMobileDrawer();
+  initExportAttestation();
   setupCopyButtons();
   setupSmoothScroll();
   setupParallax();

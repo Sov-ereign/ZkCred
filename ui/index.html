@@ -103,6 +103,7 @@
         <a href="#how-it-works" class="nav-link">How It Works</a>
         <a href="#verify" class="nav-link">Verify</a>
         <a href="#privacy" class="nav-link">Privacy</a>
+        <a href="#profile" class="nav-link" id="nav-profile-link">Profile</a>
         
         <!-- Lace Wallet Connect Button -->
         <button id="wallet-connect-btn" class="btn-wallet-connect" aria-label="Connect Lace Wallet">
@@ -116,9 +117,43 @@
           </svg>
           GitHub
         </a>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
       </div>
     </div>
   </nav>
+
+  <!-- ─── Mobile Navigation Drawer ───────────────────────────────────── -->
+  <div id="mobile-drawer" class="mobile-drawer" aria-hidden="true">
+    <div class="mobile-drawer-inner">
+      <div class="mobile-drawer-header">
+        <span class="logo-text">AegisID Menu</span>
+        <button id="mobile-drawer-close" class="mobile-drawer-close" aria-label="Close menu">✕</button>
+      </div>
+      <div class="mobile-drawer-links">
+        <a href="#how-it-works" class="mobile-drawer-link">How It Works</a>
+        <a href="#verify" class="mobile-drawer-link">Verify ZK Gate</a>
+        <a href="#privacy" class="mobile-drawer-link">Privacy Model</a>
+        <a href="#profile" class="mobile-drawer-link">Profile & Credentials</a>
+        <a href="#setup" class="mobile-drawer-link">Developer Setup</a>
+        
+        <div class="mobile-drawer-actions">
+          <button id="mobile-wallet-connect-btn" class="btn-wallet-connect btn-wallet-mobile">
+            <span class="wallet-dot"></span>
+            <span id="mobile-wallet-btn-text">Connect Lace Wallet</span>
+          </button>
+          <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="btn-ghost btn-mobile-github">
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── Hero Section ──────────────────────────────────────────────────── -->
   <section class="hero" id="top" aria-labelledby="hero-heading">
@@ -585,6 +620,140 @@
             <div><span class="code-key">export ledger</span> <span class="code-var">minCreditScore</span>: <span class="code-type">Uint&lt;32&gt;</span>;</div>
             <div><span class="code-key">export ledger</span> <span class="code-var">verificationCount</span>: <span class="code-type">Uint&lt;64&gt;</span>;</div>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Profile & ZK Credentials Section ───────────────────────────── -->
+  <section class="section" id="profile" aria-labelledby="profile-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-tag">User Identity & ZK Passport</span>
+        <h2 id="profile-heading" class="section-title">Your Privacy Profile</h2>
+        <p class="section-sub">Manage your connected Midnight Lace wallet, view verified zero-knowledge credentials, and export privacy attestations.</p>
+      </div>
+
+      <div class="profile-grid">
+        <!-- Identity & Wallet Overview Card -->
+        <div class="glass-card profile-card">
+          <div class="profile-user-header">
+            <div class="profile-avatar">
+              <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="15" fill="url(#profGrad)" stroke="var(--purple-400)" stroke-width="1.5"/>
+                <path d="M16 8a5 5 0 100 10 5 5 0 000-10zM8 25.5c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                <defs>
+                  <linearGradient id="profGrad" x1="0" y1="0" x2="32" y2="32">
+                    <stop stop-color="#7c3aed"/>
+                    <stop offset="1" stop-color="#06b6d4"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span class="avatar-status-dot" id="profile-status-dot"></span>
+            </div>
+            <div class="profile-user-info">
+              <h3 class="profile-username" id="profile-wallet-title">Lace Wallet Connected</h3>
+              <div class="profile-wallet-address mono" id="profile-wallet-addr">mn1qzkcred11f1a534eef79173c4d2d7425855122c</div>
+            </div>
+          </div>
+
+          <div class="profile-meta-list">
+            <div class="profile-meta-item">
+              <span class="meta-label">Network Status</span>
+              <span class="meta-value network-tag">
+                <span class="pulse-dot"></span>
+                Midnight Preprod (testnet-02)
+              </span>
+            </div>
+            <div class="profile-meta-item">
+              <span class="meta-label">Privacy Shield</span>
+              <span class="meta-value green-text">100% Zero-Knowledge Witness</span>
+            </div>
+            <div class="profile-meta-item">
+              <span class="meta-label">Session Witness Salt</span>
+              <span class="meta-value mono code-var" id="profile-witness-salt">0x4f8e92a1...bc39</span>
+            </div>
+            <div class="profile-meta-item">
+              <span class="meta-label">Total ZK Verifications</span>
+              <span class="meta-value badge-count" id="profile-proof-count">1 Proof</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ZK Credential Passport Card -->
+        <div class="glass-card passport-card">
+          <div class="passport-header">
+            <div class="passport-brand">
+              <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+                <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#a78bfa" stroke-width="2"/>
+              </svg>
+              <span>MIDNIGHT ZK PASSPORT</span>
+            </div>
+            <span class="passport-seal">SEALED WITNESS</span>
+          </div>
+
+          <div class="passport-body">
+            <div class="passport-title">Option 2 Financial & Age Compliance</div>
+            <div class="passport-chip">
+              <div class="chip-graphic"></div>
+              <span class="chip-text">Compact PLONK ZK-SNARK</span>
+            </div>
+
+            <div class="passport-attributes">
+              <div class="pass-attr">
+                <span class="attr-title">Age Gate</span>
+                <span class="attr-val pass" id="pass-age-val">≥ 21 Years Verified</span>
+              </div>
+              <div class="pass-attr">
+                <span class="attr-title">Credit Gate</span>
+                <span class="attr-val pass" id="pass-credit-val">≥ 700 Score Verified</span>
+              </div>
+              <div class="pass-attr">
+                <span class="attr-title">Income Gate</span>
+                <span class="attr-val pass" id="pass-income-val">≥ $50,000 Verified</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="passport-footer">
+            <button id="export-attestation-btn" class="btn-primary btn-passport">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Export ZK Attestation</span>
+            </button>
+            <span id="export-toast" class="export-toast" hidden>✓ Copied JSON Attestation!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Proof Audit Log Table -->
+      <div class="glass-card audit-log-card">
+        <div class="audit-header">
+          <h3>On-Chain Verification Audit Log</h3>
+          <span class="audit-badge">Live Preprod Indexer</span>
+        </div>
+        <div class="table-responsive">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Circuit Called</th>
+                <th>Outcome (Public)</th>
+                <th>Private Witness Protection</th>
+                <th>Transaction Hash</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body">
+              <tr>
+                <td><span class="circuit-tag">verifyEligibility()</span></td>
+                <td><span class="badge-status eligible">✓ true</span></td>
+                <td><span class="witness-protected">Age, Score, Income Shielded</span></td>
+                <td class="mono hash-cell">0x5cc188bb740ed22f27...</td>
+                <td class="time-cell">Just now</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
