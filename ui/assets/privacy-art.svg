@@ -1,0 +1,79 @@
+<svg width="800" height="320" viewBox="0 0 800 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="privateGrad" x1="0" y1="0" x2="240" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="circuitGrad" x1="280" y1="0" x2="520" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2e1065" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="publicGrad" x1="560" y1="0" x2="800" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#042f2e" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Node 1: Private Witness (Local Client) -->
+  <g transform="translate(20, 20)">
+    <rect width="230" height="280" rx="16" fill="url(#privateGrad)" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4 4" />
+    <rect x="15" y="15" width="200" height="36" rx="8" fill="rgba(99, 102, 241, 0.15)" />
+    <text x="30" y="38" font-family="Inter, sans-serif" font-weight="700" font-size="14" fill="#a5b4fc">🔒 PRIVATE WITNESS</text>
+
+    <!-- Key-Value Items -->
+    <g transform="translate(20, 75)" font-family="JetBrains Mono, monospace" font-size="12">
+      <text y="20" fill="#94a3b8">creditScore : <tspan fill="#f59e0b">750</tspan></text>
+      <text y="50" fill="#94a3b8">annualIncome: <tspan fill="#f59e0b">$75,000</tspan></text>
+      <text y="80" fill="#94a3b8">userAge     : <tspan fill="#f59e0b">24</tspan></text>
+      <text y="110" fill="#94a3b8">witnessSalt : <tspan fill="#64748b">0x4f8e...39b2</tspan></text>
+    </g>
+    <text x="20" y="245" font-family="Inter, sans-serif" font-size="11" fill="#ef4444" font-weight="600">🚫 NEVER LEAVES BROWSER</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <path d="M260 160H285" stroke="url(#arrowGrad)" stroke-width="4" stroke-linecap="round" />
+  <polygon points="295,160 283,153 283,167" fill="#06b6d4" />
+
+  <!-- Node 2: Compact ZK Circuit Evaluation -->
+  <g transform="translate(295, 20)">
+    <rect width="220" height="280" rx="16" fill="url(#circuitGrad)" stroke="#a855f7" stroke-width="1.5" />
+    <rect x="15" y="15" width="190" height="36" rx="8" fill="rgba(168, 85, 247, 0.15)" />
+    <text x="28" y="38" font-family="Inter, sans-serif" font-weight="700" font-size="14" fill="#c084fc">⚡ ZK CIRCUIT (PLONK)</text>
+
+    <g transform="translate(20, 80)" font-family="JetBrains Mono, monospace" font-size="11" fill="#e2e8f0">
+      <text y="0">score  >= minScore</text>
+      <text y="30">income >= minIncome</text>
+      <text y="60">age    >= minAge</text>
+      <line x1="0" y1="80" x2="180" y2="80" stroke="#a855f7" stroke-width="1" opacity="0.4" />
+      <text y="105" font-weight="700" fill="#38bdf8">disclose(isEligible)</text>
+    </g>
+
+    <rect x="20" y="225" width="180" height="32" rx="6" fill="rgba(56, 189, 248, 0.1)" stroke="rgba(56, 189, 248, 0.3)" />
+    <text x="35" y="246" font-family="Inter, sans-serif" font-size="11" fill="#38bdf8" font-weight="600">Zero-Knowledge Proof</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <path d="M525 160H550" stroke="url(#arrowGrad)" stroke-width="4" stroke-linecap="round" />
+  <polygon points="560,160 548,153 548,167" fill="#06b6d4" />
+
+  <!-- Node 3: Midnight Public Ledger State -->
+  <g transform="translate(560, 20)">
+    <rect width="220" height="280" rx="16" fill="url(#publicGrad)" stroke="#10b981" stroke-width="1.5" />
+    <rect x="15" y="15" width="190" height="36" rx="8" fill="rgba(16, 185, 129, 0.15)" />
+    <text x="25" y="38" font-family="Inter, sans-serif" font-weight="700" font-size="14" fill="#6ee7b7">🌐 PUBLIC LEDGER</text>
+
+    <g transform="translate(20, 80)" font-family="JetBrains Mono, monospace" font-size="12">
+      <text y="20" fill="#94a3b8">isEligible : <tspan fill="#34d399" font-weight="700">true</tspan></text>
+      <text y="50" fill="#94a3b8">proofCount : <tspan fill="#38bdf8">1</tspan></text>
+      <text y="80" fill="#94a3b8">minAge     : <tspan fill="#cbd5e1">21</tspan></text>
+      <text y="110" fill="#94a3b8">minScore   : <tspan fill="#cbd5e1">700</tspan></text>
+      <text y="140" fill="#94a3b8">minIncome  : <tspan fill="#cbd5e1">$50,000</tspan></text>
+    </g>
+
+    <text x="20" y="245" font-family="Inter, sans-serif" font-size="11" fill="#34d399" font-weight="600">✓ VERIFIABLE ON-CHAIN</text>
+  </g>
+</svg>
