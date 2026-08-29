@@ -1695,13 +1695,40 @@ kbd {
   color: var(--text-muted);
 }
 
-/* ─── Responsive Adjustments ─────────────────────────────── */
+/* ─── Global Responsive Containment ──────────────────────── */
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.zkcard-body, .code-block pre, .privacy-code, .table-responsive {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.zkcard-body .code-line, .privacy-code div {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: clamp(0.7rem, 2.5vw, 0.82rem);
+}
+
+/* ─── Responsive Breakpoints ─────────────────────────────── */
 @media (max-width: 1024px) {
-  .hero { flex-direction: column; align-items: flex-start; padding-top: 8rem; }
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: 7rem;
+    padding-bottom: 3rem;
+    gap: 3rem;
+  }
+  .hero-inner { max-width: 100%; }
   .hero-visual { max-width: 100%; width: 100%; }
-  .verifier-grid { grid-template-columns: 1fr; }
-  .privacy-grid { grid-template-columns: 1fr; }
-  .profile-grid { grid-template-columns: 1fr; }
+  .verifier-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .privacy-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .profile-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .privacy-boundary { flex-direction: row; padding: 0; margin: -0.5rem 0; }
   .boundary-line { height: 2px; min-height: unset; flex: 1; }
   .boundary-label { flex-direction: row; gap: 8px; }
@@ -1712,38 +1739,53 @@ kbd {
   .nav-links .nav-link { display: none; }
   .mobile-menu-btn { display: flex; }
 
-  .hero { padding: 5.5rem 1.25rem 2.5rem; text-align: left; }
-  .hero-title { font-size: 2.2rem; line-height: 1.2; }
-  .hero-sub { font-size: 1rem; }
-  .hero-actions { flex-direction: column; width: 100%; }
-  .btn-primary, .btn-ghost { width: 100%; justify-content: center; }
+  .hero { padding: 5.5rem 1rem 2.5rem; }
+  .hero-title { font-size: clamp(1.85rem, 6vw, 2.5rem); line-height: 1.25; }
+  .hero-sub { font-size: 0.98rem; }
+  .hero-actions { flex-direction: column; width: 100%; gap: 0.75rem; }
+  .btn-primary, .btn-ghost { width: 100%; justify-content: center; padding: 12px 18px; }
 
-  .section { padding: 3rem 1.25rem; }
-  .section-title { font-size: 1.75rem; }
+  .section { padding: 3rem 1rem; }
+  .section-title { font-size: clamp(1.5rem, 5vw, 2rem); }
+  .section-sub { font-size: 0.9rem; }
 
   .steps-grid { grid-template-columns: 1fr; gap: 1rem; }
-  .hero-stats { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .step-card { padding: 1.25rem; }
+
+  .hero-stats { flex-direction: column; align-items: flex-start; gap: 1rem; width: 100%; }
   .stat-divider { width: 100%; height: 1px; }
 
   .panel { padding: 1.25rem; }
-  .control-slider { height: 44px; } /* Touch friendly min-height */
+  .threshold-display { flex-direction: column; gap: 0.75rem; align-items: stretch; text-align: left; }
+  .threshold-item { text-align: left; }
+  .threshold-divider { width: 100%; height: 1px; }
 
   .setup-step { flex-direction: column; gap: 0.75rem; }
   .footer-inner { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
   .footer-links { flex-wrap: wrap; gap: 1rem; }
 
   .profile-card, .passport-card, .audit-log-card { padding: 1.25rem; }
-  .audit-table th, .audit-table td { padding: 0.75rem 0.5rem; font-size: 0.8rem; }
+  .profile-user-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .passport-attributes { padding: 0.75rem; }
+  .pass-attr { flex-direction: column; gap: 2px; align-items: flex-start; }
+
+  .audit-table th, .audit-table td { padding: 0.65rem 0.5rem; font-size: 0.78rem; }
+}
+
+@media (max-width: 600px) {
+  .navbar .btn-wallet-connect { display: none; } /* Show wallet connect exclusively inside mobile drawer on small phones */
+  .nav-inner { width: 100%; }
+  .logo-badge { display: none; }
+  .logo-text { font-size: 1.05rem; }
 }
 
 @media (max-width: 480px) {
-  .hero-title { font-size: 1.85rem; }
-  .hero-badge { font-size: 0.75rem; padding: 4px 10px; }
-  .logo-text { font-size: 1.1rem; }
-  .logo-badge { display: none; }
-  .stat-value { font-size: 1.75rem; }
-  .panel-title { font-size: 1.15rem; }
-  .check-item { font-size: 0.8rem; }
+  .hero-title { font-size: 1.75rem; }
+  .hero-badge { font-size: 0.72rem; padding: 4px 10px; }
+  .stat-value { font-size: 1.5rem; }
+  .panel-title { font-size: 1.05rem; }
+  .check-item { font-size: 0.78rem; }
+  .copy-btn { position: static; margin-top: 8px; display: inline-block; width: 100%; text-align: center; }
 }
 
 /* ─── Animations ─────────────────────────────────────────── */
