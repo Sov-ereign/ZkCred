@@ -16,7 +16,10 @@
     "ui": "cd ui && npx serve . -p 3000",
     "dev": "npm run compile && npm test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@vercel/analytics": "^1.4.1",
+    "@vercel/speed-insights": "^1.2.0"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^22.0.0",

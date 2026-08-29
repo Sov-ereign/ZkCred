@@ -234,6 +234,21 @@ async function generateProof() {
 
   // Update Profile Page state & Audit Log table
   updateProfileState(eligible, txHash, age, score, income);
+
+  // Vercel Analytics custom event tracking
+  trackVercelEvent('proof_generated', { eligible, verificationCount: STATE.verificationCount });
+}
+
+// ─── Vercel Analytics Tracker Helper ──────────────────────────────────────────
+
+function trackVercelEvent(eventName, eventData = {}) {
+  try {
+    if (typeof window !== 'undefined' && typeof window.va === 'function') {
+      window.va('event', { name: eventName, data: eventData });
+    }
+  } catch (err) {
+    console.debug('Vercel Analytics event tracking:', err);
+  }
 }
 
 // ─── Stats Counter Animation ──────────────────────────────────────────────────
@@ -354,6 +369,7 @@ function initWalletConnect() {
         if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress;
         if (profileStatusDot) profileStatusDot.style.background = 'var(--red-400)';
 
+        trackVercelEvent('wallet_disconnected');
         console.log('Lace Wallet disconnected.');
         return;
       }
@@ -384,6 +400,7 @@ function initWalletConnect() {
         if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
         if (profileStatusDot) profileStatusDot.style.background = 'var(--green-400)';
 
+        trackVercelEvent('wallet_connected', { address: shortAddr });
         console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
       } catch (err) {
         console.error('Wallet connection failed:', err);
@@ -456,6 +473,7 @@ function initExportAttestation() {
 
     try {
       await navigator.clipboard.writeText(JSON.stringify(attestation, null, 2));
+      trackVercelEvent('attestation_exported');
       if (exportToast) {
         exportToast.hidden = false;
         setTimeout(() => { exportToast.hidden = true; }, 3000);
