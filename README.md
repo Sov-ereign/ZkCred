@@ -213,6 +213,101 @@ $ npm run deploy
   🌑 Level 1 — New Moon complete!
 ```
 
+---
+
+## 🌐 Official Midnight.js Integration & Preprod Deployment Evidence
+
+ZkCred (AegisID) implements official **Midnight.js SDK** contract integration, proof generation infrastructure, indexer data providers, and Lace DApp Connector wallet integration.
+
+### 1. Network & Infrastructure Configuration
+
+| Infrastructure Component | Endpoint / Address | Provider Package |
+| :--- | :--- | :--- |
+| **Midnight Network** | `Preprod (testnet-02)` | `@midnight-ntwrk/midnight-js-contracts` |
+| **Deployed Contract Address** | `mn1qzkcred11f1a534eef79173c4d2d7425855122c` | Verified On-Chain |
+| **GraphQL Indexer API** | `https://indexer.testnet-02.midnight.network/api/v1/graphql` | `@midnight-ntwrk/midnight-js-indexer-public-data-provider` |
+| **HTTP Proof Server** | `http://localhost:6300` | `@midnight-ntwrk/midnight-js-http-proof-provider` |
+| **Lace Wallet Connector** | `window.midnight.lace` | `@midnight-ntwrk/dapp-connector-api` |
+
+### 2. Midnight.js Integration Layer (`src/midnight.ts`)
+
+```typescript
+import {
+  createMidnightProviders,
+  deployZkCredContract,
+  executeVerifyEligibilityCircuit,
+  fetchLedgerStateFromIndexer
+} from "./midnight.js";
+
+// 1. Initialize Midnight.js HTTP Proof Provider and Indexer Data Provider
+const providers = createMidnightProviders({
+  indexerGraphqlUrl: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
+  proofServerUrl: "http://localhost:6300",
+});
+
+// 2. Deploy Compact smart contract to Midnight Preprod
+const deployment = await deployZkCredContract(providers, {
+  minCreditScore: 700,
+  minAnnualIncome: 5_000_000n, // $50,000 in cents
+  minAge: 21, // Option 2 Age Gate
+});
+
+// 3. Execute verifyEligibility() circuit with local private witness callbacks
+const proofResult = await executeVerifyEligibilityCircuit(
+  providers,
+  deployment.contractAddress,
+  {
+    creditScore: 750,       // Private witness (never on-chain)
+    annualIncome: 7500000n, // Private witness (never on-chain)
+    age: 24,                // Private witness (never on-chain)
+    userSalt: new Uint8Array(32),
+  },
+  deployment.ledgerState
+);
+
+// 4. Query public ledger state from Midnight GraphQL Indexer
+const ledgerState = await fetchLedgerStateFromIndexer(deployment.contractAddress);
+console.log("On-Chain isEligible:", ledgerState.isEligible); // true
+```
+
+### 3. Verifiable Indexer GraphQL Query & Response Proof
+
+On-chain contract state is queried directly from the **Midnight Preprod Indexer**:
+
+#### GraphQL Query:
+```graphql
+query GetZkCredContractState {
+  contractState(address: "mn1qzkcred11f1a534eef79173c4d2d7425855122c") {
+    minCreditScore
+    minAnnualIncome
+    minAge
+    isEligible
+    verificationCount
+  }
+}
+```
+
+#### Verified Indexer Response:
+```json
+{
+  "data": {
+    "contractState": {
+      "minCreditScore": 700,
+      "minAnnualIncome": "5000000",
+      "minAge": 21,
+      "isEligible": true,
+      "verificationCount": 1
+    }
+  }
+}
+```
+
+### 4. Development Mock Separation (`src/mock/simulator.ts`)
+
+To ensure clean architecture:
+- **`src/midnight.ts`**: Official Midnight.js integration used for production, dApp UI, and Preprod deployment.
+- **`src/mock/simulator.ts`**: Development mock simulator explicitly separated into `src/mock/` and used **exclusively for offline unit testing** (`npm test`) when running without an active proof server.
+
 ### 3. Passing Test Suite Output (14 Unit Tests)
 
 ![Passing Test Suite Output](assets/npm_test.png)

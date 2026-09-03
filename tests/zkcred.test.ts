@@ -8,8 +8,8 @@
  * Run with: npm test
  */
 
+import { ZkCredSimulator } from "../src/mock/simulator.js";
 import {
-  ZkCredSimulator,
   createWitnessProvider,
   saltToHex,
   formatIncomeCents,

@@ -8,6 +8,7 @@
 export interface LedgerState {
   minCreditScore: number;
   minAnnualIncome: bigint;
+  minAge: number;
   isEligible: boolean;
   verificationCount: bigint;
 }
@@ -15,6 +16,7 @@ export interface LedgerState {
 export interface WitnessFunctions {
   getPrivateCreditScore: () => number;
   getPrivateAnnualIncome: () => bigint;
+  getPrivateAge: () => number;
   getPrivateSalt: () => Uint8Array;
 }
 

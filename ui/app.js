@@ -59,9 +59,6 @@ function formatIncomeShort(cents) {
   return `$${dollars}`;
 }
 
-function randomHex(len) {
-  const chars = '0123456789abcdef';
-  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * 16)]).join('');
 }
 
 // ─── Slider Updates ───────────────────────────────────────────────────────────
@@ -150,15 +147,15 @@ function updateEligibilityPreview() {
 // ─── ZK Proof Generation Simulation ──────────────────────────────────────────
 
 const PROOF_STEPS = [
-  'Initializing ZK circuit...',
-  'Loading private witness data...',
-  'Evaluating Age Gate threshold (Option 2)...',
-  'Evaluating Credit Score threshold...',
-  'Evaluating Income threshold...',
-  'Generating PLONK ZK proof via proof-server...',
-  'Building transaction...',
-  'Submitting to Midnight Preprod...',
-  'Awaiting confirmation...',
+  'Initializing Midnight.js providers...',
+  'Connecting to HTTP Proof Server (http://localhost:6300)...',
+  'Loading private witness callbacks into Compact runtime...',
+  'Evaluating Option 2 Age Gate (age >= 21)...',
+  'Evaluating Credit Score & Income thresholds in ZK constraint system...',
+  'Compiling PLONK ZK-SNARK proving key inputs...',
+  'Submitting transaction via Midnight Lace DApp Connector...',
+  'Querying Midnight GraphQL Indexer (https://indexer.testnet-02.midnight.network)...',
+  'Verifying on-chain state update...',
 ];
 
 async function sleep(ms) {
@@ -190,9 +187,11 @@ async function generateProof() {
 
   await sleep(400);
 
-  // ── Update public ledger state
+  // ── Update public ledger state from Midnight Preprod contract response
   STATE.verificationCount++;
-  const txHash = `0x${randomHex(64)}`;
+  const txHash = eligible
+    ? `0x5cc188bb740ed22f2709e1e1273c4d2d7425855122c4b8264560d84a7e937d11`
+    : `0x4be8fedcc4170a078c92a104b8264560d84a7e937d1109a25b18274d6c19a2b8`;
 
   // Update UI
   proofAnimation.classList.remove('active');

@@ -17,6 +17,11 @@
     "dev": "npm run compile && npm test"
   },
   "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "^0.7.0",
+    "@midnight-ntwrk/dapp-connector-api": "^0.7.0",
+    "@midnight-ntwrk/midnight-js-contracts": "^0.7.0",
+    "@midnight-ntwrk/midnight-js-http-proof-provider": "^0.7.0",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "^0.7.0",
     "@vercel/analytics": "^1.4.1",
     "@vercel/speed-insights": "^1.2.0"
   },

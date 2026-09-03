@@ -1,50 +1,26 @@
 /**
- * ZkCred (AegisID) — Contract API Layer
- * Target: Midnight Network Preprod
+ * ZkCred (AegisID) — Contract API Layer & SDK Facade
+ * Target: Midnight Network Preprod (testnet-02)
  * Track: Level 3 — Option 2: Age / Eligibility Gate
  */
 
 export type ContractAddress = string;
 
-// =============================================================================
-// Type Definitions
-// =============================================================================
+// Re-export official Midnight.js integration module
+export {
+  createMidnightProviders,
+  createWitnessCallbacks,
+  deployZkCredContract,
+  executeVerifyEligibilityCircuit,
+  fetchLedgerStateFromIndexer,
+  DEFAULT_PREPROD_CONFIG as MIDNIGHT_PREPROD_CONFIG,
+  type MidnightProviders,
+  type MidnightConfig,
+  type PrivateWitnessData,
+} from "./midnight.js";
 
-/** Public state visible on the Midnight blockchain */
-export interface ZkCredPublicState {
-  minCreditScore: number;
-  minAnnualIncome: bigint;
-  minAge: number;
-  isEligible: boolean;
-  verificationCount: bigint;
-  contractAddress?: string;
-}
-
-/** Private witness data — stays local, NEVER submitted on-chain */
-export interface ZkCredPrivateWitness {
-  creditScore: number; // e.g. 720 — kept private via ZK witness
-  annualIncome: bigint; // USD cents — kept private via ZK witness
-  age: number; // e.g. 24 — kept private via ZK witness (Age Gate)
-  userSalt: Uint8Array; // 32-byte random salt — prevents replay attacks
-}
-
-/** Result of a ZK eligibility verification */
-export interface VerificationResult {
-  eligible: boolean;
-  proofGenerated: boolean;
-  transactionHash?: string;
-  verificationCount: bigint;
-  timestamp: number;
-}
-
-/** Contract deployment configuration */
-export interface DeployConfig {
-  minCreditScore: number;
-  minAnnualIncome: bigint;
-  minAge: number;
-  networkEndpoint: string;
-  proofServerUrl: string;
-}
+// Re-export offline development mock simulator
+export { ZkCredSimulator, type ZkCredPublicState, type ZkCredPrivateWitness, type VerificationResult } from "./mock/simulator.js";
 
 // =============================================================================
 // Witness Provider
@@ -52,7 +28,14 @@ export interface DeployConfig {
 // to retrieve private data during proof generation.
 // =============================================================================
 
-export function createWitnessProvider(privateData: ZkCredPrivateWitness) {
+export interface ZkCredWitnessInput {
+  creditScore: number;
+  annualIncome: bigint;
+  age: number;
+  userSalt: Uint8Array;
+}
+
+export function createWitnessProvider(privateData: ZkCredWitnessInput) {
   return {
     getPrivateCreditScore: (): number => privateData.creditScore,
     getPrivateAnnualIncome: (): bigint => privateData.annualIncome,
@@ -84,65 +67,20 @@ export function saltToHex(salt: Uint8Array): string {
 }
 
 // =============================================================================
-// Contract State Simulator (Local ZK Circuit Execution Engine)
-// =============================================================================
-
-export class ZkCredSimulator {
-  private state: ZkCredPublicState;
-
-  constructor(initialState: Omit<ZkCredPublicState, "isEligible" | "verificationCount">) {
-    this.state = {
-      ...initialState,
-      isEligible: false,
-      verificationCount: 0n,
-    };
-  }
-
-  getPublicState(): ZkCredPublicState {
-    return { ...this.state };
-  }
-
-  /**
-   * Option 2 ZK Gate Simulation:
-   * Evaluates Age, Credit Score, and Income inside ZK circuit limits.
-   * Discloses ONLY binary eligibility boolean to public ledger.
-   */
-  async verifyEligibility(witness: ZkCredPrivateWitness): Promise<VerificationResult> {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const meetsScoreThreshold = witness.creditScore >= this.state.minCreditScore;
-    const meetsIncomeThreshold = witness.annualIncome >= this.state.minAnnualIncome;
-    const meetsAgeThreshold = witness.age >= this.state.minAge;
-
-    const eligible = meetsScoreThreshold && meetsIncomeThreshold && meetsAgeThreshold;
-
-    this.state.isEligible = eligible;
-    this.state.verificationCount += 1n;
-
-    return {
-      eligible,
-      proofGenerated: true,
-      transactionHash: `0x${saltToHex(witness.userSalt).slice(0, 64)}`,
-      verificationCount: this.state.verificationCount,
-      timestamp: Date.now(),
-    };
-  }
-
-  updateThresholds(newMinCreditScore: number, newMinAnnualIncome: bigint, newMinAge: number): void {
-    this.state.minCreditScore = newMinCreditScore;
-    this.state.minAnnualIncome = newMinAnnualIncome;
-    this.state.minAge = newMinAge;
-    this.state.isEligible = false;
-  }
-}
-
-// =============================================================================
-// Default Thresholds
+// Default Thresholds & Configurations
 // =============================================================================
 
 export const DEFAULT_MIN_CREDIT_SCORE = 700;
 export const DEFAULT_MIN_ANNUAL_INCOME = 5_000_000n; // $50,000 in cents
 export const DEFAULT_MIN_AGE = 21; // Age Gate threshold
+
+export interface DeployConfig {
+  minCreditScore: number;
+  minAnnualIncome: bigint;
+  minAge: number;
+  networkEndpoint: string;
+  proofServerUrl: string;
+}
 
 export const PREPROD_CONFIG: Partial<DeployConfig> = {
   networkEndpoint: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
