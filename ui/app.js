@@ -10,7 +10,7 @@ const STATE = {
   minAnnualIncome: 5_000_000, // cents = $50,000
   minAge: 21, // Option 2 Age Gate
   verificationCount: 0,
-  contractAddress: 'mn1qzkcred11f1a534eef79173c4d2d7425855122c',
+  contractAddress: '0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737',
   isGenerating: false,
   walletConnected: false,
   walletAddress: null,
@@ -386,7 +386,7 @@ function initWalletConnect() {
         } else {
           // Simulated connection if browser extension is not present
           await new Promise(r => setTimeout(r, 600));
-          STATE.walletAddress = 'mn1qzkcred11f1a534eef79173c4d2d7425855122c';
+          STATE.walletAddress = '0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737';
         }
 
         STATE.walletConnected = true;

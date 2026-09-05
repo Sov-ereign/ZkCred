@@ -191,7 +191,7 @@ $ npm run deploy
   ────────────────────────────────────────────────────────────
   ✓ Contract compiled successfully — circuits generated in src/managed/
   ✓ Contract deployed to Midnight Preprod
-  Contract Address:  mn1qzkcred11f1a534eef79173c4d2d7425855122c
+  Contract Address:  0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737
   Min Credit Score:  700
   Min Annual Income:  $50,000
   Min Age Required:   21 (Option 2 Age Gate)
@@ -224,7 +224,7 @@ ZkCred (AegisID) implements official **Midnight.js SDK** contract integration, p
 | Infrastructure Component | Endpoint / Address | Provider Package |
 | :--- | :--- | :--- |
 | **Midnight Network** | `Preprod (testnet-02)` | `@midnight-ntwrk/midnight-js-contracts` |
-| **Deployed Contract Address** | `mn1qzkcred11f1a534eef79173c4d2d7425855122c` | Verified On-Chain |
+| **Deployed Contract Address** | `0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737` | Verified On-Chain (September 2026) |
 | **GraphQL Indexer API** | `https://indexer.testnet-02.midnight.network/api/v1/graphql` | `@midnight-ntwrk/midnight-js-indexer-public-data-provider` |
 | **HTTP Proof Server** | `http://localhost:6300` | `@midnight-ntwrk/midnight-js-http-proof-provider` |
 | **Lace Wallet Connector** | `window.midnight.lace` | `@midnight-ntwrk/dapp-connector-api` |
@@ -277,7 +277,7 @@ On-chain contract state is queried directly from the **Midnight Preprod Indexer*
 #### GraphQL Query:
 ```graphql
 query GetZkCredContractState {
-  contractState(address: "mn1qzkcred11f1a534eef79173c4d2d7425855122c") {
+  contractState(address: "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737") {
     minCreditScore
     minAnnualIncome
     minAge
@@ -368,7 +368,7 @@ Time:        6.113 s
 
 ## 🚀 Level 1 ➔ Level 5 Protocol Roadmap
 
-- 🌑 **Level 1 (New Moon)**: Toolchain set up, Compact contract compiled to ZK circuits, 15 unit tests passing, deployed to Preprod (`mn1qzkcred11f1a534eef79173c4d2d7425855122c`).
+- 🌑 **Level 1 (New Moon)**: Toolchain set up, Compact contract compiled to ZK circuits, 15 unit tests passing, deployed to Preprod (`0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737`).
 - 🌒 **Level 2 (Crescent)**: Lace Wallet integration, live dApp hosted on Vercel ([zk-cred.vercel.app](https://zk-cred.vercel.app)), observable ZK eligibility gate proof.
 - 🌓 **Level 3 (Half Moon)**: Multi-attribute gate (Age / Income / Credit Score Thresholds) + confidential credential verification.
 - 🌔 **Level 4 (Gibbous)**: Cryptographic issuer attestations (Bank/KYC provider signature verification in circuit).

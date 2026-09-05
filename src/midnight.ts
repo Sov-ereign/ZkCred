@@ -23,7 +23,7 @@ export const DEFAULT_PREPROD_CONFIG: MidnightConfig = {
   networkEndpoint: "https://indexer.testnet-02.midnight.network",
   indexerGraphqlUrl: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
   proofServerUrl: "http://localhost:6300",
-  contractAddress: "mn1qzkcred11f1a534eef79173c4d2d7425855122c",
+  contractAddress: "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737",
 };
 
 /** Witness Data passed from local client wallet */
