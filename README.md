@@ -5,12 +5,14 @@
 [![CI/CD Pipeline](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg)](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml)
 ![Live Demo](https://img.shields.io/badge/Live_Demo-zk--cred.vercel.app-06b6d4?style=for-the-badge&logo=vercel)
 [![Demo Video](https://img.shields.io/badge/Demo_Video-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/InI_dsrYqFY)
+[![X Profile](https://img.shields.io/badge/X_Profile-@ZK__CRED-black?style=for-the-badge&logo=x)](https://x.com/ZK_CRED)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 > **ZkCred (AegisID)** is a privacy-preserving zero-knowledge multi-attribute Age & Financial Eligibility Gate built on the **Midnight Network** using Compact smart contracts.
 >
 > 🌐 **Live Demo:** [https://zk-cred.vercel.app](https://zk-cred.vercel.app)
 > 🎬 **Demo Video:** [https://youtu.be/InI_dsrYqFY](https://youtu.be/InI_dsrYqFY)
+> 🐦 **X (Twitter):** [https://x.com/ZK_CRED](https://x.com/ZK_CRED)
 > 📦 **GitHub Repo:** [https://github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred)
 
 ---
@@ -389,6 +391,7 @@ Time:        6.113 s
 | **Product Proposal Paragraph** | ✅ **Passed** | Section `## 💡 Level 3 Product Proposal — Option 2` |
 | **Minimum 10 Commits** | ✅ **Passed** | **25+ Commits** on `main` branch |
 | **Screenshot: Test Output (3+ tests)** | ✅ **Passed** | Rendered in `README.md` from `assets/npm_test.png` (14 passing tests) |
+| **Product X (Twitter) Profile** | ✅ **Passed** | Linked: [x.com/ZK_CRED](https://x.com/ZK_CRED) |
 | **Demo Video (1 minute)** | ✅ **Passed** | [YouTube Demo Video](https://youtu.be/InI_dsrYqFY) (Wallet connect + ZK circuit execution) |
 
 ---
