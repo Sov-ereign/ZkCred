@@ -67,8 +67,6 @@ function formatIncomeShort(cents) {
   return `$${dollars}`;
 }
 
-}
-
 // ─── Slider Updates ───────────────────────────────────────────────────────────
 
 function updateAge() {
