@@ -331,6 +331,9 @@ function updateProfileState(eligible, txHash, age, score, income) {
   // Prepend entry to Audit Log table
   const tbody = document.getElementById('audit-table-body');
   if (tbody) {
+    const emptyRow = document.getElementById('empty-audit-row');
+    if (emptyRow) emptyRow.remove();
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><span class="circuit-tag">verifyEligibility()</span></td>
@@ -584,6 +587,10 @@ function init() {
 
   // Ledger defaults
   ledgerAddress.textContent = STATE.contractAddress;
+  const profileWalletAddr = document.getElementById('profile-wallet-addr');
+  if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress;
+  const profileSalt = document.getElementById('profile-witness-salt');
+  if (profileSalt) profileSalt.textContent = generateDynamicHex(4, '0x') + '...' + generateDynamicHex(2, '');
 
   // Stats counter animation on view
   observeSection('#stat-proofs .stat-value', el => {

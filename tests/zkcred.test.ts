@@ -308,7 +308,8 @@ describe("ZkCred Runtime Contract — Privacy Guarantees & Indexer Strictness", 
 
   test("12. fetchLedgerStateFromIndexer throws clean error on unreachable indexer URL without state fabrication", async () => {
     const invalidUrl = "https://invalid-indexer.example.com/api/v1/graphql";
-    await expect(fetchLedgerStateFromIndexer("0x02008f3a", invalidUrl)).rejects.toThrow();
+    const testAddr = "0x02" + "a".repeat(64);
+    await expect(fetchLedgerStateFromIndexer(testAddr, invalidUrl)).rejects.toThrow();
   });
 });
 

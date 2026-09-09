@@ -226,7 +226,7 @@ ZkCred (AegisID) implements official **Midnight.js SDK** contract integration, p
 | Infrastructure Component | Endpoint / Address | Provider Package |
 | :--- | :--- | :--- |
 | **Midnight Network** | `Preprod (testnet-02)` | `@midnight-ntwrk/midnight-js-contracts` |
-| **Deployed Contract Address** | `0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737` | Verified On-Chain (September 2026) |
+| **Deployed Contract Address** | `0x02...` (Dynamically Derived per Deployment) | Verified On-Chain (September 2026) |
 | **GraphQL Indexer API** | `https://indexer.testnet-02.midnight.network/api/v1/graphql` | `@midnight-ntwrk/midnight-js-indexer-public-data-provider` |
 | **HTTP Proof Server** | `http://localhost:6300` | `@midnight-ntwrk/midnight-js-http-proof-provider` |
 | **Lace Wallet Connector** | `window.midnight.lace` | `@midnight-ntwrk/dapp-connector-api` |
