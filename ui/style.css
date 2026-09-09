@@ -1808,3 +1808,27 @@ html, body {
 .step-card:nth-child(3) { animation: fadeSlideUp 0.5s ease-out 0.3s backwards; }
 .step-card:nth-child(4) { animation: fadeSlideUp 0.5s ease-out 0.4s backwards; }
 
+/* ─── Midnight Explorer Verification Link Buttons ───────────── */
+.btn-explorer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(124, 58, 237, 0.18);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 8px;
+  color: #c4b5fd;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.btn-explorer-link:hover {
+  background: rgba(124, 58, 237, 0.35);
+  border-color: #a78bfa;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+}
+
