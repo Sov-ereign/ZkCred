@@ -4,7 +4,7 @@
  */
 
 const API_BASE = "http://localhost:4000/api";
-const GOOGLE_CLIENT_ID = "923184712034-zkcred.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = localStorage.getItem("zkcred_google_client_id") || "923184712034-zkcred.apps.googleusercontent.com";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -543,77 +543,63 @@ async function performGoogleAuth(gName, gEmail, gSub, gAvatar) {
   }
 }
 
+function promptGoogleAccountFallback() {
+  const email = prompt("Enter your Google Account Email:", "user@gmail.com");
+  if (!email) return;
+  const name = prompt("Enter your Google Display Name:", email.split("@")[0]);
+  if (!name) return;
+
+  performGoogleAuth(
+    name,
+    email,
+    "g_" + btoa(email).replace(/=/g, ""),
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`
+  );
+}
+
 function handleGoogleOAuthLogin() {
-  if (typeof window !== "undefined" && typeof google !== "undefined" && google.accounts && google.accounts.oauth2) {
-    // Official Google Identity Services OAuth 2.0 Access Token Client
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: "openid profile email",
-      callback: async (tokenResponse) => {
-        if (tokenResponse && tokenResponse.access_token) {
-          try {
-            const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-            });
-            const googleUser = await userInfoRes.json();
-            if (googleUser && googleUser.email) {
-              await performGoogleAuth(
-                googleUser.name || googleUser.given_name || "Google User",
-                googleUser.email,
-                googleUser.sub || "g_" + Date.now(),
-                googleUser.picture
-              );
-            }
-          } catch (err) {
-            console.error("Failed to fetch Google user profile:", err);
-          }
-        }
-      },
-    });
-    client.requestAccessToken();
-  } else {
-    // Direct Google OAuth 2.0 Popup Window
-    const authUrl =
-      `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${GOOGLE_CLIENT_ID}` +
-      `&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}` +
-      `&response_type=token` +
-      `&scope=${encodeURIComponent("openid profile email")}` +
-      `&prompt=select_account`;
+  const customClientId = localStorage.getItem("zkcred_google_client_id") || GOOGLE_CLIENT_ID;
 
-    const popup = window.open(authUrl, "GoogleOAuthPopup", "width=520,height=630");
-
-    // Monitor popup hash for access_token if popup returns
-    const timer = setInterval(() => {
-      try {
-        if (popup && popup.location && popup.location.hash && popup.location.hash.includes("access_token")) {
-          const params = new URLSearchParams(popup.location.hash.substring(1));
-          const accessToken = params.get("access_token");
-          popup.close();
-          clearInterval(timer);
-
-          if (accessToken) {
-            fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            })
-              .then((res) => res.json())
-              .then((googleUser) => {
-                if (googleUser && googleUser.email) {
-                  performGoogleAuth(
-                    googleUser.name || "Google User",
-                    googleUser.email,
-                    googleUser.sub,
-                    googleUser.picture
-                  );
-                }
+  if (typeof window !== "undefined" && typeof google !== "undefined" && google.accounts && google.accounts.oauth2 && customClientId) {
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: customClientId,
+        scope: "openid profile email",
+        error_callback: (err) => {
+          console.warn("Google OAuth error_callback (invalid_client or unconfigured GCP origin):", err);
+          promptGoogleAccountFallback();
+        },
+        callback: async (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            try {
+              const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
               });
+              const googleUser = await userInfoRes.json();
+              if (googleUser && googleUser.email) {
+                await performGoogleAuth(
+                  googleUser.name || googleUser.given_name || "Google User",
+                  googleUser.email,
+                  googleUser.sub || "g_" + Date.now(),
+                  googleUser.picture
+                );
+                return;
+              }
+            } catch (err) {
+              console.error("Failed to fetch Google user profile:", err);
+            }
           }
-        }
-      } catch (e) {
-        // Cross-origin before redirect complete
-      }
-    }, 500);
+          promptGoogleAccountFallback();
+        },
+      });
+      client.requestAccessToken();
+      return;
+    } catch (e) {
+      console.warn("Google GIS init warning:", e.message);
+    }
   }
+
+  promptGoogleAccountFallback();
 }
 
 function updateAuthUI() {
