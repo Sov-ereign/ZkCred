@@ -2104,3 +2104,129 @@ html, body {
 
 .btn-auth-submit { width: 100%; justify-content: center; margin-top: 0.5rem; }
 
+/* ─── Google Account Selector Popup ───────────────────── */
+.google-popup-card {
+  max-width: 420px;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 16px;
+  padding: 2rem 1.8rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+  text-align: left;
+}
+.google-popup-card .modal-close {
+  color: #6b7280;
+}
+.google-popup-card .modal-close:hover {
+  color: #111827;
+  background: #f3f4f6;
+}
+
+.google-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.google-logo-lg {
+  margin-bottom: 0.5rem;
+}
+.google-header h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #111827;
+}
+.google-sub {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin-top: 4px;
+}
+
+.google-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1.2rem;
+}
+
+.google-account-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+.google-account-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.g-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.g-account-info {
+  display: flex;
+  flex-direction: column;
+}
+.g-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+.g-email {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.google-custom-divider {
+  position: relative;
+  text-align: center;
+  margin: 1.2rem 0;
+}
+.google-custom-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e5e7eb;
+}
+.google-custom-divider span {
+  position: relative;
+  background: #ffffff;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#google-custom-form .form-group label {
+  color: #374151;
+}
+#google-custom-form .form-input {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+#google-custom-form .form-input:focus {
+  border-color: #4285F4;
+  box-shadow: 0 0 8px rgba(66, 133, 244, 0.25);
+}
+
+.google-footer {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 1.2rem;
+  line-height: 1.4;
+}
+

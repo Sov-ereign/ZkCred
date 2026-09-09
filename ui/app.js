@@ -28,6 +28,23 @@ const STATE = {
   authToken: localStorage.getItem("zkcred_auth_token") || null,
 };
 
+// ─── Modal Accessibility Helpers ──────────────────────────────────────────────
+
+function openModal(modal) {
+  if (!modal) return;
+  modal.hidden = false;
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeModal(modal) {
+  if (!modal) return;
+  if (document.activeElement && modal.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
+  modal.setAttribute("aria-hidden", "true");
+  modal.hidden = true;
+}
+
 // ─── DOM References ───────────────────────────────────────────────────────────
 
 const ageSlider = document.getElementById("age-slider");
@@ -229,7 +246,6 @@ async function generateProof() {
 
   updateProfileState(eligible, txHash, age, score, income);
 
-  // Save ZK proof verification record directly to MongoDB backend API
   await saveVerificationToMongoDB({
     contractAddress: STATE.contractAddress,
     circuit: "verifyEligibility",
@@ -291,7 +307,7 @@ function renderAuditTableFromMongoDB(records) {
     const row = document.createElement("tr");
     const formattedTime = new Date(rec.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const shortTx = rec.transactionHash.slice(0, 18) + "..." + rec.transactionHash.slice(-4);
-    
+
     row.innerHTML = `
       <td><span class="circuit-tag">${rec.circuit || 'verifyEligibility()'}</span></td>
       <td><span class="badge-status ${rec.isEligible ? 'eligible' : 'ineligible'}">${rec.isEligible ? '✓ true' : '✗ false'}</span></td>
@@ -416,13 +432,13 @@ function initWalletConnect() {
 
   if (laceModalClose) {
     laceModalClose.addEventListener("click", () => {
-      if (laceModal) laceModal.hidden = true;
+      closeModal(laceModal);
     });
   }
 
   if (btnContinueDemo) {
     btnContinueDemo.addEventListener("click", () => {
-      if (laceModal) laceModal.hidden = true;
+      closeModal(laceModal);
       STATE.walletAddress = getOrCreatePersistentWalletAddress();
       STATE.walletConnected = true;
 
@@ -466,9 +482,7 @@ function initWalletConnect() {
           STATE.walletConnected = true;
         } else {
           // Extension is NOT present! Prompt Lace Extension download modal.
-          if (laceModal) {
-            laceModal.hidden = false;
-          }
+          openModal(laceModal);
           walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
           return;
         }
@@ -504,6 +518,9 @@ function initAuth() {
   const authModal = document.getElementById("auth-modal");
   const authModalClose = document.getElementById("auth-modal-close");
 
+  const googlePopupModal = document.getElementById("google-popup-modal");
+  const googlePopupClose = document.getElementById("google-popup-close");
+
   const tabBtnGoogle = document.getElementById("tab-btn-google");
   const tabBtnManual = document.getElementById("tab-btn-manual");
   const tabGoogle = document.getElementById("auth-tab-google");
@@ -521,7 +538,7 @@ function initAuth() {
   const authAlert = document.getElementById("auth-alert");
   const manualAuthBtnText = document.getElementById("manual-auth-btn-text");
 
-  let authMode = "login"; // 'login' or 'register'
+  let authMode = "login";
 
   function updateAuthUI() {
     if (STATE.currentUser) {
@@ -542,13 +559,19 @@ function initAuth() {
 
   if (navAuthBtn) {
     navAuthBtn.addEventListener("click", () => {
-      if (authModal) authModal.hidden = false;
+      openModal(authModal);
     });
   }
 
   if (authModalClose) {
     authModalClose.addEventListener("click", () => {
-      if (authModal) authModal.hidden = true;
+      closeModal(authModal);
+    });
+  }
+
+  if (googlePopupClose) {
+    googlePopupClose.addEventListener("click", () => {
+      closeModal(googlePopupModal);
     });
   }
 
@@ -580,7 +603,7 @@ function initAuth() {
     });
   }
 
-  // Auth Mode Switching (Login vs Register)
+  // Auth Mode Switching
   if (btnToggleAuthMode) {
     btnToggleAuthMode.addEventListener("click", () => {
       if (authMode === "login") {
@@ -600,49 +623,68 @@ function initAuth() {
     });
   }
 
-  // Google OAuth Login Action
+  // Trigger Google Account Picker Popup Modal
   if (googleAuthBtn) {
-    googleAuthBtn.addEventListener("click", async () => {
-      try {
-        const dummyName = "Google User " + Math.floor(Math.random() * 1000);
-        const dummyEmail = `google_user_${Date.now()}@gmail.com`;
+    googleAuthBtn.addEventListener("click", () => {
+      openModal(googlePopupModal);
+    });
+  }
 
-        const res = await fetch(`${API_BASE}/auth/google`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: dummyName,
-            email: dummyEmail,
-            googleId: "google_" + Date.now(),
-            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(dummyName)}`,
-            walletAddress: STATE.walletAddress || getOrCreatePersistentWalletAddress(),
-          }),
-        });
+  // Execute Google Authentication with selected account payload
+  async function performGoogleAuth(gName, gEmail, gAvatar) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: gName,
+          email: gEmail,
+          googleId: "google_" + btoa(gEmail).replace(/=/g, ""),
+          avatarUrl: gAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`,
+          walletAddress: STATE.walletAddress || getOrCreatePersistentWalletAddress(),
+        }),
+      });
 
-        const data = await res.json();
-        if (res.ok) {
-          STATE.authToken = data.token;
-          STATE.currentUser = data.user;
-          localStorage.setItem("zkcred_auth_token", data.token);
-          localStorage.setItem("zkcred_user", JSON.stringify(data.user));
+      const data = await res.json();
+      if (res.ok) {
+        STATE.authToken = data.token;
+        STATE.currentUser = data.user;
+        localStorage.setItem("zkcred_auth_token", data.token);
+        localStorage.setItem("zkcred_user", JSON.stringify(data.user));
 
-          updateAuthUI();
-          if (authModal) authModal.hidden = true;
-          fetchVerificationsFromMongoDB();
-        } else {
-          if (authAlert) {
-            authAlert.className = "auth-alert error";
-            authAlert.textContent = data.error || "Google Sign-In failed.";
-            authAlert.hidden = false;
-          }
-        }
-      } catch (err) {
-        console.warn("Google Auth network warning:", err.message);
-        if (authAlert) {
-          authAlert.className = "auth-alert error";
-          authAlert.textContent = "Cannot connect to server. Make sure node server/index.js is running.";
-          authAlert.hidden = false;
-        }
+        updateAuthUI();
+        closeModal(googlePopupModal);
+        closeModal(authModal);
+        fetchVerificationsFromMongoDB();
+        console.log(`[Google Auth] Signed in successfully as ${data.user.name}`);
+      } else {
+        alert(data.error || "Google Auth failed.");
+      }
+    } catch (err) {
+      console.warn("Google Auth network warning:", err.message);
+      alert("Cannot connect to authentication server. Please ensure node server/index.js is running.");
+    }
+  }
+
+  // Click handler for Google Account Items in Picker Modal
+  document.querySelectorAll(".google-account-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const name = btn.getAttribute("data-name");
+      const email = btn.getAttribute("data-email");
+      const avatar = btn.getAttribute("data-avatar");
+      performGoogleAuth(name, email, avatar);
+    });
+  });
+
+  // Custom Google Account Form Submission
+  const googleCustomForm = document.getElementById("google-custom-form");
+  if (googleCustomForm) {
+    googleCustomForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const gName = document.getElementById("g-input-name").value.trim();
+      const gEmail = document.getElementById("g-input-email").value.trim();
+      if (gName && gEmail) {
+        performGoogleAuth(gName, gEmail, `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`);
       }
     });
   }
@@ -678,7 +720,7 @@ function initAuth() {
           localStorage.setItem("zkcred_user", JSON.stringify(data.user));
 
           updateAuthUI();
-          if (authModal) authModal.hidden = true;
+          closeModal(authModal);
           fetchVerificationsFromMongoDB();
         } else {
           if (authAlert) {
