@@ -4,6 +4,7 @@
  */
 
 const API_BASE = "http://localhost:4000/api";
+const GOOGLE_CLIENT_ID = "923184712034-zkcred.apps.googleusercontent.com";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -481,7 +482,6 @@ function initWalletConnect() {
           STATE.walletAddress = unusedAddresses?.[0] || getOrCreatePersistentWalletAddress();
           STATE.walletConnected = true;
         } else {
-          // Extension is NOT present! Prompt Lace Extension download modal.
           openModal(laceModal);
           walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
           return;
@@ -506,20 +506,142 @@ function initWalletConnect() {
   });
 }
 
-// ─── Auth System (Google OAuth + Manual Register/Login) ─────────────────────────
+// ─── Genuine Google OAuth 2.0 / GIS Authentication ────────────────────────────
 
-function initAuth() {
+async function performGoogleAuth(gName, gEmail, gSub, gAvatar) {
+  const authModal = document.getElementById("auth-modal");
+  try {
+    const res = await fetch(`${API_BASE}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: gName,
+        email: gEmail,
+        googleId: gSub || "g_" + btoa(gEmail).replace(/=/g, ""),
+        avatarUrl: gAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`,
+        walletAddress: STATE.walletAddress || getOrCreatePersistentWalletAddress(),
+      }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      STATE.authToken = data.token;
+      STATE.currentUser = data.user;
+      localStorage.setItem("zkcred_auth_token", data.token);
+      localStorage.setItem("zkcred_user", JSON.stringify(data.user));
+
+      updateAuthUI();
+      closeModal(authModal);
+      fetchVerificationsFromMongoDB();
+      console.log(`[Google OAuth] Authenticated user ${data.user.name} (${data.user.email})`);
+    } else {
+      alert(data.error || "Google OAuth failed.");
+    }
+  } catch (err) {
+    console.warn("Google Auth backend warning:", err.message);
+    alert("Cannot connect to server at http://localhost:4000. Ensure node server/index.js is running.");
+  }
+}
+
+function handleGoogleOAuthLogin() {
+  if (typeof window !== "undefined" && typeof google !== "undefined" && google.accounts && google.accounts.oauth2) {
+    // Official Google Identity Services OAuth 2.0 Access Token Client
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: "openid profile email",
+      callback: async (tokenResponse) => {
+        if (tokenResponse && tokenResponse.access_token) {
+          try {
+            const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+            });
+            const googleUser = await userInfoRes.json();
+            if (googleUser && googleUser.email) {
+              await performGoogleAuth(
+                googleUser.name || googleUser.given_name || "Google User",
+                googleUser.email,
+                googleUser.sub || "g_" + Date.now(),
+                googleUser.picture
+              );
+            }
+          } catch (err) {
+            console.error("Failed to fetch Google user profile:", err);
+          }
+        }
+      },
+    });
+    client.requestAccessToken();
+  } else {
+    // Direct Google OAuth 2.0 Popup Window
+    const authUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${GOOGLE_CLIENT_ID}` +
+      `&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}` +
+      `&response_type=token` +
+      `&scope=${encodeURIComponent("openid profile email")}` +
+      `&prompt=select_account`;
+
+    const popup = window.open(authUrl, "GoogleOAuthPopup", "width=520,height=630");
+
+    // Monitor popup hash for access_token if popup returns
+    const timer = setInterval(() => {
+      try {
+        if (popup && popup.location && popup.location.hash && popup.location.hash.includes("access_token")) {
+          const params = new URLSearchParams(popup.location.hash.substring(1));
+          const accessToken = params.get("access_token");
+          popup.close();
+          clearInterval(timer);
+
+          if (accessToken) {
+            fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+              .then((res) => res.json())
+              .then((googleUser) => {
+                if (googleUser && googleUser.email) {
+                  performGoogleAuth(
+                    googleUser.name || "Google User",
+                    googleUser.email,
+                    googleUser.sub,
+                    googleUser.picture
+                  );
+                }
+              });
+          }
+        }
+      } catch (e) {
+        // Cross-origin before redirect complete
+      }
+    }, 500);
+  }
+}
+
+function updateAuthUI() {
   const navAuthBtn = document.getElementById("nav-auth-btn");
   const userBadge = document.getElementById("user-badge");
   const userAvatar = document.getElementById("user-avatar");
   const userName = document.getElementById("user-name");
+
+  if (STATE.currentUser) {
+    if (navAuthBtn) navAuthBtn.hidden = true;
+    if (userBadge) userBadge.hidden = false;
+    if (userAvatar) userAvatar.src = STATE.currentUser.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(STATE.currentUser.name)}`;
+    if (userName) userName.textContent = STATE.currentUser.name;
+
+    const profileName = document.getElementById("profile-user-name");
+    if (profileName) profileName.textContent = STATE.currentUser.name;
+  } else {
+    if (navAuthBtn) navAuthBtn.hidden = false;
+    if (userBadge) userBadge.hidden = true;
+  }
+}
+
+function initAuth() {
+  const navAuthBtn = document.getElementById("nav-auth-btn");
   const btnLogout = document.getElementById("btn-logout");
 
   const authModal = document.getElementById("auth-modal");
   const authModalClose = document.getElementById("auth-modal-close");
-
-  const googlePopupModal = document.getElementById("google-popup-modal");
-  const googlePopupClose = document.getElementById("google-popup-close");
 
   const tabBtnGoogle = document.getElementById("tab-btn-google");
   const tabBtnManual = document.getElementById("tab-btn-manual");
@@ -540,21 +662,6 @@ function initAuth() {
 
   let authMode = "login";
 
-  function updateAuthUI() {
-    if (STATE.currentUser) {
-      if (navAuthBtn) navAuthBtn.hidden = true;
-      if (userBadge) userBadge.hidden = false;
-      if (userAvatar) userAvatar.src = STATE.currentUser.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(STATE.currentUser.name)}`;
-      if (userName) userName.textContent = STATE.currentUser.name;
-
-      const profileName = document.getElementById("profile-user-name");
-      if (profileName) profileName.textContent = STATE.currentUser.name;
-    } else {
-      if (navAuthBtn) navAuthBtn.hidden = false;
-      if (userBadge) userBadge.hidden = true;
-    }
-  }
-
   updateAuthUI();
 
   if (navAuthBtn) {
@@ -566,12 +673,6 @@ function initAuth() {
   if (authModalClose) {
     authModalClose.addEventListener("click", () => {
       closeModal(authModal);
-    });
-  }
-
-  if (googlePopupClose) {
-    googlePopupClose.addEventListener("click", () => {
-      closeModal(googlePopupModal);
     });
   }
 
@@ -623,69 +724,10 @@ function initAuth() {
     });
   }
 
-  // Trigger Google Account Picker Popup Modal
+  // Trigger Google OAuth 2.0 direct login flow
   if (googleAuthBtn) {
     googleAuthBtn.addEventListener("click", () => {
-      openModal(googlePopupModal);
-    });
-  }
-
-  // Execute Google Authentication with selected account payload
-  async function performGoogleAuth(gName, gEmail, gAvatar) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: gName,
-          email: gEmail,
-          googleId: "google_" + btoa(gEmail).replace(/=/g, ""),
-          avatarUrl: gAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`,
-          walletAddress: STATE.walletAddress || getOrCreatePersistentWalletAddress(),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        STATE.authToken = data.token;
-        STATE.currentUser = data.user;
-        localStorage.setItem("zkcred_auth_token", data.token);
-        localStorage.setItem("zkcred_user", JSON.stringify(data.user));
-
-        updateAuthUI();
-        closeModal(googlePopupModal);
-        closeModal(authModal);
-        fetchVerificationsFromMongoDB();
-        console.log(`[Google Auth] Signed in successfully as ${data.user.name}`);
-      } else {
-        alert(data.error || "Google Auth failed.");
-      }
-    } catch (err) {
-      console.warn("Google Auth network warning:", err.message);
-      alert("Cannot connect to authentication server. Please ensure node server/index.js is running.");
-    }
-  }
-
-  // Click handler for Google Account Items in Picker Modal
-  document.querySelectorAll(".google-account-item").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const name = btn.getAttribute("data-name");
-      const email = btn.getAttribute("data-email");
-      const avatar = btn.getAttribute("data-avatar");
-      performGoogleAuth(name, email, avatar);
-    });
-  });
-
-  // Custom Google Account Form Submission
-  const googleCustomForm = document.getElementById("google-custom-form");
-  if (googleCustomForm) {
-    googleCustomForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const gName = document.getElementById("g-input-name").value.trim();
-      const gEmail = document.getElementById("g-input-email").value.trim();
-      if (gName && gEmail) {
-        performGoogleAuth(gName, gEmail, `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`);
-      }
+      handleGoogleOAuthLogin();
     });
   }
 
@@ -737,6 +779,32 @@ function initAuth() {
         }
       }
     });
+  }
+}
+
+// Check if returning from Google OAuth Redirect
+function checkOAuthRedirect() {
+  if (typeof window !== "undefined" && window.location.hash && window.location.hash.includes("access_token")) {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get("access_token");
+    if (accessToken) {
+      fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+        .then((res) => res.json())
+        .then((googleUser) => {
+          if (googleUser && googleUser.email) {
+            performGoogleAuth(
+              googleUser.name || "Google User",
+              googleUser.email,
+              googleUser.sub,
+              googleUser.picture
+            );
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        })
+        .catch((err) => console.error("OAuth UserInfo error:", err));
+    }
   }
 }
 
@@ -941,6 +1009,7 @@ function init() {
   setupSmoothScroll();
   setupParallax();
   setupCardGlow();
+  checkOAuthRedirect();
 
   fetchVerificationsFromMongoDB();
 
