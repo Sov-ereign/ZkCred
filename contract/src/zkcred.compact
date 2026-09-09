@@ -22,29 +22,35 @@ export ledger minAnnualIncome: Uint<64>;
 export ledger minAge: Uint<32>;
 export ledger isEligible: Boolean;
 export ledger verificationCount: Uint<64>;
+export ledger admin: Bytes<32>;
+export ledger lastCommitment: Bytes<32>;
 
 // --- Private Witness Declarations (local off-chain only) ---
 witness getPrivateCreditScore(): Uint<32>;
 witness getPrivateAnnualIncome(): Uint<64>;
 witness getPrivateAge(): Uint<32>;
 witness getPrivateSalt(): Bytes<32>;
+witness getPrivateAdminKey(): Bytes<32>;
 
 // --- Constructor / Initializer ---
 export circuit initialize(
   creditScoreThreshold: Uint<32>,
   annualIncomeThreshold: Uint<64>,
-  ageThreshold: Uint<32>
+  ageThreshold: Uint<32>,
+  adminAddress: Bytes<32>
 ): [] {
   minCreditScore = disclose(creditScoreThreshold);
   minAnnualIncome = disclose(annualIncomeThreshold);
   minAge = disclose(ageThreshold);
   isEligible = disclose(false);
   verificationCount = disclose(0 as Uint<64>);
+  admin = disclose(adminAddress);
+  lastCommitment = disclose(pad(32, ""));
 }
 
 // --- Option 2 Core ZK Eligibility Gate Circuit ---
 // Evaluates Age, Credit Score, and Income inside PLONK ZK Circuit.
-// Discloses ONLY the boolean outcome via disclose().
+// Discloses ONLY the boolean outcome via disclose() and salt commitment.
 export circuit verifyEligibility(): [] {
   // Retrieve private values from off-chain witnesses
   const creditScore: Uint<32> = getPrivateCreditScore();
@@ -63,7 +69,12 @@ export circuit verifyEligibility(): [] {
   isEligible = disclose(eligible);
 
   // Increment public verification counter
-  verificationCount = disclose(verificationCount + (1 as Uint<64>));
+  const newCount: Uint<64> = verificationCount + (1 as Uint<64>);
+  verificationCount = disclose(newCount);
+
+  // Derive cryptographic salt commitment / replay protection
+  const saltCommitment: Bytes<32> = persistent_hash<[Bytes<32>, Uint<64>]>([_salt, newCount]);
+  lastCommitment = disclose(saltCommitment);
 }
 
 // --- Admin Circuit: Update Thresholds ---
@@ -72,6 +83,10 @@ export circuit updateThresholds(
   newMinAnnualIncome: Uint<64>,
   newMinAge: Uint<32>
 ): [] {
+  // Authorize caller against admin ledger state
+  const callerKey: Bytes<32> = getPrivateAdminKey();
+  assert callerKey == admin "Unauthorized: caller is not authorized admin";
+
   minCreditScore = disclose(newMinCreditScore);
   minAnnualIncome = disclose(newMinAnnualIncome);
   minAge = disclose(newMinAge);

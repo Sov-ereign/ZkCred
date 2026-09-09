@@ -11,6 +11,8 @@ export interface LedgerState {
   minAge: number;
   isEligible: boolean;
   verificationCount: bigint;
+  admin: Uint8Array;
+  lastCommitment: Uint8Array;
 }
 
 export interface WitnessFunctions {
@@ -18,6 +20,7 @@ export interface WitnessFunctions {
   getPrivateAnnualIncome: () => bigint;
   getPrivateAge: () => number;
   getPrivateSalt: () => Uint8Array;
+  getPrivateAdminKey: () => Uint8Array;
 }
 
 export const Circuits = {

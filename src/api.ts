@@ -12,15 +12,14 @@ export {
   createWitnessCallbacks,
   deployZkCredContract,
   executeVerifyEligibilityCircuit,
+  executeUpdateThresholdsCircuit,
   fetchLedgerStateFromIndexer,
+  deriveSaltCommitment,
   DEFAULT_PREPROD_CONFIG as MIDNIGHT_PREPROD_CONFIG,
   type MidnightProviders,
   type MidnightConfig,
   type PrivateWitnessData,
 } from "./midnight.js";
-
-// Re-export offline development mock simulator
-export { ZkCredSimulator, type ZkCredPublicState, type ZkCredPrivateWitness, type VerificationResult } from "./mock/simulator.js";
 
 // =============================================================================
 // Witness Provider
@@ -33,6 +32,7 @@ export interface ZkCredWitnessInput {
   annualIncome: bigint;
   age: number;
   userSalt: Uint8Array;
+  adminKey?: Uint8Array;
 }
 
 export function createWitnessProvider(privateData: ZkCredWitnessInput) {
@@ -41,6 +41,7 @@ export function createWitnessProvider(privateData: ZkCredWitnessInput) {
     getPrivateAnnualIncome: (): bigint => privateData.annualIncome,
     getPrivateAge: (): number => privateData.age,
     getPrivateSalt: (): Uint8Array => privateData.userSalt,
+    getPrivateAdminKey: (): Uint8Array => privateData.adminKey ?? new Uint8Array(32),
   };
 }
 
