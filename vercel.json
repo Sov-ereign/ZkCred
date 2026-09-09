@@ -5,7 +5,6 @@
   "trailingSlash": false,
   "functions": {
     "api/index.js": {
-      "runtime": "nodejs20.x",
       "memory": 512,
       "maxDuration": 15
     }
