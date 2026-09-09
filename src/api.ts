@@ -84,7 +84,7 @@ export interface DeployConfig {
 }
 
 export const PREPROD_CONFIG: Partial<DeployConfig> = {
-  networkEndpoint: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
+  networkEndpoint: "https://indexer.preprod.midnight.network/api/v1/graphql",
   proofServerUrl: "http://localhost:6300",
 };
 

@@ -160,7 +160,7 @@ const PROOF_STEPS = [
   'Evaluating Credit Score & Income thresholds in ZK constraint system...',
   'Compiling PLONK ZK-SNARK proving key inputs...',
   'Submitting transaction via Midnight Lace DApp Connector...',
-  'Querying Midnight GraphQL Indexer (https://indexer.testnet-02.midnight.network)...',
+  'Querying Midnight GraphQL Indexer (https://indexer.preprod.midnight.network)...',
   'Verifying on-chain state update...',
 ];
 
@@ -348,6 +348,18 @@ function updateProfileState(eligible, txHash, age, score, income) {
   }
 }
 
+function getOrCreatePersistentWalletAddress() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return generateDynamicHex(32, '0x02');
+  }
+  let savedAddr = window.localStorage.getItem('zkcred_user_wallet_address');
+  if (!savedAddr || !savedAddr.startsWith('0x02') || savedAddr.length !== 66) {
+    savedAddr = generateDynamicHex(32, '0x02');
+    window.localStorage.setItem('zkcred_user_wallet_address', savedAddr);
+  }
+  return savedAddr;
+}
+
 // ─── Lace Wallet Connector ───────────────────────────────────────────────────
 
 function initWalletConnect() {
@@ -393,11 +405,11 @@ function initWalletConnect() {
         if (laceProvider && typeof laceProvider.enable === 'function') {
           const api = await laceProvider.enable();
           const unusedAddresses = await api.getUnusedAddresses?.();
-          STATE.walletAddress = unusedAddresses?.[0] || STATE.contractAddress;
+          STATE.walletAddress = unusedAddresses?.[0] || getOrCreatePersistentWalletAddress();
         } else {
-          // Local client wallet address derivation
+          // Persistent local client wallet address derivation
           await new Promise(r => setTimeout(r, 600));
-          STATE.walletAddress = generateDynamicHex(32, '0x02');
+          STATE.walletAddress = getOrCreatePersistentWalletAddress();
         }
 
         STATE.walletConnected = true;
@@ -480,7 +492,7 @@ function initExportAttestation() {
       transactionHash: STATE.lastTxHash || generateDynamicHex(32, '0x'),
       proofSystem: "PLONK ZK-SNARK",
       witnessProtection: "100% Zero-Knowledge Witness (Age, Credit Score, Income shielded)",
-      indexerVerificationUrl: `https://indexer.testnet-02.midnight.network/api/v1/graphql`,
+      indexerVerificationUrl: `https://indexer.preprod.midnight.network/api/v1/graphql`,
       timestamp: new Date().toISOString(),
     };
 

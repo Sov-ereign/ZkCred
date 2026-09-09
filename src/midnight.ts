@@ -21,8 +21,8 @@ export interface MidnightConfig {
 }
 
 export const DEFAULT_PREPROD_CONFIG: MidnightConfig = {
-  networkEndpoint: "https://indexer.testnet-02.midnight.network",
-  indexerGraphqlUrl: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
+  networkEndpoint: "https://indexer.preprod.midnight.network",
+  indexerGraphqlUrl: "https://indexer.preprod.midnight.network/api/v1/graphql",
   proofServerUrl: "http://localhost:6300",
 };
 
