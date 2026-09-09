@@ -16,7 +16,9 @@
     "server": "node server/index.js",
     "start": "node server/index.js",
     "ui": "cd ui && npx serve . -p 3000",
-    "dev": "npm run compile && npm test"
+    "dev": "vercel dev --listen 3000",
+    "dev:local": "node server/local.js",
+    "vercel:deploy": "vercel --prod"
   },
   "dependencies": {
     "@vercel/analytics": "^1.4.1",
@@ -25,6 +27,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "google-auth-library": "^11.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.5"
   },

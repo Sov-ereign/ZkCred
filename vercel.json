@@ -2,5 +2,15 @@
   "version": 2,
   "outputDirectory": "ui",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x",
+      "memory": 512,
+      "maxDuration": 15
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" }
+  ]
 }

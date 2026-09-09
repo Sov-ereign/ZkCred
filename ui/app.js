@@ -3,7 +3,7 @@
  * Zero-Knowledge Proof Simulator for Midnight Network with MongoDB Auth & Lace Wallet Integration
  */
 
-const API_BASE = "http://localhost:4000/api";
+const API_BASE = "/api";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -505,41 +505,43 @@ function initWalletConnect() {
   });
 }
 
-// ─── Google OAuth & User Authentication System ─────────────────────────────────
+// ─── Google OAuth 2.0 Popup Flow ─────────────────────────────────────────────
 
-async function performGoogleAuth(gName, gEmail, gSub, gAvatar) {
-  const authModal = document.getElementById("auth-modal");
-  try {
-    const res = await fetch(`${API_BASE}/auth/google`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: gName,
-        email: gEmail,
-        googleId: gSub || "g_" + btoa(gEmail).replace(/=/g, ""),
-        avatarUrl: gAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`,
-        walletAddress: STATE.walletAddress || getOrCreatePersistentWalletAddress(),
-      }),
-    });
+function launchGoogleOAuthPopup(onSuccess) {
+  const OAUTH_URL = `${API_BASE}/auth/google/redirect`;
+  const popup = window.open(OAUTH_URL, "google-oauth", "width=520,height=640,menubar=no,toolbar=no,location=no,status=no");
 
-    const data = await res.json();
-    if (res.ok) {
-      STATE.authToken = data.token;
-      STATE.currentUser = data.user;
-      localStorage.setItem("zkcred_auth_token", data.token);
-      localStorage.setItem("zkcred_user", JSON.stringify(data.user));
-
-      updateAuthUI();
-      closeModal(authModal);
-      fetchVerificationsFromMongoDB();
-      console.log(`[Google Auth] Authenticated user ${data.user.name} (${data.user.email})`);
-    } else {
-      alert(data.error || "Google Authentication failed.");
-    }
-  } catch (err) {
-    console.warn("Google Auth backend warning:", err.message);
-    alert("Cannot connect to server at http://localhost:4000. Ensure node server/index.js is running.");
+  if (!popup || popup.closed || typeof popup.closed === "undefined") {
+    alert("Popup blocked! Please allow popups for this site and try again.");
+    return;
   }
+
+  function onMessage(event) {
+    if (!event.data || typeof event.data.type !== "string") return;
+    if (event.data.type === "GOOGLE_AUTH_SUCCESS") {
+      window.removeEventListener("message", onMessage);
+      onSuccess(event.data.token, event.data.user);
+    } else if (event.data.type === "GOOGLE_AUTH_ERROR") {
+      window.removeEventListener("message", onMessage);
+      const googleAlert = document.getElementById("google-auth-alert");
+      if (googleAlert) {
+        googleAlert.className = "auth-alert error";
+        googleAlert.textContent = `Google Sign-In failed: ${event.data.error || "Unknown error"}`;
+        googleAlert.hidden = false;
+      }
+      console.error("[Google OAuth] Error:", event.data.error);
+    }
+  }
+
+  window.addEventListener("message", onMessage);
+
+  // Clean up listener if popup is closed manually before completing auth
+  const pollClosed = setInterval(() => {
+    if (popup.closed) {
+      clearInterval(pollClosed);
+      window.removeEventListener("message", onMessage);
+    }
+  }, 500);
 }
 
 function updateAuthUI() {
@@ -574,7 +576,6 @@ function initAuth() {
   const tabGoogle = document.getElementById("auth-tab-google");
   const tabManual = document.getElementById("auth-tab-manual");
 
-  const googleAuthForm = document.getElementById("google-auth-form");
 
   const manualForm = document.getElementById("manual-auth-form");
   const btnToggleAuthMode = document.getElementById("btn-toggle-auth-mode");
@@ -650,31 +651,37 @@ function initAuth() {
     });
   }
 
-  // Submit Google Auth Form directly inside Auth Modal
-  if (googleAuthForm) {
-    googleAuthForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const gName = document.getElementById("input-google-name").value.trim();
-      const gEmail = document.getElementById("input-google-email").value.trim();
-      const googleAlert = document.getElementById("google-auth-alert");
+  // Google OAuth Popup Button
+  const googleOAuthBtn = document.getElementById("google-oauth-popup-btn");
+  const googleAlert = document.getElementById("google-auth-alert");
+
+  if (googleOAuthBtn) {
+    googleOAuthBtn.addEventListener("click", () => {
+      const btnText = document.getElementById("google-oauth-btn-text");
       if (googleAlert) googleAlert.hidden = true;
+      if (btnText) btnText.textContent = "Connecting...";
+      googleOAuthBtn.disabled = true;
 
-      if (!gName || !gEmail) return;
+      launchGoogleOAuthPopup((token, user) => {
+        STATE.authToken = token;
+        STATE.currentUser = user;
+        localStorage.setItem("zkcred_auth_token", token);
+        localStorage.setItem("zkcred_user", JSON.stringify(user));
 
-      try {
-        await performGoogleAuth(
-          gName,
-          gEmail,
-          "google_" + btoa(gEmail).replace(/=/g, ""),
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`
-        );
-      } catch (err) {
-        if (googleAlert) {
-          googleAlert.className = "auth-alert error";
-          googleAlert.textContent = "Google Sign-In failed. Make sure node server/index.js is running.";
-          googleAlert.hidden = false;
-        }
-      }
+        updateAuthUI();
+        closeModal(authModal);
+        fetchVerificationsFromMongoDB();
+        console.log(`[Google OAuth] Signed in as ${user.name} (${user.email})`);
+
+        if (btnText) btnText.textContent = "Sign in with Google";
+        googleOAuthBtn.disabled = false;
+      });
+
+      // Re-enable button after a short delay to handle popup block / cancel
+      setTimeout(() => {
+        if (btnText) btnText.textContent = "Sign in with Google";
+        googleOAuthBtn.disabled = false;
+      }, 3000);
     });
   }
 

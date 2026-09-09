@@ -1,51 +1,50 @@
 /**
- * ZkCred (AegisID) — Auth & MongoDB API Server
- * Provides Google OAuth 2.0 (Authorization Code), Manual Auth, and MongoDB Audit Persistence.
+ * ZkCred (AegisID) — Vercel Serverless API
+ * Exports the Express app as a Vercel serverless function.
+ * Routes: /api/auth/register, /api/auth/login, /api/auth/google/redirect,
+ *         /api/auth/google/callback, /api/auth/me, /api/verifications
  */
 
-import express from "express";
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import cors from "cors";
-import dotenv from "dotenv";
-import { OAuth2Client } from "google-auth-library";
+const express = require("express");
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const cors = require("cors");
+const { OAuth2Client } = require("google-auth-library");
 
-dotenv.config();
+// ─── Config ───────────────────────────────────────────────────────────────────
 
-const app = express();
-const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || "zkcred_jwt_secret_key_2026";
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/zkcred";
-
-// Google OAuth 2.0 credentials — set these in your .env file
+const MONGODB_URI = process.env.MONGODB_URI || "";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `http://localhost:${process.env.PORT || 4000}/api/auth/google/callback`;
 
-const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
-
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-
-// ─── MongoDB Connection ───────────────────────────────────────────────────────
+// ─── MongoDB Connection (module-level, reused across warm invocations) ─────────
 
 let isMongoConnected = false;
+let mongoConnectPromise = null;
 
-async function connectMongoDB() {
-  try {
-    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 3000 });
-    isMongoConnected = true;
-    console.log(`[MongoDB] Connected successfully to ${MONGODB_URI}`);
-  } catch (err) {
-    isMongoConnected = false;
-    console.warn(`[MongoDB] Database connection warning (running in memory fallback mode):`, err.message);
-  }
+function ensureMongoConnected() {
+  if (isMongoConnected) return Promise.resolve();
+  if (!MONGODB_URI) return Promise.resolve(); // fallback to memory
+  if (mongoConnectPromise) return mongoConnectPromise;
+
+  mongoConnectPromise = mongoose
+    .connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
+    .then(() => {
+      isMongoConnected = true;
+      console.log("[MongoDB] Connected:", MONGODB_URI);
+    })
+    .catch((err) => {
+      isMongoConnected = false;
+      mongoConnectPromise = null;
+      console.warn("[MongoDB] Fallback to memory mode:", err.message);
+    });
+
+  return mongoConnectPromise;
 }
 
-connectMongoDB();
-
-// ─── Mongoose Schemas & Models ────────────────────────────────────────────────
+// ─── Mongoose Schemas ─────────────────────────────────────────────────────────
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -69,14 +68,22 @@ const verificationSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
-const User = mongoose.model("User", userSchema);
-const Verification = mongoose.model("Verification", verificationSchema);
+// Avoid model re-registration on warm Vercel invocations
+const User = mongoose.models.User || mongoose.model("User", userSchema);
+const Verification = mongoose.models.Verification || mongoose.model("Verification", verificationSchema);
 
-// Memory fallback store if MongoDB container is not running locally
+// In-memory fallback (resets on cold start, fine for dev)
 const memoryUsers = new Map();
 const memoryVerifications = [];
 
-// ─── Auth Middleware ──────────────────────────────────────────────────────────
+// ─── Express App ──────────────────────────────────────────────────────────────
+
+const app = express();
+
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+
+// ─── Middleware ───────────────────────────────────────────────────────────────
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -85,10 +92,9 @@ function authMiddleware(req, res, next) {
   }
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    req.user = jwt.verify(token, JWT_SECRET);
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: "Unauthorized: token verification failed" });
   }
 }
@@ -96,11 +102,9 @@ function authMiddleware(req, res, next) {
 function optionalAuthMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.split(" ")[1];
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      req.user = decoded;
-    } catch (err) {
+      req.user = jwt.verify(authHeader.split(" ")[1], JWT_SECRET);
+    } catch {
       req.user = { id: "anonymous", email: "guest@zkcred.io", name: "Anonymous Guest" };
     }
   } else {
@@ -109,46 +113,45 @@ function optionalAuthMiddleware(req, res, next) {
   next();
 }
 
-// ─── API Routes ───────────────────────────────────────────────────────────────
+// Resolve the OAuth redirect URI dynamically from the incoming request host
+// so it works identically on localhost (vercel dev) and on Vercel production.
+function getRedirectUri(req) {
+  if (process.env.GOOGLE_REDIRECT_URI) return process.env.GOOGLE_REDIRECT_URI;
+  const proto = req.headers["x-forwarded-proto"] || "http";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${proto}://${host}/api/auth/google/callback`;
+}
 
-/** POST /api/auth/register — Manual User Registration */
+// ─── Routes ───────────────────────────────────────────────────────────────────
+
+/** POST /api/auth/register */
 app.post("/api/auth/register", async (req, res) => {
+  await ensureMongoConnected();
   try {
     const { name, email, password, walletAddress } = req.body;
-    if (!name || !email || !password) {
+    if (!name || !email || !password)
       return res.status(400).json({ error: "Name, email, and password are required" });
-    }
 
     const normalizedEmail = email.toLowerCase().trim();
 
     if (isMongoConnected) {
-      const existing = await User.findOne({ email: normalizedEmail });
-      if (existing) return res.status(400).json({ error: "User with this email already exists" });
+      if (await User.findOne({ email: normalizedEmail }))
+        return res.status(400).json({ error: "User with this email already exists" });
 
       const passwordHash = await bcrypt.hash(password, 10);
       const user = await User.create({
-        name,
-        email: normalizedEmail,
-        passwordHash,
+        name, email: normalizedEmail, passwordHash,
         walletAddress: walletAddress || null,
         avatarUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}`,
       });
-
       const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ token, user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
     } else {
-      if (memoryUsers.has(normalizedEmail)) {
+      if (memoryUsers.has(normalizedEmail))
         return res.status(400).json({ error: "User with this email already exists" });
-      }
+
       const passwordHash = await bcrypt.hash(password, 10);
-      const user = {
-        id: "mem_" + Date.now(),
-        name,
-        email: normalizedEmail,
-        passwordHash,
-        walletAddress,
-        avatarUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}`,
-      };
+      const user = { id: "mem_" + Date.now(), name, email: normalizedEmail, passwordHash, walletAddress, avatarUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}` };
       memoryUsers.set(normalizedEmail, user);
       const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
@@ -159,34 +162,28 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-/** POST /api/auth/login — Manual User Login */
+/** POST /api/auth/login */
 app.post("/api/auth/login", async (req, res) => {
+  await ensureMongoConnected();
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ error: "Email and password are required" });
-    }
 
     const normalizedEmail = email.toLowerCase().trim();
 
     if (isMongoConnected) {
       const user = await User.findOne({ email: normalizedEmail });
-      if (!user || !user.passwordHash) {
+      if (!user || !user.passwordHash)
         return res.status(401).json({ error: "Invalid email or password" });
-      }
-
-      const match = await bcrypt.compare(password, user.passwordHash);
-      if (!match) return res.status(401).json({ error: "Invalid email or password" });
-
+      if (!await bcrypt.compare(password, user.passwordHash))
+        return res.status(401).json({ error: "Invalid email or password" });
       const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ token, user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
     } else {
       const user = memoryUsers.get(normalizedEmail);
-      if (!user || !user.passwordHash) return res.status(401).json({ error: "Invalid email or password" });
-
-      const match = await bcrypt.compare(password, user.passwordHash);
-      if (!match) return res.status(401).json({ error: "Invalid email or password" });
-
+      if (!user || !user.passwordHash || !await bcrypt.compare(password, user.passwordHash))
+        return res.status(401).json({ error: "Invalid email or password" });
       const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
     }
@@ -196,24 +193,26 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-/** GET /api/auth/google/redirect — Initiate Google OAuth 2.0 Authorization Code Flow */
+/** GET /api/auth/google/redirect — Initiate Google OAuth 2.0 */
 app.get("/api/auth/google/redirect", (req, res) => {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     return res.status(503).send(`
-      <html><body style="background:#0d0b1a;color:#f0e6ff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px">
-        <h2 style="color:#ef4444">⚠ Google OAuth Not Configured</h2>
-        <p>Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> in your <code>.env</code> file.</p>
-        <p>See <a href="https://console.cloud.google.com/apis/credentials" style="color:#a78bfa" target="_blank">Google Cloud Console → Credentials</a></p>
-        <p>Add <code>http://localhost:4000/api/auth/google/callback</code> as an Authorized Redirect URI.</p>
+      <html><body style="background:#0d0b1a;color:#f0e6ff;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px">
+        <div style="font-size:3rem">⚠️</div>
+        <h2 style="color:#ef4444;margin:0">Google OAuth Not Configured</h2>
+        <p style="max-width:400px;color:#c4b5fd">Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> in your <code>.env</code> file (local) or Vercel Environment Variables (production).</p>
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#a78bfa">Open Google Cloud Console →</a>
+        <p style="font-size:0.8rem;color:#7c6fa0">Add this as an Authorized Redirect URI:<br/><code style="background:#1a1035;padding:4px 8px;border-radius:4px">${getRedirectUri(req)}</code></p>
         <button onclick="window.close()" style="padding:10px 24px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px">Close</button>
       </body></html>
     `);
   }
 
-  const scopes = ["profile", "email"];
-  const authUrl = googleOAuthClient.generateAuthUrl({
+  const redirectUri = getRedirectUri(req);
+  const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri);
+  const authUrl = oauthClient.generateAuthUrl({
     access_type: "offline",
-    scope: scopes,
+    scope: ["profile", "email"],
     prompt: "select_account",
   });
   res.redirect(authUrl);
@@ -221,29 +220,37 @@ app.get("/api/auth/google/redirect", (req, res) => {
 
 /** GET /api/auth/google/callback — Google returns here after consent */
 app.get("/api/auth/google/callback", async (req, res) => {
+  await ensureMongoConnected();
   const { code, error } = req.query;
 
-  if (error || !code) {
-    return res.send(`
+  const postMessageScript = (payload) => `
+    <html><body>
       <script>
-        window.opener && window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error: ${JSON.stringify(error || "No auth code returned")} }, "*");
-        window.close();
+        try {
+          window.opener && window.opener.postMessage(${JSON.stringify(payload)}, "*");
+        } catch(e) {}
+        setTimeout(() => window.close(), 200);
       </script>
-    `);
+      <p style="font-family:system-ui;text-align:center;margin-top:40px;color:#888">
+        ${payload.type === "GOOGLE_AUTH_SUCCESS" ? "✅ Signed in! Closing…" : "❌ Auth failed. Closing…"}
+      </p>
+    </body></html>
+  `;
+
+  if (error || !code) {
+    return res.send(postMessageScript({ type: "GOOGLE_AUTH_ERROR", error: error || "No auth code returned" }));
   }
 
   try {
-    // Exchange code for tokens
-    const { tokens } = await googleOAuthClient.getToken(code);
-    googleOAuthClient.setCredentials(tokens);
+    const redirectUri = getRedirectUri(req);
+    const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri);
+    const { tokens } = await oauthClient.getToken(code);
 
-    // Fetch user info from Google
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
-    const googleUser = await userInfoRes.json();
+    const { id: googleId, name, email, picture: avatarUrl } = await userInfoRes.json();
 
-    const { id: googleId, name, email, picture: avatarUrl } = googleUser;
     if (!email || !name) throw new Error("Google did not return email/name");
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -259,7 +266,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
         if (avatarUrl) user.avatarUrl = avatarUrl;
         await user.save();
       }
-      appUser = { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress };
+      appUser = { id: String(user._id), name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress };
     } else {
       let user = memoryUsers.get(normalizedEmail);
       if (!user) {
@@ -273,30 +280,16 @@ app.get("/api/auth/google/callback", async (req, res) => {
     }
 
     const token = jwt.sign({ id: appUser.id, email: appUser.email, name: appUser.name }, JWT_SECRET, { expiresIn: "7d" });
-
-    // Send result back to opener (popup) and close
-    res.send(`
-      <script>
-        window.opener && window.opener.postMessage(
-          { type: "GOOGLE_AUTH_SUCCESS", token: ${JSON.stringify(token)}, user: ${JSON.stringify(appUser)} },
-          "*"
-        );
-        window.close();
-      </script>
-    `);
+    res.send(postMessageScript({ type: "GOOGLE_AUTH_SUCCESS", token, user: appUser }));
   } catch (err) {
     console.error("Google OAuth callback error:", err);
-    res.send(`
-      <script>
-        window.opener && window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error: ${JSON.stringify(err.message)} }, "*");
-        window.close();
-      </script>
-    `);
+    res.send(postMessageScript({ type: "GOOGLE_AUTH_ERROR", error: err.message }));
   }
 });
 
-/** GET /api/auth/me — Current User Profile */
+/** GET /api/auth/me */
 app.get("/api/auth/me", authMiddleware, async (req, res) => {
+  await ensureMongoConnected();
   try {
     if (isMongoConnected) {
       const user = await User.findById(req.user.id);
@@ -312,58 +305,50 @@ app.get("/api/auth/me", authMiddleware, async (req, res) => {
   }
 });
 
-/** POST /api/verifications — Save ZK Verification Audit Log to MongoDB */
+/** POST /api/verifications */
 app.post("/api/verifications", optionalAuthMiddleware, async (req, res) => {
+  await ensureMongoConnected();
   try {
     const { contractAddress, circuit, isEligible, verificationCount, saltCommitment, transactionHash } = req.body;
-    if (!contractAddress || isEligible === undefined || !verificationCount || !saltCommitment || !transactionHash) {
+    if (!contractAddress || isEligible === undefined || !verificationCount || !saltCommitment || !transactionHash)
       return res.status(400).json({ error: "Missing verification parameters" });
-    }
 
     if (isMongoConnected) {
       const record = await Verification.create({
-        userId: req.user.id,
-        userEmail: req.user.email,
-        contractAddress,
+        userId: req.user.id, userEmail: req.user.email, contractAddress,
         circuit: circuit || "verifyEligibility",
-        isEligible: Boolean(isEligible),
-        verificationCount: Number(verificationCount),
-        saltCommitment,
-        transactionHash,
-        timestamp: new Date(),
+        isEligible: Boolean(isEligible), verificationCount: Number(verificationCount),
+        saltCommitment, transactionHash, timestamp: new Date(),
       });
       return res.json({ success: true, record });
     } else {
       const record = {
-        id: "ver_" + Date.now(),
-        userId: req.user.id,
-        userEmail: req.user.email,
-        contractAddress,
-        circuit: circuit || "verifyEligibility",
-        isEligible: Boolean(isEligible),
-        verificationCount: Number(verificationCount),
-        saltCommitment,
-        transactionHash,
-        timestamp: new Date().toISOString(),
+        id: "ver_" + Date.now(), userId: req.user.id, userEmail: req.user.email,
+        contractAddress, circuit: circuit || "verifyEligibility",
+        isEligible: Boolean(isEligible), verificationCount: Number(verificationCount),
+        saltCommitment, transactionHash, timestamp: new Date().toISOString(),
       };
       memoryVerifications.push(record);
       return res.json({ success: true, record });
     }
   } catch (err) {
     console.error("Save verification error:", err);
-    res.status(500).json({ error: "Failed to save verification record to MongoDB" });
+    res.status(500).json({ error: "Failed to save verification record" });
   }
 });
 
-/** GET /api/verifications — Fetch User Verification Audit Logs from MongoDB */
+/** GET /api/verifications */
 app.get("/api/verifications", optionalAuthMiddleware, async (req, res) => {
+  await ensureMongoConnected();
   try {
     if (isMongoConnected) {
       const filter = req.user.id === "anonymous" ? {} : { userId: req.user.id };
       const records = await Verification.find(filter).sort({ timestamp: -1 }).limit(50);
       return res.json({ records });
     } else {
-      const records = req.user.id === "anonymous" ? [...memoryVerifications].reverse() : memoryVerifications.filter((v) => v.userId === req.user.id).reverse();
+      const records = req.user.id === "anonymous"
+        ? [...memoryVerifications].reverse()
+        : memoryVerifications.filter((v) => v.userId === req.user.id).reverse();
       return res.json({ records });
     }
   } catch (err) {
@@ -371,8 +356,6 @@ app.get("/api/verifications", optionalAuthMiddleware, async (req, res) => {
   }
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
+// ─── Export for Vercel ─────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`[ZkCred Server] Express & MongoDB API Server listening on port ${PORT}`);
-});
+module.exports = app;
