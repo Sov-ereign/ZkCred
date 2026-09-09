@@ -630,10 +630,19 @@ function initAuth() {
           if (authModal) authModal.hidden = true;
           fetchVerificationsFromMongoDB();
         } else {
-          alert(data.error || "Google Sign-In failed.");
+          if (authAlert) {
+            authAlert.className = "auth-alert error";
+            authAlert.textContent = data.error || "Google Sign-In failed.";
+            authAlert.hidden = false;
+          }
         }
       } catch (err) {
-        console.error("Google Auth failed:", err);
+        console.warn("Google Auth network warning:", err.message);
+        if (authAlert) {
+          authAlert.className = "auth-alert error";
+          authAlert.textContent = "Cannot connect to server. Make sure node server/index.js is running.";
+          authAlert.hidden = false;
+        }
       }
     });
   }
