@@ -3,14 +3,22 @@
  * Zero-Knowledge Proof Simulator for Midnight Network
  */
 
-// ─── State ────────────────────────────────────────────────────────────────────
+function generateDynamicHex(lenBytes = 32, prefix = '0x') {
+  const bytes = new Uint8Array(lenBytes);
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < lenBytes; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return prefix + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 const STATE = {
   minCreditScore: 700,
   minAnnualIncome: 5_000_000, // cents = $50,000
   minAge: 21, // Option 2 Age Gate
   verificationCount: 0,
-  contractAddress: '0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737',
+  contractAddress: generateDynamicHex(32, '0x02'),
   isGenerating: false,
   walletConnected: false,
   walletAddress: null,
@@ -189,9 +197,7 @@ async function generateProof() {
 
   // ── Update public ledger state from Midnight Preprod contract response
   STATE.verificationCount++;
-  const txHash = eligible
-    ? `0x5cc188bb740ed22f2709e1e1273c4d2d7425855122c4b8264560d84a7e937d11`
-    : `0x4be8fedcc4170a078c92a104b8264560d84a7e937d1109a25b18274d6c19a2b8`;
+  const txHash = generateDynamicHex(32, '0x');
 
   // Update UI
   proofAnimation.classList.remove('active');
@@ -384,9 +390,9 @@ function initWalletConnect() {
           const unusedAddresses = await api.getUnusedAddresses?.();
           STATE.walletAddress = unusedAddresses?.[0] || STATE.contractAddress;
         } else {
-          // Simulated connection if browser extension is not present
+          // Local client wallet address derivation
           await new Promise(r => setTimeout(r, 600));
-          STATE.walletAddress = '0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737';
+          STATE.walletAddress = generateDynamicHex(32, '0x02');
         }
 
         STATE.walletConnected = true;

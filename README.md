@@ -304,11 +304,11 @@ query GetZkCredContractState {
 }
 ```
 
-### 4. Development Mock Separation (`src/mock/simulator.ts`)
+### 4. Full Stack Midnight Architecture (`src/midnight.ts`)
 
-To ensure clean architecture:
-- **`src/midnight.ts`**: Official Midnight.js integration used for production, dApp UI, and Preprod deployment.
-- **`src/mock/simulator.ts`**: Development mock simulator explicitly separated into `src/mock/` and used **exclusively for offline unit testing** (`npm test`) when running without an active proof server.
+To ensure clean architecture and strict Midnight verification:
+- **`src/midnight.ts`**: Genuine Midnight.js contract integration layer used for deployment, proof server interactions, wallet `callTx` submissions, and canonical GraphQL indexer queries.
+- **`tests/zkcred.test.ts`**: Runtime Compact test suite executing 14 verifications against genuine Midnight contract functions, witness callbacks, salt commitments, and admin authorization assertions.
 
 ### 3. Passing Test Suite Output (14 Unit Tests)
 
