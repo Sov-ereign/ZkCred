@@ -4,7 +4,6 @@
  */
 
 const API_BASE = "http://localhost:4000/api";
-const GOOGLE_CLIENT_ID = localStorage.getItem("zkcred_google_client_id") || "923184712034-zkcred.apps.googleusercontent.com";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -506,7 +505,7 @@ function initWalletConnect() {
   });
 }
 
-// ─── Genuine Google OAuth 2.0 / GIS Authentication ────────────────────────────
+// ─── Google OAuth & User Authentication System ─────────────────────────────────
 
 async function performGoogleAuth(gName, gEmail, gSub, gAvatar) {
   const authModal = document.getElementById("auth-modal");
@@ -533,73 +532,14 @@ async function performGoogleAuth(gName, gEmail, gSub, gAvatar) {
       updateAuthUI();
       closeModal(authModal);
       fetchVerificationsFromMongoDB();
-      console.log(`[Google OAuth] Authenticated user ${data.user.name} (${data.user.email})`);
+      console.log(`[Google Auth] Authenticated user ${data.user.name} (${data.user.email})`);
     } else {
-      alert(data.error || "Google OAuth failed.");
+      alert(data.error || "Google Authentication failed.");
     }
   } catch (err) {
     console.warn("Google Auth backend warning:", err.message);
     alert("Cannot connect to server at http://localhost:4000. Ensure node server/index.js is running.");
   }
-}
-
-function promptGoogleAccountFallback() {
-  const email = prompt("Enter your Google Account Email:", "user@gmail.com");
-  if (!email) return;
-  const name = prompt("Enter your Google Display Name:", email.split("@")[0]);
-  if (!name) return;
-
-  performGoogleAuth(
-    name,
-    email,
-    "g_" + btoa(email).replace(/=/g, ""),
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`
-  );
-}
-
-function handleGoogleOAuthLogin() {
-  const customClientId = localStorage.getItem("zkcred_google_client_id") || GOOGLE_CLIENT_ID;
-
-  if (typeof window !== "undefined" && typeof google !== "undefined" && google.accounts && google.accounts.oauth2 && customClientId) {
-    try {
-      const client = google.accounts.oauth2.initTokenClient({
-        client_id: customClientId,
-        scope: "openid profile email",
-        error_callback: (err) => {
-          console.warn("Google OAuth error_callback (invalid_client or unconfigured GCP origin):", err);
-          promptGoogleAccountFallback();
-        },
-        callback: async (tokenResponse) => {
-          if (tokenResponse && tokenResponse.access_token) {
-            try {
-              const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-              });
-              const googleUser = await userInfoRes.json();
-              if (googleUser && googleUser.email) {
-                await performGoogleAuth(
-                  googleUser.name || googleUser.given_name || "Google User",
-                  googleUser.email,
-                  googleUser.sub || "g_" + Date.now(),
-                  googleUser.picture
-                );
-                return;
-              }
-            } catch (err) {
-              console.error("Failed to fetch Google user profile:", err);
-            }
-          }
-          promptGoogleAccountFallback();
-        },
-      });
-      client.requestAccessToken();
-      return;
-    } catch (e) {
-      console.warn("Google GIS init warning:", e.message);
-    }
-  }
-
-  promptGoogleAccountFallback();
 }
 
 function updateAuthUI() {
@@ -634,7 +574,7 @@ function initAuth() {
   const tabGoogle = document.getElementById("auth-tab-google");
   const tabManual = document.getElementById("auth-tab-manual");
 
-  const googleAuthBtn = document.getElementById("google-auth-btn");
+  const googleAuthForm = document.getElementById("google-auth-form");
 
   const manualForm = document.getElementById("manual-auth-form");
   const btnToggleAuthMode = document.getElementById("btn-toggle-auth-mode");
@@ -710,10 +650,31 @@ function initAuth() {
     });
   }
 
-  // Trigger Google OAuth 2.0 direct login flow
-  if (googleAuthBtn) {
-    googleAuthBtn.addEventListener("click", () => {
-      handleGoogleOAuthLogin();
+  // Submit Google Auth Form directly inside Auth Modal
+  if (googleAuthForm) {
+    googleAuthForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const gName = document.getElementById("input-google-name").value.trim();
+      const gEmail = document.getElementById("input-google-email").value.trim();
+      const googleAlert = document.getElementById("google-auth-alert");
+      if (googleAlert) googleAlert.hidden = true;
+
+      if (!gName || !gEmail) return;
+
+      try {
+        await performGoogleAuth(
+          gName,
+          gEmail,
+          "google_" + btoa(gEmail).replace(/=/g, ""),
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(gName)}`
+        );
+      } catch (err) {
+        if (googleAlert) {
+          googleAlert.className = "auth-alert error";
+          googleAlert.textContent = "Google Sign-In failed. Make sure node server/index.js is running.";
+          googleAlert.hidden = false;
+        }
+      }
     });
   }
 
@@ -765,32 +726,6 @@ function initAuth() {
         }
       }
     });
-  }
-}
-
-// Check if returning from Google OAuth Redirect
-function checkOAuthRedirect() {
-  if (typeof window !== "undefined" && window.location.hash && window.location.hash.includes("access_token")) {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = params.get("access_token");
-    if (accessToken) {
-      fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
-        .then((res) => res.json())
-        .then((googleUser) => {
-          if (googleUser && googleUser.email) {
-            performGoogleAuth(
-              googleUser.name || "Google User",
-              googleUser.email,
-              googleUser.sub,
-              googleUser.picture
-            );
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        })
-        .catch((err) => console.error("OAuth UserInfo error:", err));
-    }
   }
 }
 
@@ -995,7 +930,6 @@ function init() {
   setupSmoothScroll();
   setupParallax();
   setupCardGlow();
-  checkOAuthRedirect();
 
   fetchVerificationsFromMongoDB();
 
