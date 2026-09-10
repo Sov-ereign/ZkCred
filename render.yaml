@@ -1,0 +1,46 @@
+services:
+  # ─── 1. ZkCred API (Express + MongoDB + Google OAuth) ────────────────────────
+  - type: web
+    name: zkcred-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://zkcred-api.onrender.com/api/auth/google/callback
+      - key: CONTRACT_ADDRESS
+        value: "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab"
+      - key: MIDNIGHT_INDEXER_URL
+        value: https://indexer.preprod.midnight.network/api/v3/graphql
+      - key: PROOF_SERVER_URL
+        value: https://zkcred-proof-server.onrender.com
+    healthCheckPath: /api/health
+
+  # ─── 2. Midnight Proof Server (Docker — zero-knowledge PLONK prover) ─────────
+  - type: web
+    name: zkcred-proof-server
+    runtime: docker
+    region: oregon
+    plan: standard
+    rootDir: proof-server
+    dockerfilePath: proof-server/Dockerfile
+    envVars:
+      - key: PORT
+        value: 6300
+    healthCheckPath: /health
+    numInstances: 1

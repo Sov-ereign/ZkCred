@@ -27,7 +27,8 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-a
 // Midnight Network config
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
 const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
-const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "https://1fb0af96f50262.lhr.life";
+// Production: set PROOF_SERVER_URL to https://zkcred-proof-server.onrender.com in Render env vars
+const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "https://zkcred-proof-server.onrender.com";
 
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 
@@ -528,10 +529,28 @@ app.post("/api/proof", async (req, res) => {
   });
 });
 
+// ─── Health Check ──────────────────────────────────────────────────────────────────────────
+
+/** GET /api/health — Render & uptime monitors call this */
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "zkcred-api",
+    timestamp: new Date().toISOString(),
+    mongo: isMongoConnected ? "connected" : "memory-fallback",
+    proofServer: PROOF_SERVER_URL,
+    contract: CONTRACT_ADDRESS,
+    indexer: MIDNIGHT_INDEXER_URL,
+  });
+});
+
 // ─── Start Server ────────────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
   console.log(`[ZkCred] Server running on port ${PORT}`);
+  console.log(`[ZkCred] Proof Server: ${PROOF_SERVER_URL}`);
+  console.log(`[ZkCred] Indexer: ${MIDNIGHT_INDEXER_URL}`);
+  console.log(`[ZkCred] Contract: ${CONTRACT_ADDRESS}`);
   console.log(`[ZkCred] Google OAuth callback: ${GOOGLE_REDIRECT_URI}`);
 });
 
