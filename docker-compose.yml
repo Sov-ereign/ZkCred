@@ -1,14 +1,25 @@
 version: '3.8'
 
+# ─── Local Development Stack ──────────────────────────────────────────────────
+# Run this to start the Midnight proof server locally:
+#
+#   docker compose up -d
+#
+# The proof server will be available at http://localhost:6300
+# The frontend (ui/index.html) and the npm deploy script both talk to it.
+#
+# Prerequisites:
+#   - Docker installed and running
+#   - Port 6300 free
+
 services:
-  # Midnight Proof Server — runs local ZK PLONK prover at http://localhost:6300
-  # Official image: midnightnetwork/proof-server:latest
   proof-server:
     image: midnightnetwork/proof-server:latest
+    container_name: midnight-proof-server
     ports:
       - "6300:6300"
     volumes:
-      # Cache cryptographic parameters so they aren't re-downloaded on restart
+      # Cache downloaded ZK parameters so they don't re-download on restart (~1GB)
       - proof-server-cache:/root/.cache
     restart: unless-stopped
     healthcheck:
@@ -16,27 +27,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-
-  # ZkCred API Server — Express + MongoDB + Google OAuth
-  # Connects to proof-server above for ZK proof generation
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    ports:
-      - "4000:4000"
-    environment:
-      - PORT=4000
-      - PROOF_SERVER_URL=http://proof-server:6300
-      - MIDNIGHT_INDEXER_URL=https://indexer.preprod.midnight.network/api/v3/graphql
-      - CONTRACT_ADDRESS=0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab
-    env_file:
-      - .env
-    depends_on:
-      proof-server:
-        condition: service_healthy
-    restart: unless-stopped
+      start_period: 90s
 
 volumes:
   proof-server-cache:

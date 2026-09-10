@@ -27,8 +27,8 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-a
 // Midnight Network config
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
 const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
-// Production: set PROOF_SERVER_URL to https://zkcred-proof-server.onrender.com in Render env vars
-const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "https://zkcred-proof-server.onrender.com";
+// Proof server runs locally via Docker: docker compose up -d (see docker-compose.yml)
+const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "http://localhost:6300";
 
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 

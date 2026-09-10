@@ -16,7 +16,6 @@
 |---|---|
 | **Live dApp** | [https://zk-cred.vercel.app](https://zk-cred.vercel.app) |
 | **Backend API** | [https://zkcred-api.onrender.com](https://zkcred-api.onrender.com) |
-| **Proof Server Endpoint** | [https://1fb0af96f50262.lhr.life](https://1fb0af96f50262.lhr.life) |
 | **Demo Video** | [https://youtu.be/InI_dsrYqFY](https://youtu.be/InI_dsrYqFY) |
 | **X / Twitter** | [https://x.com/ZK_CRED](https://x.com/ZK_CRED) |
 | **GitHub** | [https://github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred) |
@@ -101,27 +100,46 @@ AegisID uses Midnight's Compact language to prove multi-attribute financial elig
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   Browser (Client)                       │
+│  window.midnight.lace  ←  Lace Wallet Extension          │
 │  Private Witnesses: age, creditScore, income, salt      │
-│  (never sent over network)                              │
 │  Compact Circuit: verifyEligibility()                   │
-│  PLONK zk-SNARK proof generated                         │
+│  PLONK zk-SNARK proof ← localhost:6300 (Docker)         │
 └──────────────────────────┬──────────────────────────────┘
                            │ disclose(isEligible)
                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │          Midnight Network (Preprod)                      │
 │  Public Ledger: isEligible, verificationCount, txHash   │
-│  Contract: 0x02008f3a9e...54737                         │
+│  Contract: 0x0225677b...bdab                            │
 └─────────────────────────────────────────────────────────┘
 ```
 
 **Stack:**
 - **Smart Contract**: Compact (`.compact`) → compiled to PLONK zk-SNARK circuits
 - **Frontend**: Vanilla HTML/CSS/JS hosted on Vercel
-- **Backend API**: Express.js on Render ([zkcred-api.onrender.com](https://zkcred-api.onrender.com))
-- **Wallet**: Lace DApp Connector (Midnight extension)
+- **Backend API**: Express.js on Render ([zkcred-api.onrender.com](https://zkcred-api.onrender.com)) — auth, MongoDB, indexer proxy
+- **Proof Server**: Midnight Docker container — runs **locally** at `localhost:6300`
+- **Wallet**: Lace DApp Connector (Midnight browser extension)
 - **Auth**: JWT + Google OAuth 2.0 via Render backend
 - **Audit Log**: MongoDB Atlas (verification records persisted per user)
+
+### Local Development Setup
+
+```bash
+# 1. Start the Midnight proof server (Docker required)
+docker compose up -d
+# → proof server available at http://localhost:6300
+
+# 2. Install dependencies
+npm install
+
+# 3. Run tests
+npm test
+
+# 4. Open the dApp
+# Open ui/index.html in browser, or serve via any static server
+# Install the Midnight Lace browser extension to connect wallet
+```
 
 ---
 
