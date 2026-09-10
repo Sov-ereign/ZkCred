@@ -19,6 +19,11 @@ const MONGODB_URI = process.env.MONGODB_URI || "";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 
+// Midnight Network config
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737";
+const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v1/graphql";
+const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "http://localhost:6300";
+
 // ─── MongoDB Connection (module-level, reused across warm invocations) ─────────
 
 let isMongoConnected = false;
@@ -353,6 +358,124 @@ app.get("/api/verifications", optionalAuthMiddleware, async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch verifications" });
+  }
+});
+
+// ─── Midnight Network Routes ─────────────────────────────────────────────────
+
+/**
+ * GET /api/contract/state
+ * Proxies GraphQL query to Midnight Indexer and returns live on-chain ledger state.
+ * Returns minCreditScore, minAnnualIncome, minAge, isEligible, verificationCount.
+ */
+app.get("/api/contract/state", async (req, res) => {
+  const address = req.query.address || CONTRACT_ADDRESS;
+  const graphqlQuery = {
+    query: `query GetZkCredState($address: String!) {
+      contractState(address: $address) {
+        minCreditScore
+        minAnnualIncome
+        minAge
+        isEligible
+        verificationCount
+        lastCommitment
+      }
+    }`,
+    variables: { address },
+  };
+
+  try {
+    const response = await fetch(MIDNIGHT_INDEXER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(graphqlQuery),
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: `Midnight Indexer returned HTTP ${response.status}` });
+    }
+
+    const json = await response.json();
+
+    if (json.errors && json.errors.length > 0) {
+      return res.status(502).json({ error: "Midnight Indexer GraphQL error", details: json.errors });
+    }
+
+    const state = json?.data?.contractState;
+    if (!state) {
+      return res.status(404).json({ error: `No contract state found for address ${address}` });
+    }
+
+    return res.json({
+      contractAddress: address,
+      minCreditScore: Number(state.minCreditScore),
+      minAnnualIncome: String(state.minAnnualIncome),
+      minAge: Number(state.minAge),
+      isEligible: Boolean(state.isEligible),
+      verificationCount: String(state.verificationCount),
+      lastCommitment: state.lastCommitment || null,
+    });
+  } catch (err) {
+    console.error("[Midnight Indexer] Proxy error:", err.message);
+    return res.status(502).json({ error: "Failed to reach Midnight Indexer", message: err.message });
+  }
+});
+
+/**
+ * POST /api/proof
+ * Proxies ZK proof request to the Midnight Proof Server (PROOF_SERVER_URL).
+ * Body: { circuit, witnesses }
+ * Returns: { proof (base64), status }
+ */
+app.post("/api/proof", async (req, res) => {
+  const { circuit, witnesses } = req.body;
+  if (!circuit || !witnesses) {
+    return res.status(400).json({ error: "circuit and witnesses are required" });
+  }
+
+  try {
+    const response = await fetch(`${PROOF_SERVER_URL}/prove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ circuit, witnesses }, (_, v) =>
+        typeof v === "bigint" ? v.toString() : v
+      ),
+      signal: AbortSignal.timeout(30000), // 30s timeout
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      return res.status(502).json({ error: `Proof server returned HTTP ${response.status}`, details: errText });
+    }
+
+    const buf = await response.arrayBuffer();
+    const proofBase64 = Buffer.from(buf).toString("base64");
+    return res.json({ proof: proofBase64, status: `PLONK proof generated via ${PROOF_SERVER_URL}` });
+  } catch (err) {
+    if (err.name === "TimeoutError" || err.code === "ECONNREFUSED") {
+      return res.status(503).json({
+        error: "Proof server unavailable",
+        message: `Cannot reach Midnight proof server at ${PROOF_SERVER_URL}. Start it with: docker-compose up proof-server`,
+        proofServerUrl: PROOF_SERVER_URL,
+      });
+    }
+    return res.status(502).json({ error: "Proof server error", message: err.message });
+  }
+});
+
+/**
+ * GET /api/verifications/count
+ * Returns the total number of verification records stored.
+ */
+app.get("/api/verifications/count", async (req, res) => {
+  await ensureMongoConnected();
+  try {
+    const count = isMongoConnected
+      ? await Verification.countDocuments()
+      : memoryVerifications.length;
+    return res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to count verifications" });
   }
 });
 

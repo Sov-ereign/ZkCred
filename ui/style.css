@@ -70,6 +70,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* ─── Background Canvas ──────────────────────────────────── */
 .bg-canvas {
   position: fixed;
@@ -1986,38 +1990,35 @@ html, body {
 }
 .btn-logout:hover { color: var(--red-400); }
 
-/* ─── Auth Modal Tabs & Forms ──────────────────────────── */
-.auth-tabs {
+/* ─── Unified Auth Modal & Form ─────────────────────────── */
+.auth-unified-form {
+  text-align: left;
+}
+
+.auth-divider {
   display: flex;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px;
-  border-radius: var(--radius);
-  margin-bottom: 1.5rem;
-}
-
-.auth-tab-btn {
-  flex: 1;
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
+  align-items: center;
+  text-align: center;
+  margin: 1.25rem 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
+  font-size: 0.78rem;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
 }
-.auth-tab-btn.active {
-  background: rgba(124, 58, 237, 0.25);
-  color: var(--text-primary);
-  border: 1px solid rgba(167, 139, 250, 0.3);
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.auth-divider span {
+  padding: 0 0.75rem;
 }
 
-.auth-tab-content { display: none; text-align: left; }
-.auth-tab-content.active { display: block; }
-
-.google-auth-box { text-align: center; padding: 1rem 0; }
+.google-auth-box {
+  text-align: center;
+  padding: 0;
+}
 .auth-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem; }
 .auth-fine-print { font-size: 0.72rem; color: var(--text-muted); margin-top: 1rem; opacity: 0.7; }
 
