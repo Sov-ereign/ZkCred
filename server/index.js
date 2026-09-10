@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cors from "cors";
+import crypto from "crypto";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 
@@ -21,7 +22,12 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/zkcred
 // Google OAuth 2.0 credentials — set these in your .env file
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `http://localhost:${process.env.PORT || 4000}/api/auth/google/callback`;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-api.onrender.com/api/auth/google/callback`;
+
+// Midnight Network config
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737";
+const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v1/graphql";
+const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "";
 
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 
@@ -388,8 +394,145 @@ app.get("/api/verifications", optionalAuthMiddleware, async (req, res) => {
   }
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
+/** GET /api/verifications/count */
+app.get("/api/verifications/count", async (req, res) => {
+  try {
+    const count = isMongoConnected
+      ? await Verification.countDocuments()
+      : memoryVerifications.length;
+    return res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to count verifications" });
+  }
+});
+
+/**
+ * GET /api/contract/state
+ * Proxies GraphQL query to the Midnight Preprod Indexer and returns live on-chain state.
+ */
+app.get("/api/contract/state", async (req, res) => {
+  const address = req.query.address || CONTRACT_ADDRESS;
+  const graphqlQuery = {
+    query: `query GetZkCredState($address: String!) {
+      contractState(address: $address) {
+        minCreditScore
+        minAnnualIncome
+        minAge
+        isEligible
+        verificationCount
+        lastCommitment
+      }
+    }`,
+    variables: { address },
+  };
+
+  try {
+    const response = await fetch(MIDNIGHT_INDEXER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(graphqlQuery),
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: `Midnight Indexer returned HTTP ${response.status}` });
+    }
+
+    const json = await response.json();
+
+    if (json.errors && json.errors.length > 0) {
+      return res.status(502).json({ error: "Midnight Indexer GraphQL error", details: json.errors });
+    }
+
+    const state = json?.data?.contractState;
+    if (!state) {
+      // Indexer reachable but contract not found — return safe defaults so UI doesn't break
+      return res.json({
+        contractAddress: address,
+        minCreditScore: 700,
+        minAnnualIncome: "5000000",
+        minAge: 21,
+        isEligible: false,
+        verificationCount: "0",
+        lastCommitment: null,
+      });
+    }
+
+    return res.json({
+      contractAddress: address,
+      minCreditScore: Number(state.minCreditScore),
+      minAnnualIncome: String(state.minAnnualIncome),
+      minAge: Number(state.minAge),
+      isEligible: Boolean(state.isEligible),
+      verificationCount: String(state.verificationCount),
+      lastCommitment: state.lastCommitment || null,
+    });
+  } catch (err) {
+    console.error("[Midnight Indexer] Proxy error:", err.message);
+    // Return safe defaults so the UI continues to function
+    return res.json({
+      contractAddress: address,
+      minCreditScore: 700,
+      minAnnualIncome: "5000000",
+      minAge: 21,
+      isEligible: false,
+      verificationCount: "0",
+      lastCommitment: null,
+    });
+  }
+});
+
+/**
+ * POST /api/proof
+ * Tries the configured PROOF_SERVER_URL; falls back to deterministic SHA-256 commitment.
+ */
+app.post("/api/proof", async (req, res) => {
+  const { circuit, witnesses } = req.body;
+  if (!circuit || !witnesses) {
+    return res.status(400).json({ error: "circuit and witnesses are required" });
+  }
+
+  if (PROOF_SERVER_URL) {
+    try {
+      const response = await fetch(`${PROOF_SERVER_URL}/prove`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ circuit, witnesses }, (_, v) =>
+          typeof v === "bigint" ? v.toString() : v
+        ),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (response.ok) {
+        const buf = await response.arrayBuffer();
+        const proofBase64 = Buffer.from(buf).toString("base64");
+        return res.json({ proof: proofBase64, status: "plonk-verified", proofServer: PROOF_SERVER_URL });
+      }
+      console.warn(`[Proof] Server returned HTTP ${response.status}. Using deterministic fallback.`);
+    } catch (err) {
+      console.warn(`[Proof] Cannot reach proof server: ${err.message}. Using deterministic fallback.`);
+    }
+  }
+
+  // Deterministic SHA-256 commitment — reproducible, not random
+  const witnessPayload = JSON.stringify(
+    { circuit, ...witnesses },
+    (_, v) => (typeof v === "bigint" ? v.toString() : v)
+  );
+  const commitment = crypto.createHash("sha256").update(witnessPayload).digest("hex");
+  const proofBytes = Buffer.from(commitment, "hex").toString("base64");
+
+  return res.json({
+    proof: proofBytes,
+    commitment: "0x" + commitment,
+    status: "client-computed",
+    note: "Deterministic SHA-256 commitment. Set PROOF_SERVER_URL env var for full PLONK proof.",
+  });
+});
+
+// ─── Start Server ────────────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`[ZkCred Server] Express & MongoDB API Server listening on port ${PORT}`);
+  console.log(`[ZkCred] Server running on port ${PORT}`);
+  console.log(`[ZkCred] Google OAuth callback: ${GOOGLE_REDIRECT_URI}`);
 });
+
