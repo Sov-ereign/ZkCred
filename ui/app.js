@@ -606,10 +606,6 @@ function initWalletConnect() {
       if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
       if (profileStatusDot) profileStatusDot.style.background = "var(--amber-400)";
 
-      if (STATE.currentUser) {
-        STATE.currentUser.walletAddress = STATE.walletAddress;
-        localStorage.setItem("zkcred_user", JSON.stringify(STATE.currentUser));
-      }
     });
   }
 
@@ -682,11 +678,6 @@ function initWalletConnect() {
         if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
         if (profileStatusDot) profileStatusDot.style.background = "var(--green-400)";
 
-        if (STATE.currentUser) {
-          STATE.currentUser.walletAddress = STATE.walletAddress;
-          localStorage.setItem("zkcred_user", JSON.stringify(STATE.currentUser));
-        }
-
         trackVercelEvent("wallet_connected", { address: shortAddr });
         console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
       } catch (err) {
@@ -743,20 +734,6 @@ function updateAuthUI() {
   const userAvatar = document.getElementById("user-avatar");
   const userName = document.getElementById("user-name");
 
-  const walletBtns = [
-    document.getElementById("wallet-connect-btn"),
-    document.getElementById("mobile-wallet-connect-btn"),
-  ].filter(Boolean);
-
-  const walletTexts = [
-    document.getElementById("wallet-btn-text"),
-    document.getElementById("mobile-wallet-btn-text"),
-  ].filter(Boolean);
-
-  const profileWalletTitle = document.getElementById("profile-wallet-title");
-  const profileWalletAddr = document.getElementById("profile-wallet-addr");
-  const profileStatusDot = document.getElementById("profile-status-dot");
-
   if (STATE.currentUser) {
     if (navAuthBtn) navAuthBtn.hidden = true;
     if (userBadge) userBadge.hidden = false;
@@ -765,35 +742,9 @@ function updateAuthUI() {
 
     const profileName = document.getElementById("profile-user-name");
     if (profileName) profileName.textContent = STATE.currentUser.name;
-
-    // Restore user wallet if saved
-    if (STATE.currentUser.walletAddress && !STATE.walletConnected) {
-      STATE.walletAddress = STATE.currentUser.walletAddress;
-      STATE.walletConnected = true;
-
-      const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
-      walletBtns.forEach((b) => b.classList.add("connected"));
-      walletTexts.forEach((t) => (t.textContent = `${shortAddr} (Connected)`));
-
-      if (profileWalletTitle) profileWalletTitle.textContent = "Lace Wallet Connected";
-      if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
-      if (profileStatusDot) profileStatusDot.style.background = "var(--green-400)";
-    }
   } else {
     if (navAuthBtn) navAuthBtn.hidden = false;
     if (userBadge) userBadge.hidden = true;
-
-    // Reset wallet if user logged out
-    if (STATE.walletConnected) {
-      STATE.walletConnected = false;
-      STATE.walletAddress = null;
-      walletBtns.forEach((b) => b.classList.remove("connected"));
-      walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
-
-      if (profileWalletTitle) profileWalletTitle.textContent = "Lace Wallet Disconnected";
-      if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress;
-      if (profileStatusDot) profileStatusDot.style.background = "var(--red-400)";
-    }
   }
 }
 
