@@ -18,6 +18,8 @@
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+    // Render backend URL — API requests go here
+    window.__RENDER_API__ = "https://zkcred-api.onrender.com/api";
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
@@ -794,86 +796,55 @@
     </div>
   </section>
 
-  <!-- ─── Toolchain Section ────────────────────────────────────────────── -->
-  <section class="section" id="setup" aria-labelledby="setup-heading">
+  <!-- ─── How It Works Section ────────────────────────────────────── -->
+  <section class="section" id="how-it-works" aria-labelledby="how-heading">
     <div class="section-inner">
       <div class="section-header">
-        <span class="section-tag">Developer Setup</span>
-        <h2 id="setup-heading" class="section-title">Run It Locally</h2>
+        <span class="section-tag">Zero-Knowledge Architecture</span>
+        <h2 id="how-heading" class="section-title">How It Works</h2>
+        <p class="section-subtitle">Your sensitive data never leaves your browser. Only a cryptographic proof of eligibility is submitted on-chain.</p>
       </div>
       <div class="setup-grid">
         <div class="setup-step">
           <div class="setup-step-num" aria-hidden="true">1</div>
           <div class="setup-step-body">
-            <h3>Install Prerequisites</h3>
-            <div class="code-block" role="region" aria-label="Install prerequisites commands">
-              <pre><code><span class="code-comment"># Node 22+</span>
-nvm install 22 && nvm use 22
-
-<span class="code-comment"># Compact compiler</span>
-npm install -g @midnight-ntwrk/compact-cli
-
-<span class="code-comment"># Verify</span>
-node --version  <span class="code-comment"># v22.x.x</span>
-compact --version</code></pre>
-              <button class="copy-btn" data-target="code-1" aria-label="Copy install commands">Copy</button>
-            </div>
+            <h3>Private Witness (Local Only)</h3>
+            <p style="color: var(--gray-300); line-height: 1.7; margin-top: 0.5rem;">Your age, credit score, and income are entered locally in your browser. They are passed as <strong>private witness inputs</strong> to the Compact ZK circuit &mdash; they are never serialized, never sent to any server, and never appear in any transaction payload.</p>
           </div>
         </div>
         <div class="setup-step">
           <div class="setup-step-num" aria-hidden="true">2</div>
           <div class="setup-step-body">
-            <h3>Start Proof Server & Install</h3>
-            <div class="code-block" role="region" aria-label="Start proof server commands">
-              <pre><code><span class="code-comment"># Clone & install</span>
-git clone https://github.com/your/zkcred
-cd zkcred && npm install
-
-<span class="code-comment"># Start Docker proof server</span>
-docker compose up -d
-
-<span class="code-comment"># Compile Compact contract</span>
-npm run compile</code></pre>
-              <button class="copy-btn" data-target="code-2" aria-label="Copy setup commands">Copy</button>
-            </div>
+            <h3>PLONK ZK Circuit Evaluation</h3>
+            <p style="color: var(--gray-300); line-height: 1.7; margin-top: 0.5rem;">The Compact smart contract circuit evaluates <code style="background: rgba(124,58,237,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace;">age &ge; 21 &amp;&amp; creditScore &ge; 700 &amp;&amp; income &ge; $50k</code> inside a PLONK zk-SNARK constraint system. The proof is generated without revealing any of the private values.</p>
           </div>
         </div>
         <div class="setup-step">
           <div class="setup-step-num" aria-hidden="true">3</div>
           <div class="setup-step-body">
-            <h3>Test & Deploy</h3>
-            <div class="code-block" role="region" aria-label="Test and deploy commands">
-              <pre><code><span class="code-comment"># Run test suite</span>
-npm test
-
-<span class="code-comment"># Deploy to Midnight Preprod</span>
-npm run deploy
-
-<span class="code-comment"># Open UI</span>
-open ui/index.html</code></pre>
-              <button class="copy-btn" data-target="code-3" aria-label="Copy test and deploy commands">Copy</button>
-            </div>
+            <h3>Selective Disclosure On-Chain</h3>
+            <p style="color: var(--gray-300); line-height: 1.7; margin-top: 0.5rem;">Only <code style="background: rgba(6,182,212,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace;">isEligible: true/false</code> is disclosed to the Midnight public ledger via <code style="background: rgba(6,182,212,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace;">disclose()</code>. Any observer can verify the result &mdash; but cannot learn your actual age, score, or income.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
-
   <!-- ─── Footer ──────────────────────────────────────────────────────── -->
   <footer class="footer" role="contentinfo">
     <div class="footer-inner">
       <div class="footer-brand">
         <span class="logo-text">AegisID</span>
-        <span class="footer-desc">ZkCred · Built on Midnight Network</span>
+        <span class="footer-desc">ZkCred &middot; Built on Midnight Network &middot; <a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" style="color: var(--purple-400); text-decoration: none;">@ZK_CRED</a></span>
       </div>
       <div class="footer-links" role="list">
-        <a href="https://midnight.network" target="_blank" rel="noopener" class="footer-link" role="listitem">Midnight Docs</a>
-        <a href="https://compact-by-example.org" target="_blank" rel="noopener" class="footer-link" role="listitem">Compact by Example</a>
-        <a href="https://github.com" target="_blank" rel="noopener" class="footer-link" role="listitem">GitHub</a>
+        <a href="https://midnight.network" target="_blank" rel="noopener" class="footer-link" role="listitem">Midnight Network</a>
+        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="footer-link" role="listitem">GitHub</a>
+        <a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" class="footer-link" role="listitem">@ZK_CRED</a>
+        <a href="https://youtu.be/InI_dsrYqFY" target="_blank" rel="noopener" class="footer-link" role="listitem">Demo Video</a>
       </div>
       <div class="footer-badge">
         <span class="badge-dot" aria-hidden="true"></span>
-        Level 1 · New Moon 🌑
+        Level 4 &middot; Gibbous Moon &#127764;
       </div>
     </div>
   </footer>

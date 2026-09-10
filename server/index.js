@@ -25,7 +25,24 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `http://localhost
 
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 
-app.use(cors({ origin: true, credentials: true }));
+const ALLOWED_ORIGINS = [
+  "https://zk-cred.vercel.app",
+  /\.vercel\.app$/,
+  /\.onrender\.com$/,
+  "http://localhost:3000",
+  "http://localhost:4000",
+  "http://localhost:5000",
+];
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    const ok = ALLOWED_ORIGINS.some((o) =>
+      typeof o === "string" ? o === origin : o.test(origin)
+    );
+    cb(ok ? null : new Error("CORS not allowed"), ok);
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────

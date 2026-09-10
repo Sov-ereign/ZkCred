@@ -3,7 +3,12 @@
  * Zero-Knowledge Proof Simulator for Midnight Network with MongoDB Auth & Lace Wallet Integration
  */
 
-const API_BASE = "/api";
+// ─── API Base Configuration ───────────────────────────────────────────────────
+// If RENDER_BACKEND_URL env is injected at build time, use it; otherwise use same-origin /api.
+// To connect to a Render backend, set window.__RENDER_API__ before this script loads.
+const API_BASE = (typeof window !== "undefined" && window.__RENDER_API__)
+  ? window.__RENDER_API__.replace(/\/$/, "")
+  : "/api";
 
 // Real deployed contract address — fetched live from Midnight Indexer on init
 const REAL_CONTRACT_ADDRESS = "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737";
@@ -309,7 +314,7 @@ async function generateProof() {
 
   // ── Step 3: Submit transaction via Lace wallet (if connected) ────────────
   setProofStatus("Submitting transaction via Lace DApp Connector...");
-  await sleep(300);
+  await sleep(200);
 
   let transactionHash = null;
   const laceProvider = window.midnight?.lace || window.cardano?.lace;
@@ -368,7 +373,15 @@ async function generateProof() {
   STATE.lastEligibility = eligible;
   STATE.lastSaltCommitment = saltCommitment;
 
-  setProofStatus(proofError ? `⚠ Proof note: ${proofError}` : proofStatus_val);
+  // Show proof status — distinguish PLONK-verified from deterministic fallback
+  const statusMsg = proofError
+    ? `⚠ Proof note: ${proofError}`
+    : proofStatus_val === "plonk-verified"
+    ? "✓ PLONK ZK proof verified via Midnight Proof Server"
+    : proofStatus_val === "client-computed"
+    ? "✓ Deterministic ZK commitment computed (SHA-256)"
+    : proofStatus_val;
+  setProofStatus(statusMsg);
 
   generateBtn.disabled = false;
   proofBtnText.textContent = eligible ? "✓ Proof Generated — Eligible" : "✗ Proof Generated — Ineligible";
@@ -393,7 +406,7 @@ async function generateProof() {
     isEligible: eligible,
     verificationCount: STATE.verificationCount,
     saltCommitment,
-    transactionHash: txHash,
+    transactionHash,
   });
 
   trackVercelEvent("proof_generated", { eligible, verificationCount: STATE.verificationCount });
