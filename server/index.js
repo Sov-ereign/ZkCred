@@ -412,72 +412,71 @@ app.get("/api/verifications/count", async (req, res) => {
  */
 app.get("/api/contract/state", async (req, res) => {
   const address = req.query.address || CONTRACT_ADDRESS;
-  const graphqlQuery = {
-    query: `query GetZkCredState($address: String!) {
-      contractState(address: $address) {
-        minCreditScore
-        minAnnualIncome
-        minAge
-        isEligible
-        verificationCount
-        lastCommitment
-      }
-    }`,
-    variables: { address },
+
+  // Safe defaults — used whenever the Midnight Indexer is unreachable or the contract
+  // is not yet indexed. This keeps the UI fully functional regardless of indexer state.
+  const safeDefaults = {
+    contractAddress: address,
+    minCreditScore: 700,
+    minAnnualIncome: "5000000",
+    minAge: 21,
+    isEligible: false,
+    verificationCount: "0",
+    lastCommitment: null,
   };
 
   try {
+    const graphqlQuery = {
+      query: `query GetZkCredState($address: String!) {
+        contractState(address: $address) {
+          minCreditScore
+          minAnnualIncome
+          minAge
+          isEligible
+          verificationCount
+          lastCommitment
+        }
+      }`,
+      variables: { address },
+    };
+
     const response = await fetch(MIDNIGHT_INDEXER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(graphqlQuery),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!response.ok) {
-      return res.status(502).json({ error: `Midnight Indexer returned HTTP ${response.status}` });
+      console.warn(`[Midnight Indexer] HTTP ${response.status} — returning safe defaults`);
+      return res.json(safeDefaults);
     }
 
     const json = await response.json();
 
+    // GraphQL errors or schema mismatch — return safe defaults, don't 502
     if (json.errors && json.errors.length > 0) {
-      return res.status(502).json({ error: "Midnight Indexer GraphQL error", details: json.errors });
+      console.warn("[Midnight Indexer] GraphQL errors — returning safe defaults:", json.errors[0]?.message);
+      return res.json(safeDefaults);
     }
 
     const state = json?.data?.contractState;
     if (!state) {
-      // Indexer reachable but contract not found — return safe defaults so UI doesn't break
-      return res.json({
-        contractAddress: address,
-        minCreditScore: 700,
-        minAnnualIncome: "5000000",
-        minAge: 21,
-        isEligible: false,
-        verificationCount: "0",
-        lastCommitment: null,
-      });
+      return res.json(safeDefaults);
     }
 
     return res.json({
       contractAddress: address,
-      minCreditScore: Number(state.minCreditScore),
-      minAnnualIncome: String(state.minAnnualIncome),
-      minAge: Number(state.minAge),
+      minCreditScore: Number(state.minCreditScore) || 700,
+      minAnnualIncome: String(state.minAnnualIncome || "5000000"),
+      minAge: Number(state.minAge) || 21,
       isEligible: Boolean(state.isEligible),
-      verificationCount: String(state.verificationCount),
+      verificationCount: String(state.verificationCount || "0"),
       lastCommitment: state.lastCommitment || null,
     });
   } catch (err) {
-    console.error("[Midnight Indexer] Proxy error:", err.message);
-    // Return safe defaults so the UI continues to function
-    return res.json({
-      contractAddress: address,
-      minCreditScore: 700,
-      minAnnualIncome: "5000000",
-      minAge: 21,
-      isEligible: false,
-      verificationCount: "0",
-      lastCommitment: null,
-    });
+    console.warn("[Midnight Indexer] Unreachable — returning safe defaults:", err.message);
+    return res.json(safeDefaults);
   }
 });
 
