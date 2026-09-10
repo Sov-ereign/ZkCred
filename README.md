@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg)](https://github.com/Sov-ereign/ZkCred/actions)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-zk--cred.vercel.app-7c3aed?logo=vercel)](https://zk-cred.vercel.app)
-[![Midnight Preprod](https://img.shields.io/badge/Midnight-Preprod-06b6d4)](https://indexer.preprod.midnight.network/api/v1/graphql)
+[![Midnight Preprod](https://img.shields.io/badge/Midnight-Preprod-06b6d4)](https://indexer.preprod.midnight.network/api/v3/graphql)
 [![X / Twitter](https://img.shields.io/badge/%40ZK__CRED-000000?logo=x)](https://x.com/ZK_CRED)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a78bfa)](LICENSE)
 
@@ -16,6 +16,7 @@
 |---|---|
 | **Live dApp** | [https://zk-cred.vercel.app](https://zk-cred.vercel.app) |
 | **Backend API** | [https://zkcred-api.onrender.com](https://zkcred-api.onrender.com) |
+| **Proof Server Endpoint** | [https://1fb0af96f50262.lhr.life](https://1fb0af96f50262.lhr.life) |
 | **Demo Video** | [https://youtu.be/InI_dsrYqFY](https://youtu.be/InI_dsrYqFY) |
 | **X / Twitter** | [https://x.com/ZK_CRED](https://x.com/ZK_CRED) |
 | **GitHub** | [https://github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred) |
@@ -27,22 +28,22 @@
 | Field | Value |
 |---|---|
 | **Network** | Midnight Preprod (`testnet-02`) |
-| **Contract Address** | `0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737` |
+| **Contract Address** | `0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab` |
 | **Deployed** | September 2026 |
-| **Indexer** | `https://indexer.preprod.midnight.network/api/v1/graphql` |
+| **Indexer** | `https://indexer.preprod.midnight.network/api/v3/graphql` |
 | **Circuit** | `verifyEligibility` (Compact PLONK zk-SNARK) |
 
 ### Verify Live Contract State via GraphQL
 
 ```graphql
-query {
-  contractState(address: "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737") {
-    minCreditScore
-    minAnnualIncome
-    minAge
-    isEligible
-    verificationCount
-    lastCommitment
+query GetZkCredContractAction {
+  contractAction(address: "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab") {
+    address
+    state
+    zswapState
+    transaction {
+      hash
+    }
   }
 }
 ```

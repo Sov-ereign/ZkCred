@@ -11,7 +11,7 @@ const API_BASE = (typeof window !== "undefined" && window.__RENDER_API__)
   : "/api";
 
 // Real deployed contract address — fetched live from Midnight Indexer on init
-const REAL_CONTRACT_ADDRESS = "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737";
+const REAL_CONTRACT_ADDRESS = "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);

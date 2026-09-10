@@ -25,9 +25,9 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-api.onrender.com/api/auth/google/callback`;
 
 // Midnight Network config
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737";
-const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v1/graphql";
-const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "";
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
+const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
+const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "https://1fb0af96f50262.lhr.life";
 
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 

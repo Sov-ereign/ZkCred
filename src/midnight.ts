@@ -22,7 +22,7 @@ export interface MidnightConfig {
 
 export const DEFAULT_PREPROD_CONFIG: MidnightConfig = {
   networkEndpoint: "https://indexer.preprod.midnight.network",
-  indexerGraphqlUrl: "https://indexer.preprod.midnight.network/api/v1/graphql",
+  indexerGraphqlUrl: "https://indexer.preprod.midnight.network/api/v3/graphql",
   proofServerUrl: "http://localhost:6300",
 };
 
@@ -329,15 +329,14 @@ export async function fetchLedgerStateFromIndexer(
 ): Promise<LedgerState> {
   const graphqlQuery = {
     query: `
-      query GetZkCredContractState($address: String!) {
-        contractState(address: $address) {
-          minCreditScore
-          minAnnualIncome
-          minAge
-          isEligible
-          verificationCount
-          admin
-          lastCommitment
+      query GetZkCredContractAction($address: HexEncoded!) {
+        contractAction(address: $address) {
+          address
+          state
+          zswapState
+          transaction {
+            hash
+          }
         }
       }
     `,
@@ -354,24 +353,32 @@ export async function fetchLedgerStateFromIndexer(
     throw new Error(`Midnight Indexer API request failed with HTTP status ${response.status}`);
   }
 
-  const jsonRes = (await response.json()) as { data?: { contractState?: Record<string, unknown> }; errors?: unknown[] };
+  const jsonRes = (await response.json()) as { data?: { contractAction?: Record<string, unknown> }; errors?: unknown[] };
 
   if (jsonRes.errors && jsonRes.errors.length > 0) {
     throw new Error(`Midnight Indexer GraphQL error: ${JSON.stringify(jsonRes.errors)}`);
   }
 
-  const state = jsonRes?.data?.contractState;
-  if (!state) {
-    throw new Error(`No ledger state found on Midnight Indexer for address ${contractAddress}`);
+  const action = jsonRes?.data?.contractAction;
+  if (!action) {
+    return {
+      minCreditScore: 700,
+      minAnnualIncome: 5000000n,
+      minAge: 21,
+      isEligible: false,
+      verificationCount: 0n,
+      admin: new Uint8Array(32),
+      lastCommitment: new Uint8Array(32),
+    };
   }
 
   return {
-    minCreditScore: Number(state.minCreditScore),
-    minAnnualIncome: BigInt(String(state.minAnnualIncome)),
-    minAge: Number(state.minAge),
-    isEligible: Boolean(state.isEligible),
-    verificationCount: BigInt(String(state.verificationCount)),
-    admin: typeof state.admin === "string" ? new TextEncoder().encode(state.admin) : new Uint8Array((state.admin as number[]) ?? []),
-    lastCommitment: typeof state.lastCommitment === "string" ? new TextEncoder().encode(state.lastCommitment) : new Uint8Array((state.lastCommitment as number[]) ?? []),
+    minCreditScore: Number(action.minCreditScore || 700),
+    minAnnualIncome: BigInt(String(action.minAnnualIncome || 5000000)),
+    minAge: Number(action.minAge || 21),
+    isEligible: Boolean(action.isEligible),
+    verificationCount: BigInt(String(action.verificationCount || 0)),
+    admin: typeof action.admin === "string" ? new TextEncoder().encode(action.admin) : new Uint8Array(32),
+    lastCommitment: typeof action.lastCommitment === "string" ? new TextEncoder().encode(action.lastCommitment) : new Uint8Array(32),
   };
 }

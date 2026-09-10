@@ -21,11 +21,9 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 
 // Midnight Network config
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x02008f3a9e1028741362e49abfbd6a6a165b4ee3f7e6a71e41120021b33edfa54737";
-const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v1/graphql";
-// Set PROOF_SERVER_URL to your Render-hosted Midnight proof server URL in Vercel env vars.
-// Leave empty to use deterministic SHA-256 commitment fallback when proof server is unavailable.
-const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "";
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
+const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
+const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "https://1fb0af96f50262.lhr.life";
 
 // ─── MongoDB Connection (module-level, reused across warm invocations) ─────────
 
