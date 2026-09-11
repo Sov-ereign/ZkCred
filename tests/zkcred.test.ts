@@ -310,7 +310,7 @@ describe("ZkCred Runtime Contract — Privacy Guarantees & Indexer Strictness", 
     const invalidUrl = "https://invalid-indexer.example.com/api/v1/graphql";
     const testAddr = "0x02" + "a".repeat(64);
     await expect(fetchLedgerStateFromIndexer(testAddr, invalidUrl)).rejects.toThrow();
-  });
+  }, 15000);
 });
 
 describe("ZkCred Utilities", () => {

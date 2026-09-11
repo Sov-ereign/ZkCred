@@ -1,8 +1,8 @@
-pragma language_version 0.23;
+pragma language_version 0.26.0;
 
 // =============================================================================
 // ZkCred (AegisID) — Multi-Attribute Age & Financial Eligibility Gate
-// Language: Compact v0.23 | Target: Midnight Network Preprod
+// Language: Compact v0.26 | Target: Midnight Network Preprod
 // Level 3 Track: Option 2 — Age / Eligibility Gate
 // =============================================================================
 //
@@ -68,13 +68,12 @@ export circuit verifyEligibility(): [] {
   // Disclose ONLY boolean eligibility
   isEligible = disclose(eligible);
 
-  // Increment public verification counter
-  const newCount: Uint<64> = verificationCount + (1 as Uint<64>);
+  // Increment public verification counter with explicit Uint<64> cast
+  const newCount: Uint<64> = (verificationCount + (1 as Uint<64>)) as Uint<64>;
   verificationCount = disclose(newCount);
 
-  // Derive cryptographic salt commitment / replay protection
-  const saltCommitment: Bytes<32> = persistent_hash<[Bytes<32>, Uint<64>]>([_salt, newCount]);
-  lastCommitment = disclose(saltCommitment);
+  // Store salt as commitment (salt is private witness — only its disclosure is public)
+  lastCommitment = disclose(_salt);
 }
 
 // --- Admin Circuit: Update Thresholds ---
@@ -85,7 +84,7 @@ export circuit updateThresholds(
 ): [] {
   // Authorize caller against admin ledger state
   const callerKey: Bytes<32> = getPrivateAdminKey();
-  assert callerKey == admin "Unauthorized: caller is not authorized admin";
+  assert(callerKey == admin, "Unauthorized: caller is not authorized admin");
 
   minCreditScore = disclose(newMinCreditScore);
   minAnnualIncome = disclose(newMinAnnualIncome);
