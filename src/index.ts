@@ -142,7 +142,6 @@ async function main() {
 
   info("Public Ledger State", "isEligible = true");
   info("Verification Count", eligibleResult.newVerificationCount.toString());
-  info("Salt Commitment", saltToHex(eligibleResult.lastCommitment).slice(0, 24) + "...");
   info("Transaction Hash", eligibleResult.transactionHash);
   info("Proving Server Status", eligibleResult.proofServerStatus);
 
@@ -191,7 +190,7 @@ async function main() {
   log(`  ${c.green}✓${c.reset}  Raw Credit Scores — 100% Private (NEVER on-chain)`);
   log(`  ${c.green}✓${c.reset}  Raw Annual Income — 100% Private (NEVER on-chain)`);
   log(`  ${c.green}✓${c.reset}  User Age & Salt   — 100% Private (NEVER on-chain)`);
-  log(`  ${c.green}✓${c.reset}  Salt Commitment   — On-chain 32-byte cryptographic replay protection`);
+  log(`  ${c.green}✓${c.reset}  Private Salt       — Never disclosed to public ledger state`);
   log(`  ${c.green}✓${c.reset}  Admin Access      — Authorized via admin ledger assertion`);
   log(`  ${c.green}✓${c.reset}  Disclosed State   — ONLY boolean isEligible via disclose()`);
 

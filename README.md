@@ -56,8 +56,7 @@ query GetZkCredContractAction {
       "minAnnualIncome": "5000000",
       "minAge": 21,
       "isEligible": true,
-      "verificationCount": "14",
-      "lastCommitment": "0x02008f..."
+    "verificationCount": "14"
     }
   }
 }
@@ -74,7 +73,7 @@ AegisID uses Midnight's Compact language to prove multi-attribute financial elig
 | Age (e.g. `24`) | ❌ **Private** — never leaves the browser |
 | Credit Score (e.g. `720`) | ❌ **Private** — never leaves the browser |
 | Annual Income (e.g. `$60,000`) | ❌ **Private** — never leaves the browser |
-| User Salt (32-byte nonce) | ❌ **Private** — witness only, never serialized |
+| User Salt (32-byte nonce) | ❌ **Private** — witness only, never serialized or stored |
 | `isEligible: true/false` | ✅ **Public** — disclosed via `disclose()` on Midnight ledger |
 | `verificationCount` | ✅ **Public** — integer counter, publicly incrementing |
 | Transaction Hash | ✅ **Public** — ZK proof commitment on-chain |
@@ -91,7 +90,7 @@ AegisID uses Midnight's Compact language to prove multi-attribute financial elig
 - The prover's actual credit score
 - The prover's actual annual income
 - Any intermediate circuit witness values
-- The salt used for commitment derivation
+- The private salt used by the circuit
 
 ---
 
@@ -167,9 +166,8 @@ PASS  tests/zkcred.test.ts
     ✓ updateThresholds rejects calls without admin key (authorization failure)
     ✓ updateThresholds accepts and applies new thresholds when admin key matches
 
-  ZkCred — Salt Commitment & Cryptographic Utilities
-    ✓ deriveSaltCommitment returns a deterministic 66-char 0x02-prefixed hex commitment
-    ✓ deriveSaltCommitment produces different outputs for different salts (collision-resistant)
+  ZkCred — Cryptographic Utilities
+    ✓ saltToHex returns a valid 64-character hex representation
 
   ZkCred — Midnight Indexer Integration
     ✓ fetchLedgerStateFromIndexer reads live verificationCount from Midnight Preprod Indexer

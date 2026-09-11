@@ -60,7 +60,6 @@ export type Ledger = {
   readonly isEligible: boolean;
   readonly verificationCount: bigint;
   readonly admin: Uint8Array;
-  readonly lastCommitment: Uint8Array;
 }
 
 export type ContractReferenceLocations = any;

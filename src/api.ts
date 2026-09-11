@@ -14,7 +14,6 @@ export {
   executeVerifyEligibilityCircuit,
   executeUpdateThresholdsCircuit,
   fetchLedgerStateFromIndexer,
-  deriveSaltCommitment,
   DEFAULT_PREPROD_CONFIG as MIDNIGHT_PREPROD_CONFIG,
   type MidnightProviders,
   type MidnightConfig,

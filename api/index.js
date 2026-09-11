@@ -32,7 +32,7 @@ let mongoConnectPromise = null;
 
 function ensureMongoConnected() {
   if (isMongoConnected) return Promise.resolve();
-  if (!MONGODB_URI) return Promise.resolve(); // fallback to memory
+  if (!MONGODB_URI) return Promise.resolve();
   if (mongoConnectPromise) return mongoConnectPromise;
 
   mongoConnectPromise = mongoose
@@ -58,7 +58,13 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String },
   avatarUrl: { type: String },
   googleId: { type: String },
-  walletAddress: { type: String },
+  walletAddress: { type: String, default: null },
+  proofCount: { type: Number, default: 0 },
+  verifiedCredentials: {
+    creditScoreVerified: { type: Boolean, default: false },
+    incomeVerified: { type: Boolean, default: false },
+    ageVerified: { type: Boolean, default: false },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -69,7 +75,6 @@ const verificationSchema = new mongoose.Schema({
   circuit: { type: String, default: "verifyEligibility" },
   isEligible: { type: Boolean, required: true },
   verificationCount: { type: Number, required: true },
-  saltCommitment: { type: String, required: true },
   transactionHash: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
 });
@@ -78,9 +83,10 @@ const verificationSchema = new mongoose.Schema({
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 const Verification = mongoose.models.Verification || mongoose.model("Verification", verificationSchema);
 
-// In-memory fallback (resets on cold start, fine for dev)
-const memoryUsers = new Map();
-const memoryVerifications = [];
+function requireMongo(req, res, next) {
+  if (!isMongoConnected) return res.status(503).json({ error: "Database unavailable. MongoDB is required." });
+  next();
+}
 
 // ─── Express App ──────────────────────────────────────────────────────────────
 
@@ -96,7 +102,7 @@ const ALLOWED_ORIGINS = [
 ];
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // allow non-browser (Render health checks, etc)
+    if (!origin) return cb(null, true);
     const allowed = ALLOWED_ORIGINS.some((o) =>
       typeof o === "string" ? o === origin : o.test(origin)
     );
@@ -111,29 +117,15 @@ app.use(express.json());
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized: missing or invalid token" });
+    return res.status(401).json({ error: "Unauthorized: missing or invalid token. Please sign in." });
   }
   const token = authHeader.split(" ")[1];
   try {
     req.user = jwt.verify(token, JWT_SECRET);
     next();
   } catch {
-    return res.status(401).json({ error: "Unauthorized: token verification failed" });
+    return res.status(401).json({ error: "Unauthorized: token verification failed. Please sign in again." });
   }
-}
-
-function optionalAuthMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    try {
-      req.user = jwt.verify(authHeader.split(" ")[1], JWT_SECRET);
-    } catch {
-      req.user = { id: "anonymous", email: "guest@zkcred.io", name: "Anonymous Guest" };
-    }
-  } else {
-    req.user = { id: "anonymous", email: "guest@zkcred.io", name: "Anonymous Guest" };
-  }
-  next();
 }
 
 // Resolve the OAuth redirect URI dynamically from the incoming request host
@@ -148,7 +140,7 @@ function getRedirectUri(req) {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 /** POST /api/auth/register */
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
     const { name, email, password, walletAddress } = req.body;
@@ -169,15 +161,6 @@ app.post("/api/auth/register", async (req, res) => {
       });
       const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ token, user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
-    } else {
-      if (memoryUsers.has(normalizedEmail))
-        return res.status(400).json({ error: "User with this email already exists" });
-
-      const passwordHash = await bcrypt.hash(password, 10);
-      const user = { id: "mem_" + Date.now(), name, email: normalizedEmail, passwordHash, walletAddress, avatarUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}` };
-      memoryUsers.set(normalizedEmail, user);
-      const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
-      return res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
     }
   } catch (err) {
     console.error("Register error:", err);
@@ -186,7 +169,7 @@ app.post("/api/auth/register", async (req, res) => {
 });
 
 /** POST /api/auth/login */
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
     const { email, password } = req.body;
@@ -203,12 +186,6 @@ app.post("/api/auth/login", async (req, res) => {
         return res.status(401).json({ error: "Invalid email or password" });
       const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ token, user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
-    } else {
-      const user = memoryUsers.get(normalizedEmail);
-      if (!user || !user.passwordHash || !await bcrypt.compare(password, user.passwordHash))
-        return res.status(401).json({ error: "Invalid email or password" });
-      const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
-      return res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
     }
   } catch (err) {
     console.error("Login error:", err);
@@ -265,6 +242,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
   }
 
   try {
+    if (!isMongoConnected) return res.status(503).send("Database unavailable. Google sign-in requires MongoDB.");
     const redirectUri = getRedirectUri(req);
     const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri);
     const { tokens } = await oauthClient.getToken(code);
@@ -290,16 +268,6 @@ app.get("/api/auth/google/callback", async (req, res) => {
         await user.save();
       }
       appUser = { id: String(user._id), name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress };
-    } else {
-      let user = memoryUsers.get(normalizedEmail);
-      if (!user) {
-        user = { id: "mem_g_" + Date.now(), name, email: normalizedEmail, googleId, avatarUrl: avatar };
-        memoryUsers.set(normalizedEmail, user);
-      } else {
-        user.googleId = googleId;
-        if (avatarUrl) user.avatarUrl = avatarUrl;
-      }
-      appUser = { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress };
     }
 
     const token = jwt.sign({ id: appUser.id, email: appUser.email, name: appUser.name }, JWT_SECRET, { expiresIn: "7d" });
@@ -310,48 +278,102 @@ app.get("/api/auth/google/callback", async (req, res) => {
   }
 });
 
-/** GET /api/auth/me */
-app.get("/api/auth/me", authMiddleware, async (req, res) => {
+function publicProfile(user) {
+  return {
+    id: String(user._id), name: user.name, email: user.email,
+    avatarUrl: user.avatarUrl, googleId: user.googleId || null, walletAddress: user.walletAddress || null,
+    proofCount: user.proofCount || 0,
+    verifiedCredentials: user.verifiedCredentials || { creditScoreVerified: false, incomeVerified: false, ageVerified: false },
+    createdAt: user.createdAt,
+  };
+}
+
+async function getProfile(req, res) {
   await ensureMongoConnected();
   try {
     if (isMongoConnected) {
       const user = await User.findById(req.user.id);
       if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json({ user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
-    } else {
-      const user = memoryUsers.get(req.user.email);
-      if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json({ user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
+      return res.json({ user: publicProfile(user) });
     }
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch user profile" });
   }
+}
+
+app.get("/api/auth/profile", authMiddleware, requireMongo, getProfile);
+app.get("/api/auth/me", authMiddleware, requireMongo, getProfile);
+
+app.put("/api/auth/profile", authMiddleware, requireMongo, async (req, res) => {
+  await ensureMongoConnected();
+  const updates = {};
+  if (typeof req.body.name === "string" && req.body.name.trim()) updates.name = req.body.name.trim().slice(0, 100);
+  if (typeof req.body.avatarUrl === "string") updates.avatarUrl = req.body.avatarUrl.trim().slice(0, 2048);
+  if (typeof req.body.walletAddress === "string") updates.walletAddress = req.body.walletAddress.trim() || null;
+  try {
+    if (isMongoConnected) {
+      const user = await User.findByIdAndUpdate(req.user.id, { $set: updates }, { new: true });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      return res.json({ success: true, user: publicProfile(user) });
+    }
+    return res.status(503).json({ error: "Database unavailable" });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to update user profile" });
+  }
+});
+
+/** PUT /api/auth/wallet — Save Connected Wallet Address to MongoDB User Profile */
+app.put("/api/auth/wallet", authMiddleware, requireMongo, async (req, res) => {
+  await ensureMongoConnected();
+  const { walletAddress } = req.body;
+  if (!walletAddress) {
+    return res.status(400).json({ error: "walletAddress is required" });
+  }
+
+  try {
+    if (isMongoConnected) {
+      const user = await User.findByIdAndUpdate(req.user.id, { walletAddress }, { new: true });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      return res.json({ success: true, walletAddress: user.walletAddress });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save wallet address" });
+  }
 });
 
 /** POST /api/verifications */
-app.post("/api/verifications", optionalAuthMiddleware, async (req, res) => {
+app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
-    const { contractAddress, circuit, isEligible, verificationCount, saltCommitment, transactionHash } = req.body;
-    if (!contractAddress || isEligible === undefined || !verificationCount || !saltCommitment || !transactionHash)
+    const { contractAddress, circuit, isEligible, verificationCount, transactionHash } = req.body;
+    if (!contractAddress || isEligible === undefined || !verificationCount || !transactionHash)
       return res.status(400).json({ error: "Missing verification parameters" });
 
     if (isMongoConnected) {
       const record = await Verification.create({
-        userId: req.user.id, userEmail: req.user.email, contractAddress,
+        userId: req.user.id,
+        userEmail: req.user.email,
+        contractAddress,
         circuit: circuit || "verifyEligibility",
-        isEligible: Boolean(isEligible), verificationCount: Number(verificationCount),
-        saltCommitment, transactionHash, timestamp: new Date(),
+        isEligible: Boolean(isEligible),
+        verificationCount: Number(verificationCount),
+        transactionHash,
+        timestamp: new Date(),
       });
-      return res.json({ success: true, record });
-    } else {
-      const record = {
-        id: "ver_" + Date.now(), userId: req.user.id, userEmail: req.user.email,
-        contractAddress, circuit: circuit || "verifyEligibility",
-        isEligible: Boolean(isEligible), verificationCount: Number(verificationCount),
-        saltCommitment, transactionHash, timestamp: new Date().toISOString(),
-      };
-      memoryVerifications.push(record);
+
+      if (Boolean(isEligible)) {
+        await User.findByIdAndUpdate(req.user.id, {
+          $inc: { proofCount: 1 },
+          $set: {
+            "verifiedCredentials.creditScoreVerified": true,
+            "verifiedCredentials.incomeVerified": true,
+            "verifiedCredentials.ageVerified": true,
+          },
+        });
+      } else {
+        await User.findByIdAndUpdate(req.user.id, { $inc: { proofCount: 1 } });
+      }
+
       return res.json({ success: true, record });
     }
   } catch (err) {
@@ -361,17 +383,11 @@ app.post("/api/verifications", optionalAuthMiddleware, async (req, res) => {
 });
 
 /** GET /api/verifications */
-app.get("/api/verifications", optionalAuthMiddleware, async (req, res) => {
+app.get("/api/verifications", authMiddleware, requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
     if (isMongoConnected) {
-      const filter = req.user.id === "anonymous" ? {} : { userId: req.user.id };
-      const records = await Verification.find(filter).sort({ timestamp: -1 }).limit(50);
-      return res.json({ records });
-    } else {
-      const records = req.user.id === "anonymous"
-        ? [...memoryVerifications].reverse()
-        : memoryVerifications.filter((v) => v.userId === req.user.id).reverse();
+      const records = await Verification.find({ userId: req.user.id }).sort({ timestamp: -1 }).limit(50);
       return res.json({ records });
     }
   } catch (err) {
@@ -396,7 +412,6 @@ app.get("/api/contract/state", async (req, res) => {
         minAge
         isEligible
         verificationCount
-        lastCommitment
       }
     }`,
     variables: { address },
@@ -431,7 +446,6 @@ app.get("/api/contract/state", async (req, res) => {
       minAge: Number(state.minAge),
       isEligible: Boolean(state.isEligible),
       verificationCount: String(state.verificationCount),
-      lastCommitment: state.lastCommitment || null,
     });
   } catch (err) {
     console.error("[Midnight Indexer] Proxy error:", err.message);
@@ -448,85 +462,21 @@ app.get("/api/contract/state", async (req, res) => {
 /**
  * POST /api/proof
  * Proxies ZK proof request to the Midnight Proof Server (PROOF_SERVER_URL).
- * If PROOF_SERVER_URL is not configured or unreachable, computes a deterministic
- * SHA-256 based commitment from the witnesses — labeled "client-computed" so the
- * reviewer knows the difference. No random/fabricated hashes ever returned.
+ * Private witnesses are never accepted by this API. Proof generation belongs to
+ * the wallet-local Midnight proving provider.
  */
 app.post("/api/proof", async (req, res) => {
-  const { circuit, witnesses } = req.body;
-  if (!circuit || !witnesses) {
-    return res.status(400).json({ error: "circuit and witnesses are required" });
-  }
-
-  // 1. Health check proof server
-  let isHealthOk = false;
-  try {
-    const healthRes = await fetch(`${PROOF_SERVER_URL}/health`, { signal: AbortSignal.timeout(5000) });
-    isHealthOk = healthRes.ok;
-  } catch {
-    isHealthOk = false;
-  }
-
-  if (!isHealthOk) {
-    return res.status(503).json({
-      error: "Proof Server Offline",
-      message: `Cannot connect to Midnight Proof Server at ${PROOF_SERVER_URL}. Start container with 'docker start midnight-proof-server'.`,
-    });
-  }
-
-  // 2. Request proof generation
-  try {
-    const response = await fetch(`${PROOF_SERVER_URL}/prove`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ circuit, witnesses }, (_, v) =>
-        typeof v === "bigint" ? v.toString() : v
-      ),
-      signal: AbortSignal.timeout(30000),
-    });
-
-    if (response.ok) {
-      const buf = await response.arrayBuffer();
-      const proofBase64 = Buffer.from(buf).toString("base64");
-      return res.json({ proof: proofBase64, status: "plonk-verified", proofServer: PROOF_SERVER_URL });
-    }
-
-    const errText = await response.text().catch(() => "");
-    if (response.status === 400 && errText.includes("proof-preimage-versioned")) {
-      // Verified proof server active & enforcing Midnight wire protocol
-      const witnessPayload = JSON.stringify({ circuit, ...witnesses }, (_, v) => (typeof v === "bigint" ? v.toString() : v));
-      const commitment = crypto.createHash("sha256").update(witnessPayload).digest("hex");
-      return res.json({
-        proof: Buffer.from(commitment, "hex").toString("base64"),
-        commitment: "0x" + commitment,
-        status: "plonk-proof-server-active",
-        proofServer: PROOF_SERVER_URL,
-        message: "PLONK proof server active and enforcing Midnight binary wire protocol.",
-      });
-    }
-
-    return res.status(500).json({
-      error: "Proof Generation Error",
-      message: `Proof server returned HTTP ${response.status}: ${errText || response.statusText}`,
-    });
-  } catch (err) {
-    return res.status(503).json({
-      error: "Proof Server Error",
-      message: `Proof server request failed: ${err.message}`,
-    });
-  }
+  return res.status(410).json({ error: "Proof generation is wallet-local. This API never accepts private witnesses." });
 });
 
 /**
  * GET /api/verifications/count
  * Returns the total number of verification records stored.
  */
-app.get("/api/verifications/count", async (req, res) => {
+app.get("/api/verifications/count", authMiddleware, requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
-    const count = isMongoConnected
-      ? await Verification.countDocuments()
-      : memoryVerifications.length;
+    const count = await Verification.countDocuments({ userId: req.user.id });
     return res.json({ count });
   } catch (err) {
     res.status(500).json({ error: "Failed to count verifications" });

@@ -863,13 +863,18 @@
       <h3 class="modal-title">Lace Wallet Required</h3>
       <p class="modal-desc">
         Midnight Network smart contracts and ZK proof verifications require the <strong>Lace Wallet Extension</strong>.
-        Please install Lace to connect your wallet, manage keys, and execute on-chain verifications.
+        Install or unlock Lace, then select a Midnight wallet before trying again.
       </p>
+      <ul class="wallet-troubleshooting" aria-label="Lace connection troubleshooting">
+        <li>Open the Lace extension and unlock it.</li>
+        <li>Create or select a Midnight Network wallet.</li>
+        <li>Refresh this page after installing or updating Lace.</li>
+      </ul>
       <div class="modal-actions">
         <a href="https://www.lace.io/" target="_blank" rel="noopener noreferrer" class="btn-primary modal-download-btn">
           <span>Download Lace Extension ↗</span>
         </a>
-        <button id="btn-continue-demo" class="btn-ghost modal-fallback-btn">Continue with Fallback Key</button>
+        <button id="btn-retry-lace" class="btn-ghost">Try Again</button>
       </div>
     </div>
   </div>
@@ -928,6 +933,96 @@
           </svg>
           <span id="google-oauth-btn-text">Sign in with Google</span>
         </button>
+      </div>
+    </div>
+  </div>
+  <!-- ─── User Profile Modal ───────────────────────────────────────────── -->
+  <div id="user-profile-modal" class="modal-overlay" aria-hidden="true" hidden>
+    <div class="modal-card profile-modal-card">
+      <button class="modal-close" id="profile-modal-close" aria-label="Close profile modal">✕</button>
+
+      <div class="profile-header-card">
+        <img id="modal-profile-avatar" src="" alt="Profile Avatar" class="profile-large-avatar" />
+        <div class="profile-header-info">
+          <h3 id="modal-profile-name" class="profile-user-name">User Name</h3>
+          <p id="modal-profile-email" class="profile-user-email">user@zkcred.io</p>
+          <div class="profile-meta-tags">
+            <span id="modal-profile-auth-type" class="badge-tag">Manual Account</span>
+            <span id="modal-profile-created" class="badge-tag dim">Member since Sep 2026</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wallet Connection Card -->
+      <div class="profile-section-box">
+        <div class="profile-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+          <span>Connected Midnight Lace Wallet</span>
+        </div>
+        <div class="profile-wallet-row">
+          <span id="modal-profile-wallet" class="mono wallet-addr-text">Not Connected</span>
+          <button id="modal-connect-wallet-btn" class="btn-sm btn-outline">Connect Lace</button>
+        </div>
+      </div>
+
+      <!-- Credentials & Achievements Badges -->
+      <div class="profile-section-box">
+        <div class="profile-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Zero-Knowledge Verified Credentials</span>
+        </div>
+        <div class="profile-badges-grid">
+          <div id="badge-credit" class="badge-card locked">
+            <div class="badge-icon">🛡️</div>
+            <div class="badge-info">
+              <h4>Credit Score Verified</h4>
+              <p>Score ≥ 700 (Shielded)</p>
+            </div>
+            <span class="badge-status-pill" id="status-credit">Locked</span>
+          </div>
+
+          <div id="badge-income" class="badge-card locked">
+            <div class="badge-icon">💼</div>
+            <div class="badge-info">
+              <h4>Annual Income Verified</h4>
+              <p>Income ≥ $50,000 (Shielded)</p>
+            </div>
+            <span class="badge-status-pill" id="status-income">Locked</span>
+          </div>
+
+          <div id="badge-age" class="badge-card locked">
+            <div class="badge-icon">🎂</div>
+            <div class="badge-info">
+              <h4>Option 2 Age Gate</h4>
+              <p>Age ≥ 21 (Shielded)</p>
+            </div>
+            <span class="badge-status-pill" id="status-age">Locked</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Activity Stats -->
+      <div class="profile-stats-grid">
+        <div class="stat-mini-card">
+          <span class="stat-mini-val" id="modal-proof-count">0</span>
+          <span class="stat-mini-label">Total Proofs Generated</span>
+        </div>
+        <div class="stat-mini-card">
+          <span class="stat-mini-val" id="modal-contract-address-short">0x0225...bdab</span>
+          <span class="stat-mini-label">Midnight Preprod Contract</span>
+        </div>
+      </div>
+
+      <div class="profile-section-box profile-activity-box">
+        <div class="profile-section-title"><span>Recent proof activity</span></div>
+        <div class="table-responsive">
+          <table class="audit-table profile-activity-table">
+            <thead><tr><th>Proof</th><th>Outcome</th><th>Time</th></tr></thead>
+            <tbody id="modal-activity-body">
+              <tr><td colspan="3" class="profile-activity-empty">No proofs generated yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

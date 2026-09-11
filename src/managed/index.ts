@@ -36,7 +36,6 @@ export interface LedgerState {
   isEligible: boolean;
   verificationCount: bigint;
   admin: Uint8Array;
-  lastCommitment: Uint8Array;
 }
 
 /**

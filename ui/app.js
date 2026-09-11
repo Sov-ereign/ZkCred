@@ -23,24 +23,6 @@ function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   return prefix + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * Derive a deterministic salt commitment matching the Compact circuit's
- * persistent_hash<[Bytes<32>, Uint<64>]>([salt, count]) logic.
- * Uses the same XOR-based derivation as midnight.ts deriveSaltCommitment().
- */
-function deriveSaltCommitment(saltHex, count) {
-  const saltBytes = new Uint8Array(32);
-  const hex = saltHex.replace(/^0x/, "");
-  for (let i = 0; i < 32; i++) {
-    saltBytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2) || "00", 16);
-  }
-  const commitment = new Uint8Array(32);
-  for (let i = 0; i < 32; i++) {
-    commitment[i] = saltBytes[i % saltBytes.length] ^ Number((BigInt(count) >> BigInt(i % 8)) & 0xffn) ^ 0xa5;
-  }
-  return "0x" + Array.from(commitment).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 const STATE = {
   // Thresholds — overwritten by live /api/contract/state on init
   minCreditScore: 700,
@@ -220,7 +202,10 @@ async function fetchOnChainState() {
 
 async function fetchLiveVerificationCount() {
   try {
-    const res = await fetch(`${API_BASE}/verifications/count`);
+    if (!STATE.authToken) return 0;
+    const res = await fetch(`${API_BASE}/verifications/count`, {
+      headers: { Authorization: `Bearer ${STATE.authToken}` },
+    });
     if (res.ok) {
       const { count } = await res.json();
       return count;
@@ -244,6 +229,26 @@ function setProofStatus(msg, isError = false) {
 
 async function generateProof() {
   if (STATE.isGenerating) return;
+
+  // Mandatory Authentication Check
+  if (!STATE.currentUser || !STATE.authToken) {
+    const authAlert = document.getElementById("auth-alert");
+    if (authAlert) {
+      authAlert.className = "auth-alert error";
+      authAlert.textContent = "Please sign in or create an account first to generate ZK proofs.";
+      authAlert.hidden = false;
+    }
+    const authModal = document.getElementById("auth-modal");
+    openModal(authModal);
+    return;
+  }
+
+  if (!STATE.walletConnected) {
+    setProofStatus("Connect Lace before generating a proof.", true);
+    openModal(document.getElementById("lace-download-modal"));
+    return;
+  }
+
   STATE.isGenerating = true;
 
   const age = ageSlider ? parseInt(ageSlider.value) : 24;
@@ -263,102 +268,37 @@ async function generateProof() {
   // Recalculate eligibility against live thresholds
   const eligible = age >= STATE.minAge && score >= STATE.minCreditScore && income >= STATE.minAnnualIncome;
 
-  // ── Step 2: Call Midnight Proof Server via API proxy ──────────────────────
-  setProofStatus("Submitting private witnesses to Midnight Proof Server...");
-
-  let proofStatus_val = "local";
-  let proofError = null;
-
-  try {
-    const proofRes = await fetch(`${API_BASE}/proof`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        circuit: "verifyEligibility",
-        witnesses: {
-          creditScore: score,
-          annualIncome: income,
-          age: age,
-          salt: STATE.userSalt,
-        },
-      }),
-    });
-
-    const proofData = await proofRes.json();
-
-    if (proofRes.status === 503) {
-      // Proof server is down — show clear error, stop here
-      setProofStatus(`⚠ ${proofData.message || "Proof server unavailable"}`, true);
-      proofAnimation.classList.remove("active");
-      ledgerFields.style.opacity = "1";
-      generateBtn.disabled = false;
-      proofBtnText.textContent = "Proof Server Offline";
-      setTimeout(() => {
-        proofBtnText.textContent = "Generate ZK Proof";
-        STATE.isGenerating = false;
-      }, 4000);
-      return;
-    }
-
-    if (proofRes.ok) {
-      proofStatus_val = proofData.status || "PLONK proof generated";
-      console.log("[Midnight] Proof generated:", proofStatus_val);
-    } else {
-      proofError = proofData.error || "Proof generation failed";
-      console.warn("[Midnight] Proof error:", proofError);
-    }
-  } catch (err) {
-    proofError = err.message;
-    console.warn("[Midnight] Proof fetch error:", err.message);
+  // The wallet owns proving and transaction submission. Private witnesses are
+  // passed only to the connected wallet provider and never to this API.
+  setProofStatus("Generating and submitting verifyEligibility through Lace...");
+  const laceProvider = findLaceProvider();
+  if (!laceProvider?.enable) {
+    setProofStatus("Midnight Lace provider is unavailable.", true);
+    proofAnimation.classList.remove("active"); ledgerFields.style.opacity = "1"; generateBtn.disabled = false; STATE.isGenerating = false;
+    return;
+  }
+  const api = await laceProvider.enable();
+  if (typeof api.balanceAndProveTransaction !== "function" || typeof api.submitTransaction !== "function") {
+    setProofStatus("This Lace version does not expose the required Midnight proving API.", true);
+    proofAnimation.classList.remove("active"); ledgerFields.style.opacity = "1"; generateBtn.disabled = false; STATE.isGenerating = false;
+    return;
+  }
+  const balancedTx = await api.balanceAndProveTransaction({
+    type: "callTx",
+    contractAddress: STATE.contractAddress,
+    circuit: "verifyEligibility",
+    witnesses: { creditScore: score, annualIncome: income, age, userSalt: STATE.userSalt },
+  });
+  const transactionHash = await api.submitTransaction(balancedTx);
+  if (!transactionHash || typeof transactionHash !== "string") {
+    setProofStatus("Lace did not return a submitted transaction hash.", true);
+    proofAnimation.classList.remove("active"); ledgerFields.style.opacity = "1"; generateBtn.disabled = false; STATE.isGenerating = false;
+    return;
   }
 
-  // ── Step 3: Submit transaction via Lace wallet (if connected) ────────────
-  setProofStatus("Submitting transaction via Lace DApp Connector...");
-  await sleep(200);
-
-  let transactionHash = null;
-  const laceProvider = window.midnight?.mnLace || window.midnight?.lace || window.cardano?.lace;
-
-  if (laceProvider && typeof laceProvider.enable === "function" && STATE.walletConnected) {
-    try {
-      const api = await laceProvider.enable();
-      if (typeof api.balanceAndProveTransaction === "function" && typeof api.submitTransaction === "function") {
-        const balancedTx = await api.balanceAndProveTransaction({
-          type: "callTx",
-          contractAddress: STATE.contractAddress,
-          circuit: "verifyEligibility",
-          disclosedState: { isEligible: eligible, verificationCount: STATE.verificationCount + 1 },
-        });
-        transactionHash = await api.submitTransaction(balancedTx);
-        console.log("[Lace] Real tx submitted:", transactionHash);
-      } else if (typeof api.submitTx === "function") {
-        transactionHash = await api.submitTx({
-          type: "callTx",
-          contractAddress: STATE.contractAddress,
-          circuit: "verifyEligibility",
-          disclosedState: { isEligible: eligible, verificationCount: STATE.verificationCount + 1 },
-        });
-        console.log("[Lace] Real tx submitted:", transactionHash);
-      }
-    } catch (err) {
-      console.warn("[Lace] Wallet submission failed:", err.message);
-    }
-  }
-
-  // If Lace didn't give us a real hash, derive a deterministic one from proof data
-  if (!transactionHash) {
-    // Deterministic from input — not random, but not on-chain until proof server + wallet is up
-    const payload = `${STATE.contractAddress}:verifyEligibility:${score}:${income}:${age}:${Date.now()}`;
-    const enc = new TextEncoder().encode(payload);
-    const hashBuf = await crypto.subtle.digest("SHA-256", enc);
-    transactionHash = "0x" + Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  }
-
-  // ── Step 4: Derive real salt commitment ──────────────────────────────────
   STATE.verificationCount++;
-  const saltCommitment = deriveSaltCommitment(STATE.userSalt, STATE.verificationCount);
 
-  // ── Step 5: Re-fetch on-chain state to get updated verificationCount ─────
+  // Re-fetch on-chain state to confirm the transaction's public result.
   setProofStatus("Querying Midnight Indexer for updated on-chain state...");
   await fetchOnChainState();
 
@@ -380,17 +320,8 @@ async function generateProof() {
 
   STATE.lastTxHash = transactionHash;
   STATE.lastEligibility = eligible;
-  STATE.lastSaltCommitment = saltCommitment;
 
-  // Show proof status — distinguish PLONK-verified from deterministic fallback
-  const statusMsg = proofError
-    ? `⚠ Proof note: ${proofError}`
-    : proofStatus_val === "plonk-verified"
-    ? "✓ PLONK ZK proof verified via Midnight Proof Server"
-    : proofStatus_val === "client-computed"
-    ? "✓ Deterministic ZK commitment computed (SHA-256)"
-    : proofStatus_val;
-  setProofStatus(statusMsg);
+  setProofStatus("✓ Lace submitted a real verifyEligibility transaction.");
 
   generateBtn.disabled = false;
   proofBtnText.textContent = eligible ? "✓ Proof Generated — Eligible" : "✗ Proof Generated — Ineligible";
@@ -414,7 +345,6 @@ async function generateProof() {
     circuit: "verifyEligibility",
     isEligible: eligible,
     verificationCount: STATE.verificationCount,
-    saltCommitment,
     transactionHash,
   });
 
@@ -437,6 +367,7 @@ async function saveVerificationToMongoDB(recordData) {
     if (res.ok) {
       console.log("[MongoDB] Saved ZK Verification record successfully.");
       fetchVerificationsFromMongoDB();
+      fetchProfileFromMongoDB();
     }
   } catch (err) {
     console.warn("[MongoDB] Verification auto-save warning:", err.message);
@@ -452,9 +383,7 @@ async function fetchVerificationsFromMongoDB() {
     const res = await fetch(`${API_BASE}/verifications`, { headers });
     if (res.ok) {
       const data = await res.json();
-      if (data.records && data.records.length > 0) {
-        renderAuditTableFromMongoDB(data.records);
-      }
+      renderAuditTableFromMongoDB(data.records || []);
     }
   } catch (err) {
     console.warn("[MongoDB] Verification fetch warning:", err.message);
@@ -463,8 +392,15 @@ async function fetchVerificationsFromMongoDB() {
 
 function renderAuditTableFromMongoDB(records) {
   const tbody = document.getElementById("audit-table-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+  const modalTbody = document.getElementById("modal-activity-body");
+  if (tbody) tbody.innerHTML = "";
+  if (modalTbody) modalTbody.innerHTML = "";
+
+  if (!records.length) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1.5rem;">No proof verifications recorded yet.</td></tr>';
+    if (modalTbody) modalTbody.innerHTML = '<tr><td colspan="3" class="profile-activity-empty">No proofs generated yet.</td></tr>';
+    return;
+  }
 
   records.forEach((rec) => {
     const row = document.createElement("tr");
@@ -478,7 +414,12 @@ function renderAuditTableFromMongoDB(records) {
       <td class="mono hash-cell">${shortTx}</td>
       <td class="time-cell">${formattedTime}</td>
     `;
-    tbody.appendChild(row);
+    if (tbody) tbody.appendChild(row);
+    if (modalTbody) {
+      const modalRow = document.createElement("tr");
+      modalRow.innerHTML = `<td>${rec.circuit || "verifyEligibility"}</td><td><span class="badge-status ${rec.isEligible ? "eligible" : "ineligible"}">${rec.isEligible ? "✓ Passed" : "✗ Failed"}</span></td><td class="time-cell">${formattedTime}</td>`;
+      modalTbody.appendChild(modalRow);
+    }
   });
 }
 
@@ -560,16 +501,19 @@ function updateProfileState(eligible, txHash, age, score, income) {
   }
 }
 
-function getOrCreatePersistentWalletAddress() {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return generateDynamicHex(32, "0x02");
+function findLaceProvider() {
+  return window.midnight?.mnLace || window.midnight?.lace ||
+    window.cardano?.laceMidnight || window.cardano?.lace || null;
+}
+
+async function detectLaceProvider(timeoutMs = 5000) {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeoutMs) {
+    const provider = findLaceProvider();
+    if (provider) return provider;
+    await new Promise((r) => setTimeout(r, 100));
   }
-  let savedAddr = window.localStorage.getItem("zkcred_user_wallet_address");
-  if (!savedAddr || !savedAddr.startsWith("0x02") || savedAddr.length !== 66) {
-    savedAddr = generateDynamicHex(32, "0x02");
-    window.localStorage.setItem("zkcred_user_wallet_address", savedAddr);
-  }
-  return savedAddr;
+  return findLaceProvider();
 }
 
 // ─── Lace Wallet Connector & Extension Check ──────────────────────────────────
@@ -578,6 +522,7 @@ function initWalletConnect() {
   const walletBtns = [
     document.getElementById("wallet-connect-btn"),
     document.getElementById("mobile-wallet-connect-btn"),
+    document.getElementById("modal-connect-wallet-btn"),
   ].filter(Boolean);
 
   const walletTexts = [
@@ -591,7 +536,7 @@ function initWalletConnect() {
 
   const laceModal = document.getElementById("lace-download-modal");
   const laceModalClose = document.getElementById("lace-modal-close");
-  const btnContinueDemo = document.getElementById("btn-continue-demo");
+  const btnRetryLace = document.getElementById("btn-retry-lace");
 
   const authModal = document.getElementById("auth-modal");
   const authAlert = document.getElementById("auth-alert");
@@ -602,32 +547,10 @@ function initWalletConnect() {
     });
   }
 
-  if (btnContinueDemo) {
-    btnContinueDemo.addEventListener("click", () => {
-      // Require user to be signed in first!
-      if (!STATE.currentUser) {
-        closeModal(laceModal);
-        if (authAlert) {
-          authAlert.className = "auth-alert error";
-          authAlert.textContent = "Please sign in or create an account first to connect your wallet.";
-          authAlert.hidden = false;
-        }
-        openModal(authModal);
-        return;
-      }
-
+  if (btnRetryLace) {
+    btnRetryLace.addEventListener("click", () => {
       closeModal(laceModal);
-      STATE.walletAddress = getOrCreatePersistentWalletAddress();
-      STATE.walletConnected = true;
-
-      const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
-      walletBtns.forEach((b) => b.classList.add("connected"));
-      walletTexts.forEach((t) => (t.textContent = `${shortAddr} (Fallback Key)`));
-
-      if (profileWalletTitle) profileWalletTitle.textContent = "Lace Wallet Connected (Fallback Key)";
-      if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
-      if (profileStatusDot) profileStatusDot.style.background = "var(--amber-400)";
-
+      document.getElementById("wallet-connect-btn")?.click();
     });
   }
 
@@ -661,11 +584,11 @@ function initWalletConnect() {
         return;
       }
 
-      walletTexts.forEach((t) => (t.textContent = "Connecting..."));
+      walletTexts.forEach((t) => (t.textContent = "Detecting Lace..."));
 
       try {
-        // Detect Midnight Lace Browser Extension Provider (strictly Midnight, not Cardano)
-        const laceProvider = window.midnight?.mnLace || window.midnight?.lace || window.midnight?.laceMidnight;
+        // Poll up to 2s for Lace extension script injection
+        const laceProvider = await detectLaceProvider(5000);
 
         if (laceProvider && typeof laceProvider.enable === "function") {
           let api;
@@ -673,7 +596,7 @@ function initWalletConnect() {
             api = await laceProvider.enable();
           } catch (enableErr) {
             console.warn("Midnight Lace enable failed:", enableErr.message);
-            alert("Lace Wallet: Please open your Lace extension and select/create a Midnight Network wallet.");
+            openModal(laceModal);
             walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
             STATE.walletConnected = false;
             return;
@@ -696,8 +619,23 @@ function initWalletConnect() {
             extAddr = await api.getChangeAddress();
           }
 
-          STATE.walletAddress = extAddr || getOrCreatePersistentWalletAddress();
+          if (!extAddr) throw new Error("Lace did not return a Midnight wallet address. Unlock Lace and select a Midnight wallet.");
+          STATE.walletAddress = extAddr;
           STATE.walletConnected = true;
+
+          // Save wallet address to MongoDB profile
+          if (STATE.authToken) {
+            const profileRes = await fetch(`${API_BASE}/auth/profile`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${STATE.authToken}` },
+              body: JSON.stringify({ walletAddress: extAddr }),
+            });
+            if (!profileRes.ok) throw new Error("Failed to save wallet to your profile.");
+            const { user } = await profileRes.json();
+            STATE.currentUser = user;
+            localStorage.setItem("zkcred_user", JSON.stringify(user));
+            renderProfile(user);
+          }
         } else {
           // Extension not detected — prompt download modal
           openModal(laceModal);
@@ -719,6 +657,7 @@ function initWalletConnect() {
         console.error("Wallet connection failed:", err.message);
         walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
         STATE.walletConnected = false;
+        openModal(laceModal);
       }
     });
   });
@@ -787,6 +726,77 @@ function updateAuthUI() {
   }
 }
 
+function setCredentialBadge(id, statusId, verified) {
+  const badge = document.getElementById(id);
+  const status = document.getElementById(statusId);
+  if (badge) badge.classList.toggle("locked", !verified);
+  if (status) status.textContent = verified ? "Verified" : "Locked";
+}
+
+function renderProfile(user = STATE.currentUser) {
+  if (!user) return;
+  const fallbackAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(user.name || user.email)}`;
+  const credentials = user.verifiedCredentials || {};
+  const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Unknown";
+  const wallet = user.walletAddress || "Not connected";
+
+  const fields = {
+    "modal-profile-name": user.name || "AegisID member",
+    "modal-profile-email": user.email || "",
+    "modal-profile-auth-type": user.googleId ? "Google OAuth" : "Manual Account",
+    "modal-profile-created": `Member since ${memberSince}`,
+    "modal-profile-wallet": wallet,
+    "modal-proof-count": String(user.proofCount || 0),
+  };
+  Object.entries(fields).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
+  const avatar = document.getElementById("modal-profile-avatar");
+  if (avatar) avatar.src = user.avatarUrl || fallbackAvatar;
+  const mainCount = document.getElementById("profile-proof-count");
+  if (mainCount) mainCount.textContent = `${user.proofCount || 0} Proof${user.proofCount === 1 ? "" : "s"}`;
+  setCredentialBadge("badge-credit", "status-credit", Boolean(credentials.creditScoreVerified));
+  setCredentialBadge("badge-income", "status-income", Boolean(credentials.incomeVerified));
+  setCredentialBadge("badge-age", "status-age", Boolean(credentials.ageVerified));
+}
+
+async function fetchProfileFromMongoDB() {
+  if (!STATE.authToken) return null;
+  try {
+    const res = await fetch(`${API_BASE}/auth/profile`, {
+      headers: { Authorization: `Bearer ${STATE.authToken}` },
+    });
+    if (res.status === 401) throw new Error("Your sign-in session has expired.");
+    if (!res.ok) throw new Error("Unable to load your profile.");
+    const { user } = await res.json();
+    STATE.currentUser = user;
+    localStorage.setItem("zkcred_user", JSON.stringify(user));
+    renderProfile(user);
+    updateAuthUI();
+    return user;
+  } catch (err) {
+    console.warn("[MongoDB] Profile fetch warning:", err.message);
+    return null;
+  }
+}
+
+function openProfile() {
+  if (!STATE.currentUser || !STATE.authToken) {
+    const authAlert = document.getElementById("auth-alert");
+    if (authAlert) {
+      authAlert.className = "auth-alert error";
+      authAlert.textContent = "Please sign in to view your profile.";
+      authAlert.hidden = false;
+    }
+    openModal(document.getElementById("auth-modal"));
+    return;
+  }
+  renderProfile();
+  fetchProfileFromMongoDB();
+  openModal(document.getElementById("user-profile-modal"));
+}
+
 function initAuth() {
   const navAuthBtn = document.getElementById("nav-auth-btn");
   const btnLogout = document.getElementById("btn-logout");
@@ -807,6 +817,7 @@ function initAuth() {
   let authMode = "login";
 
   updateAuthUI();
+  renderProfile();
 
   if (navAuthBtn) {
     navAuthBtn.addEventListener("click", () => {
@@ -821,7 +832,8 @@ function initAuth() {
   }
 
   if (btnLogout) {
-    btnLogout.addEventListener("click", () => {
+    btnLogout.addEventListener("click", (event) => {
+      event.stopPropagation();
       STATE.currentUser = null;
       STATE.authToken = null;
       STATE.walletConnected = false;
@@ -871,6 +883,7 @@ function initAuth() {
         localStorage.setItem("zkcred_user", JSON.stringify(user));
 
         updateAuthUI();
+        fetchProfileFromMongoDB();
         closeModal(authModal);
         fetchVerificationsFromMongoDB();
         console.log(`[Google OAuth] Signed in as ${user.name} (${user.email})`);
@@ -898,9 +911,7 @@ function initAuth() {
       const name = inputName.value.trim();
 
       const endpoint = authMode === "register" ? `${API_BASE}/auth/register` : `${API_BASE}/auth/login`;
-      const payload = authMode === "register"
-        ? { name, email, password, walletAddress: STATE.walletAddress || getOrCreatePersistentWalletAddress() }
-        : { email, password };
+      const payload = authMode === "register" ? { name, email, password } : { email, password };
 
       try {
         const res = await fetch(endpoint, {
@@ -918,6 +929,7 @@ function initAuth() {
           localStorage.setItem("zkcred_user", JSON.stringify(data.user));
 
           updateAuthUI();
+          fetchProfileFromMongoDB();
           closeModal(authModal);
           fetchVerificationsFromMongoDB();
         } else {
@@ -936,6 +948,13 @@ function initAuth() {
       }
     });
   }
+
+  document.getElementById("user-badge")?.addEventListener("click", openProfile);
+  document.getElementById("nav-profile-link")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    openProfile();
+  });
+  document.getElementById("profile-modal-close")?.addEventListener("click", () => closeModal(document.getElementById("user-profile-modal")));
 }
 
 // ─── Mobile Drawer & Interactive UI Helpers ─────────────────────────────────────
@@ -990,9 +1009,8 @@ function initExportAttestation() {
       disclosedOutcome: {
         isEligible: STATE.lastEligibility ?? true,
         verificationCount: STATE.verificationCount,
-        saltCommitment: STATE.lastSaltCommitment || generateDynamicHex(32, "0x"),
       },
-      transactionHash: STATE.lastTxHash || generateDynamicHex(32, "0x"),
+      transactionHash: STATE.lastTxHash || "Not available until a real transaction is submitted",
       proofSystem: "PLONK ZK-SNARK",
       witnessProtection: "100% Zero-Knowledge Witness (Age, Credit Score, Income shielded)",
       indexerVerificationUrl: `https://indexer.preprod.midnight.network/api/v1/graphql`,
@@ -1110,7 +1128,7 @@ function init() {
   if (profileSalt) profileSalt.textContent = STATE.userSalt.slice(0, 10) + "..." + STATE.userSalt.slice(-6);
 
   observeSection("#stat-proofs .stat-value", async (el) => {
-    // Use live count from MongoDB, fallback to 0
+    // Use the authenticated user's live count from MongoDB.
     const liveCount = await fetchLiveVerificationCount();
     animateCounter(el, liveCount || 0);
   });
@@ -1144,6 +1162,7 @@ function init() {
   setupCardGlow();
 
   fetchVerificationsFromMongoDB();
+  fetchProfileFromMongoDB();
 
   // Fetch live on-chain state: thresholds, contract address, verificationCount
   fetchOnChainState().then((state) => {

@@ -207,16 +207,6 @@
         "type-name": "Bytes",
         "length": 32
       }
-    },
-    {
-      "name": "lastCommitment",
-      "index": 6,
-      "exported": true,
-      "storage": "Cell",
-      "type": {
-        "type-name": "Bytes",
-        "length": 32
-      }
     }
   ]
 }

@@ -23,7 +23,6 @@ export ledger minAge: Uint<32>;
 export ledger isEligible: Boolean;
 export ledger verificationCount: Uint<64>;
 export ledger admin: Bytes<32>;
-export ledger lastCommitment: Bytes<32>;
 
 // --- Private Witness Declarations (local off-chain only) ---
 witness getPrivateCreditScore(): Uint<32>;
@@ -45,12 +44,12 @@ export circuit initialize(
   isEligible = disclose(false);
   verificationCount = disclose(0 as Uint<64>);
   admin = disclose(adminAddress);
-  lastCommitment = disclose(pad(32, ""));
 }
 
 // --- Option 2 Core ZK Eligibility Gate Circuit ---
 // Evaluates Age, Credit Score, and Income inside PLONK ZK Circuit.
-// Discloses ONLY the boolean outcome via disclose() and salt commitment.
+// Discloses ONLY the boolean outcome via disclose(). The salt remains a private
+// witness and is never copied to public ledger state.
 export circuit verifyEligibility(): [] {
   // Retrieve private values from off-chain witnesses
   const creditScore: Uint<32> = getPrivateCreditScore();
@@ -72,8 +71,7 @@ export circuit verifyEligibility(): [] {
   const newCount: Uint<64> = (verificationCount + (1 as Uint<64>)) as Uint<64>;
   verificationCount = disclose(newCount);
 
-  // Store salt as commitment (salt is private witness — only its disclosure is public)
-  lastCommitment = disclose(_salt);
+  // Keep the salt in the private witness. It is intentionally not disclosed.
 }
 
 // --- Admin Circuit: Update Thresholds ---

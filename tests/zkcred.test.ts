@@ -15,7 +15,6 @@ import {
   executeVerifyEligibilityCircuit,
   executeUpdateThresholdsCircuit,
   fetchLedgerStateFromIndexer,
-  deriveSaltCommitment,
   saltToHex,
   formatIncomeCents,
   DEFAULT_MIN_CREDIT_SCORE,
@@ -72,7 +71,6 @@ describe("ZkCred Runtime Contract — Initialization & Deployment", () => {
     expect(ledger.isEligible).toBe(false);
     expect(ledger.verificationCount).toBe(0n);
     expect(ledger.admin).toEqual(adminKey);
-    expect(ledger.lastCommitment).toHaveLength(32);
   });
 });
 
@@ -100,8 +98,6 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
     expect(result.transactionHash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(result.proofServerStatus).toContain("PLONK proof server");
 
-    const expectedCommitment = deriveSaltCommitment(witness.userSalt);
-    expect(result.lastCommitment).toEqual(expectedCommitment);
   });
 
   test("3. Option 2 Age Gate failure: under-age user (age < 21) fails even with high credit score & income", async () => {

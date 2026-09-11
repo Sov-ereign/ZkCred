@@ -1928,11 +1928,27 @@ html, body {
   background: linear-gradient(135deg, var(--purple-500), var(--cyan-500));
 }
 
-.modal-fallback-btn {
-  width: 100%;
-  text-align: center;
+.wallet-troubleshooting {
+  margin: -0.6rem 0 1.4rem;
+  padding-left: 1.2rem;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.75;
+}
+
+.profile-activity-box {
+  margin-top: 1rem;
+}
+
+.profile-activity-table {
+  min-width: 0;
+  font-size: 0.78rem;
+}
+
+.profile-activity-empty {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  padding: 0.8rem;
+  text-align: center;
 }
 
 /* ─── Navbar Auth & Profile ───────────────────────────── */
@@ -2232,3 +2248,200 @@ html, body {
   line-height: 1.4;
 }
 
+/* ─── Rich User Profile Modal ─────────────────────────────────────── */
+.profile-modal-card {
+  max-width: 580px;
+  width: 90%;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.profile-header-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.profile-large-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--purple-400);
+  background: var(--color-bg-3);
+  object-fit: cover;
+}
+
+.profile-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-user-name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.profile-user-email {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.profile-meta-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.badge-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--purple-300);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.badge-tag.dim {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border-color: var(--color-border);
+}
+
+.profile-section-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.profile-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--purple-300);
+}
+
+.profile-wallet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0.6rem 0.8rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+}
+
+.wallet-addr-text {
+  font-size: 0.85rem;
+  color: var(--cyan-400);
+  word-break: break-all;
+}
+
+.profile-badges-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.badge-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.badge-card.unlocked {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.badge-icon {
+  font-size: 1.3rem;
+  margin-right: 10px;
+}
+
+.badge-info {
+  flex: 1;
+}
+
+.badge-info h4 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.badge-info p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 2px 0 0 0;
+}
+
+.badge-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+.badge-card.unlocked .badge-status-pill {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.stat-mini-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(124, 58, 237, 0.06);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.stat-mini-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--purple-400);
+}
+
+.stat-mini-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}

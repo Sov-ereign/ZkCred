@@ -9,7 +9,7 @@
   ],
   "type": "module",
   "scripts": {
-    "compile": "compact compile contract/src/zkcred.compact -o src/managed",
+    "compile": "compact compile contract/src/zkcred.compact src/managed",
     "build": "tsc",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit",
     "deploy": "tsx src/index.ts",
@@ -22,9 +22,12 @@
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "^0.19.0",
+    "@midnight-ntwrk/dapp-connector-api": "^4.0.1",
     "@midnight-ntwrk/midnight-js-contracts": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "^4.1.1",
     "@midnight-ntwrk/midnight-js-http-client-proof-provider": "^4.1.1",
     "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "^4.1.1",
     "@midnight-ntwrk/midnight-js-types": "^4.1.1",
     "@vercel/analytics": "^1.4.1",
     "@vercel/speed-insights": "^1.2.0",
@@ -43,7 +46,8 @@
     "serve": "^14.2.4",
     "ts-jest": "^29.2.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
   },
   "jest": {
     "preset": "ts-jest/presets/default-esm",

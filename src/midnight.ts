@@ -121,23 +121,6 @@ export async function connectLaceWallet(): Promise<LaceWalletState> {
   return walletAPI;
 }
 
-async function sha256Hex(data: Uint8Array): Promise<string> {
-  if (typeof globalThis.crypto?.subtle !== "undefined") {
-    const hashBuffer = await globalThis.crypto.subtle.digest("SHA-256", data.buffer as ArrayBuffer);
-    return Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toLowerCase();
-  }
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < data.length; i++) {
-    hash ^= data[i];
-    hash = Math.imul(hash, 0x01000193);
-  }
-  const hex = (hash >>> 0).toString(16).padStart(8, "0").toLowerCase();
-  return (hex + hex + hex + hex + hex + hex + hex + hex).slice(0, 64);
-}
-
 async function fetchCircuitProof(
   proofServerUrl: string,
   circuitName: string,
@@ -164,15 +147,6 @@ async function fetchCircuitProof(
   }
 
   const errText = await proofRes.text().catch(() => "");
-  if (proofRes.status === 400 && errText.includes("proof-preimage-versioned")) {
-    // Verified proof server is running and enforcing Midnight wire protocol
-    const proofBytes = new TextEncoder().encode(`PLONK_CIRCUIT_${circuitName}`);
-    return {
-      proofBytes,
-      statusMsg: `PLONK proof server active at ${proofServerUrl} (verified Midnight binary wire protocol)`,
-    };
-  }
-
   throw new Error(
     `Proof server error (HTTP ${proofRes.status}) for circuit '${circuitName}': ${errText || proofRes.statusText}`
   );
@@ -255,9 +229,7 @@ export async function deployZkCredContract(
       );
     }
   } else {
-    // Generate deterministic tx hash from real proof bytes for local test/verification
-    transactionHash = "0x" + (await sha256Hex(proofBytes));
-    console.log(`[ZkCred] (Local/Test) Proof verified via Proof Server. Tx Hash derived from proof bytes.`);
+    throw new Error("A connected Lace wallet is required to deploy a contract. No local transaction ID is generated.");
   }
 
   const contractAddress = "0x02" + transactionHash.replace(/^0x/, "").padEnd(62, "0").slice(0, 62);
@@ -273,7 +245,6 @@ export async function deployZkCredContract(
     isEligible: false,
     verificationCount: 0n,
     admin: initialThresholds.adminKey,
-    lastCommitment: new Uint8Array(32),
   };
 
   return { contractAddress, transactionHash, ledgerState: initialLedger };
@@ -297,7 +268,6 @@ export async function executeVerifyEligibilityCircuit(
   transactionHash: string;
   newVerificationCount: bigint;
   proofServerStatus: string;
-  lastCommitment: Uint8Array;
 }> {
   console.log(`[ZkCred] Calling verifyEligibility() on ${contractAddress}`);
 
@@ -317,8 +287,6 @@ export async function executeVerifyEligibilityCircuit(
   );
 
   const newVerificationCount = currentPublicState.verificationCount + 1n;
-  const commitment = witnesses.getPrivateSalt();
-
   let transactionHash = "";
 
   if (activeWallet) {
@@ -342,8 +310,7 @@ export async function executeVerifyEligibilityCircuit(
       );
     }
   } else {
-    // Offline/CLI context (proof server check only, no wallet submitted)
-    transactionHash = "0x" + (await sha256Hex(proofBytes));
+    throw new Error("A connected Lace wallet is required to submit verifyEligibility. No local transaction ID is generated.");
   }
 
   return {
@@ -351,7 +318,6 @@ export async function executeVerifyEligibilityCircuit(
     transactionHash,
     newVerificationCount,
     proofServerStatus,
-    lastCommitment: commitment,
   };
 }
 
@@ -415,7 +381,7 @@ export async function executeUpdateThresholdsCircuit(
       );
     }
   } else {
-    transactionHash = "0x" + (await sha256Hex(proofBytes));
+    throw new Error("A connected Lace wallet is required to submit updateThresholds. No local transaction ID is generated.");
   }
 
   return { transactionHash, newLedgerState: updatedState, proofServerStatus };
@@ -489,8 +455,6 @@ export async function fetchLedgerStateFromIndexer(
     isEligible: Boolean(action.isEligible),
     verificationCount: BigInt(String(action.verificationCount ?? 0)),
     admin: typeof action.admin === "string" ? new TextEncoder().encode(action.admin) : new Uint8Array(32),
-    lastCommitment:
-      typeof action.lastCommitment === "string" ? new TextEncoder().encode(action.lastCommitment) : new Uint8Array(32),
   };
 }
 
@@ -499,10 +463,6 @@ export function saltToHex(salt: Uint8Array): string {
   return Array.from(salt)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-export function deriveSaltCommitment(salt: Uint8Array): Uint8Array {
-  return salt;
 }
 
 export function formatIncomeCents(cents: bigint): string {
