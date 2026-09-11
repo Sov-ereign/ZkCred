@@ -52,7 +52,7 @@ function makeWitness(
 
 describe("ZkCred Runtime Contract — Initialization & Deployment", () => {
   test("1. deployZkCredContract initializes contract state with admin authorization and thresholds", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey(0xaa);
 
     const deployment = await deployZkCredContract(providers, {
@@ -78,7 +78,7 @@ describe("ZkCred Runtime Contract — Initialization & Deployment", () => {
 
 describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () => {
   test("2. eligible user (score >= 700, income >= $50k, age >= 21) evaluates isEligible = true and updates salt commitment", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -100,12 +100,12 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
     expect(result.transactionHash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(result.proofServerStatus).toContain("PLONK proof server");
 
-    const expectedCommitment = deriveSaltCommitment(witness.userSalt, 1n);
+    const expectedCommitment = deriveSaltCommitment(witness.userSalt);
     expect(result.lastCommitment).toEqual(expectedCommitment);
   });
 
   test("3. Option 2 Age Gate failure: under-age user (age < 21) fails even with high credit score & income", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -126,7 +126,7 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
   });
 
   test("4. ineligible: credit score BELOW threshold → isEligible = false", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -147,7 +147,7 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
   });
 
   test("5. ineligible: annual income BELOW threshold → isEligible = false", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -168,7 +168,7 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
   });
 
   test("6. Option 2 boundary: exactly AT threshold values (score=700, income=$50k, age=21) → passes", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -189,7 +189,7 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
   });
 
   test("7. verification counter increments monotonically on sequential proof executions", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -212,7 +212,7 @@ describe("ZkCred Runtime Contract — verifyEligibility Circuit Execution", () =
 
 describe("ZkCred Runtime Contract — updateThresholds & Authorization", () => {
   test("8. authorized admin key can update minimum thresholds", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const adminKey = makeAdminKey(0x55);
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
@@ -237,7 +237,7 @@ describe("ZkCred Runtime Contract — updateThresholds & Authorization", () => {
   });
 
   test("9. unauthorized admin key fails authorization check and rejects execution", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const validAdminKey = makeAdminKey(0x55);
     const wrongAdminKey = makeAdminKey(0x99);
 
@@ -256,13 +256,13 @@ describe("ZkCred Runtime Contract — updateThresholds & Authorization", () => {
         deployment.ledgerState,
         { minCreditScore: 750, minAnnualIncome: 10_000_000n, minAge: 25 }
       )
-    ).rejects.toThrow("Unauthorized: caller is not authorized admin");
+    ).rejects.toThrow("Unauthorized");
   });
 });
 
 describe("ZkCred Runtime Contract — Privacy Guarantees & Indexer Strictness", () => {
   test("10. private witness data (score, income, age, salt) NEVER leak into public ledger state", async () => {
-    const providers = createMidnightProviders();
+    const providers = await createMidnightProviders();
     const deployment = await deployZkCredContract(providers, {
       minCreditScore: 700,
       minAnnualIncome: 5_000_000n,

@@ -81,7 +81,7 @@ async function main() {
   info("Proof Server Endpoint", MIDNIGHT_PREPROD_CONFIG.proofServerUrl!);
   info("Contract File", "contract/src/zkcred.compact");
 
-  const providers = createMidnightProviders(MIDNIGHT_PREPROD_CONFIG);
+  const providers = await createMidnightProviders(MIDNIGHT_PREPROD_CONFIG);
   success("Midnight.js providers initialized successfully (HTTP Proof + Indexer Data Provider)");
 
   await sleep(200);

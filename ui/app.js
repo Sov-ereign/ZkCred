@@ -317,12 +317,21 @@ async function generateProof() {
   await sleep(200);
 
   let transactionHash = null;
-  const laceProvider = window.midnight?.lace || window.cardano?.lace;
+  const laceProvider = window.midnight?.mnLace || window.midnight?.lace || window.cardano?.lace;
 
   if (laceProvider && typeof laceProvider.enable === "function" && STATE.walletConnected) {
     try {
       const api = await laceProvider.enable();
-      if (typeof api.submitTx === "function") {
+      if (typeof api.balanceAndProveTransaction === "function" && typeof api.submitTransaction === "function") {
+        const balancedTx = await api.balanceAndProveTransaction({
+          type: "callTx",
+          contractAddress: STATE.contractAddress,
+          circuit: "verifyEligibility",
+          disclosedState: { isEligible: eligible, verificationCount: STATE.verificationCount + 1 },
+        });
+        transactionHash = await api.submitTransaction(balancedTx);
+        console.log("[Lace] Real tx submitted:", transactionHash);
+      } else if (typeof api.submitTx === "function") {
         transactionHash = await api.submitTx({
           type: "callTx",
           contractAddress: STATE.contractAddress,
@@ -332,7 +341,7 @@ async function generateProof() {
         console.log("[Lace] Real tx submitted:", transactionHash);
       }
     } catch (err) {
-      console.warn("[Lace] submitTx failed:", err.message);
+      console.warn("[Lace] Wallet submission failed:", err.message);
     }
   }
 
@@ -656,13 +665,17 @@ function initWalletConnect() {
 
       try {
         // Detect Lace / Midnight / Cardano Browser Extension Provider
-        const laceProvider = window.midnight?.lace || window.cardano?.lace || window.midnight?.laceMidnight || window.cardano?.laceMidnight;
+        const laceProvider = window.midnight?.mnLace || window.midnight?.lace || window.cardano?.lace || window.midnight?.laceMidnight;
 
         if (laceProvider && typeof laceProvider.enable === "function") {
           const api = await laceProvider.enable();
           let extAddr = null;
 
-          if (typeof api.getUnusedAddresses === "function") {
+          if (typeof api.state === "function") {
+            const st = await api.state();
+            extAddr = st?.address;
+          }
+          if (!extAddr && typeof api.getUnusedAddresses === "function") {
             const unused = await api.getUnusedAddresses();
             extAddr = unused?.[0];
           }
