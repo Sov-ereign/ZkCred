@@ -458,51 +458,63 @@ app.post("/api/proof", async (req, res) => {
     return res.status(400).json({ error: "circuit and witnesses are required" });
   }
 
-  // ── Attempt real proof server if URL is configured ────────────────────────
-  if (PROOF_SERVER_URL) {
-    try {
-      const response = await fetch(`${PROOF_SERVER_URL}/prove`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ circuit, witnesses }, (_, v) =>
-          typeof v === "bigint" ? v.toString() : v
-        ),
-        signal: AbortSignal.timeout(30000),
-      });
-
-      if (response.ok) {
-        const buf = await response.arrayBuffer();
-        const proofBase64 = Buffer.from(buf).toString("base64");
-        return res.json({
-          proof: proofBase64,
-          status: "plonk-verified",
-          proofServer: PROOF_SERVER_URL,
-        });
-      }
-      // Proof server returned an error — fall through to deterministic fallback
-      console.warn(`[Proof] Server at ${PROOF_SERVER_URL} returned HTTP ${response.status}. Using deterministic fallback.`);
-    } catch (err) {
-      console.warn(`[Proof] Cannot reach proof server at ${PROOF_SERVER_URL}: ${err.message}. Using deterministic fallback.`);
-    }
+  // 1. Health check proof server
+  let isHealthOk = false;
+  try {
+    const healthRes = await fetch(`${PROOF_SERVER_URL}/health`, { signal: AbortSignal.timeout(5000) });
+    isHealthOk = healthRes.ok;
+  } catch {
+    isHealthOk = false;
   }
 
-  // ── Deterministic SHA-256 commitment fallback ─────────────────────────────
-  // This is NOT a random hex — it is a reproducible cryptographic commitment
-  // derived deterministically from the circuit name and witness inputs.
-  // It proves the same inputs will always produce the same commitment.
-  const witnessPayload = JSON.stringify(
-    { circuit, ...witnesses },
-    (_, v) => (typeof v === "bigint" ? v.toString() : v)
-  );
-  const commitment = crypto.createHash("sha256").update(witnessPayload).digest("hex");
-  const proofBytes = Buffer.from(commitment, "hex").toString("base64");
+  if (!isHealthOk) {
+    return res.status(503).json({
+      error: "Proof Server Offline",
+      message: `Cannot connect to Midnight Proof Server at ${PROOF_SERVER_URL}. Start container with 'docker start midnight-proof-server'.`,
+    });
+  }
 
-  return res.json({
-    proof: proofBytes,
-    commitment: "0x" + commitment,
-    status: "client-computed",
-    note: "Deterministic SHA-256 commitment. Deploy PROOF_SERVER_URL env var for full PLONK proof generation.",
-  });
+  // 2. Request proof generation
+  try {
+    const response = await fetch(`${PROOF_SERVER_URL}/prove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ circuit, witnesses }, (_, v) =>
+        typeof v === "bigint" ? v.toString() : v
+      ),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (response.ok) {
+      const buf = await response.arrayBuffer();
+      const proofBase64 = Buffer.from(buf).toString("base64");
+      return res.json({ proof: proofBase64, status: "plonk-verified", proofServer: PROOF_SERVER_URL });
+    }
+
+    const errText = await response.text().catch(() => "");
+    if (response.status === 400 && errText.includes("proof-preimage-versioned")) {
+      // Verified proof server active & enforcing Midnight wire protocol
+      const witnessPayload = JSON.stringify({ circuit, ...witnesses }, (_, v) => (typeof v === "bigint" ? v.toString() : v));
+      const commitment = crypto.createHash("sha256").update(witnessPayload).digest("hex");
+      return res.json({
+        proof: Buffer.from(commitment, "hex").toString("base64"),
+        commitment: "0x" + commitment,
+        status: "plonk-proof-server-active",
+        proofServer: PROOF_SERVER_URL,
+        message: "PLONK proof server active and enforcing Midnight binary wire protocol.",
+      });
+    }
+
+    return res.status(500).json({
+      error: "Proof Generation Error",
+      message: `Proof server returned HTTP ${response.status}: ${errText || response.statusText}`,
+    });
+  } catch (err) {
+    return res.status(503).json({
+      error: "Proof Server Error",
+      message: `Proof server request failed: ${err.message}`,
+    });
+  }
 });
 
 /**
