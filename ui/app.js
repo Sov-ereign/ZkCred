@@ -70,8 +70,8 @@ function closeModal(modal) {
   if (document.activeElement && modal.contains(document.activeElement)) {
     document.activeElement.blur();
   }
-  modal.setAttribute("aria-hidden", "true");
   modal.hidden = true;
+  modal.setAttribute("aria-hidden", "true");
 }
 
 // ─── DOM References ───────────────────────────────────────────────────────────
@@ -664,13 +664,22 @@ function initWalletConnect() {
       walletTexts.forEach((t) => (t.textContent = "Connecting..."));
 
       try {
-        // Detect Lace / Midnight / Cardano Browser Extension Provider
-        const laceProvider = window.midnight?.mnLace || window.midnight?.lace || window.cardano?.lace || window.midnight?.laceMidnight;
+        // Detect Midnight Lace Browser Extension Provider (strictly Midnight, not Cardano)
+        const laceProvider = window.midnight?.mnLace || window.midnight?.lace || window.midnight?.laceMidnight;
 
         if (laceProvider && typeof laceProvider.enable === "function") {
-          const api = await laceProvider.enable();
-          let extAddr = null;
+          let api;
+          try {
+            api = await laceProvider.enable();
+          } catch (enableErr) {
+            console.warn("Midnight Lace enable failed:", enableErr.message);
+            alert("Lace Wallet: Please open your Lace extension and select/create a Midnight Network wallet.");
+            walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
+            STATE.walletConnected = false;
+            return;
+          }
 
+          let extAddr = null;
           if (typeof api.state === "function") {
             const st = await api.state();
             extAddr = st?.address;
@@ -707,7 +716,7 @@ function initWalletConnect() {
         trackVercelEvent("wallet_connected", { address: shortAddr });
         console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
       } catch (err) {
-        console.error("Wallet connection failed:", err);
+        console.error("Wallet connection failed:", err.message);
         walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
         STATE.walletConnected = false;
       }
@@ -747,9 +756,13 @@ function launchGoogleOAuthPopup(onSuccess) {
 
   // Clean up listener if popup is closed manually before completing auth
   const pollClosed = setInterval(() => {
-    if (popup.closed) {
-      clearInterval(pollClosed);
-      window.removeEventListener("message", onMessage);
+    try {
+      if (popup.closed) {
+        clearInterval(pollClosed);
+        window.removeEventListener("message", onMessage);
+      }
+    } catch {
+      // Ignore COOP access warnings during cross-origin OAuth navigation
     }
   }, 500);
 }
