@@ -15,13 +15,13 @@ const { OAuth2Client } = require("google-auth-library");
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const JWT_SECRET = process.env.JWT_SECRET || "zkcred_jwt_secret_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "";
 const MONGODB_URI = process.env.MONGODB_URI || "";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 
 // Midnight Network config
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "";
 const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
 const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "http://localhost:6300";
 
@@ -32,7 +32,7 @@ let mongoConnectPromise = null;
 
 function ensureMongoConnected() {
   if (isMongoConnected) return Promise.resolve();
-  if (!MONGODB_URI) return Promise.resolve();
+  if (!MONGODB_URI) return Promise.reject(new Error("MONGODB_URI is not configured"));
   if (mongoConnectPromise) return mongoConnectPromise;
 
   mongoConnectPromise = mongoose
@@ -44,7 +44,7 @@ function ensureMongoConnected() {
     .catch((err) => {
       isMongoConnected = false;
       mongoConnectPromise = null;
-      console.warn("[MongoDB] Fallback to memory mode:", err.message);
+      throw err;
     });
 
   return mongoConnectPromise;
@@ -83,9 +83,14 @@ const verificationSchema = new mongoose.Schema({
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 const Verification = mongoose.models.Verification || mongoose.model("Verification", verificationSchema);
 
-function requireMongo(req, res, next) {
-  if (!isMongoConnected) return res.status(503).json({ error: "Database unavailable. MongoDB is required." });
-  next();
+async function requireMongo(req, res, next) {
+  try {
+    await ensureMongoConnected();
+    if (!isMongoConnected) throw new Error("MongoDB connection unavailable");
+    next();
+  } catch {
+    return res.status(503).json({ error: "Database unavailable. MongoDB is required." });
+  }
 }
 
 // ─── Express App ──────────────────────────────────────────────────────────────
@@ -111,6 +116,13 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+app.use((req, res, next) => {
+  if ((req.path.startsWith("/api/auth") || req.path.startsWith("/api/verifications")) && !JWT_SECRET) {
+    return res.status(503).json({ error: "Authentication is not configured. Set JWT_SECRET." });
+  }
+  next();
+});
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
@@ -404,15 +416,12 @@ app.get("/api/verifications", authMiddleware, requireMongo, async (req, res) => 
  */
 app.get("/api/contract/state", async (req, res) => {
   const address = req.query.address || CONTRACT_ADDRESS;
+  if (!address) return res.status(503).json({ error: "No deployed contract is configured. Set CONTRACT_ADDRESS after a verified Preprod deployment." });
   const graphqlQuery = {
-    query: `query GetZkCredState($address: String!) {
-      contractState(address: $address) {
-        minCreditScore
-        minAnnualIncome
-        minAge
-        isEligible
-        verificationCount
-      }
+      query: `query GetContractState($address: HexEncoded!) {
+        contractAction(address: $address) {
+          state
+        }
     }`,
     variables: { address },
   };
@@ -434,19 +443,14 @@ app.get("/api/contract/state", async (req, res) => {
       return res.status(502).json({ error: "Midnight Indexer GraphQL error", details: json.errors });
     }
 
-    const state = json?.data?.contractState;
+    const state = json?.data?.contractAction;
     if (!state) {
       return res.status(404).json({ error: `No contract state found for address ${address}` });
     }
-
-    return res.json({
-      contractAddress: address,
-      minCreditScore: Number(state.minCreditScore),
-      minAnnualIncome: String(state.minAnnualIncome),
-      minAge: Number(state.minAge),
-      isEligible: Boolean(state.isEligible),
-      verificationCount: String(state.verificationCount),
-    });
+    // State is an encoded Compact value. The browser decodes it with the
+    // generated contract binding after verifier-key validation; this API must
+    // not guess application fields from opaque ledger bytes.
+    return res.json({ contractAddress: address, state: state.state });
   } catch (err) {
     console.error("[Midnight Indexer] Proxy error:", err.message);
     return res.status(502).json({ error: "Failed to reach Midnight Indexer", message: err.message });

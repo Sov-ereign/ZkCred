@@ -10,9 +10,6 @@ export type ContractAddress = string;
 export {
   createMidnightProviders,
   createWitnessCallbacks,
-  deployZkCredContract,
-  executeVerifyEligibilityCircuit,
-  executeUpdateThresholdsCircuit,
   fetchLedgerStateFromIndexer,
   DEFAULT_PREPROD_CONFIG as MIDNIGHT_PREPROD_CONFIG,
   type MidnightProviders,

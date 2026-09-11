@@ -23,14 +23,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Validate Compact Smart Contract & Binding Assets
+      - name: Compile Compact smart contract
         run: |
-          test -f contract/src/zkcred.compact || (echo "Missing contract/src/zkcred.compact" && exit 1)
-          test -f src/managed/index.ts || (echo "Missing generated bindings" && exit 1)
-          npm run compile || echo "Compact compiler CLI not in PATH; pre-generated managed bindings verified."
+          test -f contract/src/zkcred.compact
+          npm run compile
 
-      - name: Run Genuine Contract Unit Tests
+      - name: Run privacy and contract-asset tests
         run: npm test
 
       - name: Build TypeScript Project
-        run: npm run build
+        run: |
+          npm run build
+          npm run ui:build

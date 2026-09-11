@@ -1,6 +1,6 @@
 /**
  * AegisID — ZkCred Interactive Demo Logic
- * Zero-Knowledge Proof Simulator for Midnight Network with MongoDB Auth & Lace Wallet Integration
+ * Zero-knowledge credential client for Midnight Network with MongoDB Auth & Lace Wallet Integration.
  */
 
 // ─── API Base Configuration ───────────────────────────────────────────────────
@@ -9,9 +9,6 @@
 const API_BASE = (typeof window !== "undefined" && window.__RENDER_API__)
   ? window.__RENDER_API__.replace(/\/$/, "")
   : "/api";
-
-// Real deployed contract address — fetched live from Midnight Indexer on init
-const REAL_CONTRACT_ADDRESS = "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -24,12 +21,12 @@ function generateDynamicHex(lenBytes = 32, prefix = "0x") {
 }
 
 const STATE = {
-  // Thresholds — overwritten by live /api/contract/state on init
-  minCreditScore: 700,
-  minAnnualIncome: 5_000_000,
-  minAge: 21,
-  verificationCount: 0,
-  contractAddress: REAL_CONTRACT_ADDRESS,
+  // These fields are populated only from verified on-chain contract state.
+  minCreditScore: null,
+  minAnnualIncome: null,
+  minAge: null,
+  verificationCount: null,
+  contractAddress: localStorage.getItem("zkcred_contract_address") || null,
   isGenerating: false,
   walletConnected: false,
   walletAddress: null,
@@ -179,19 +176,25 @@ function updateEligibilityPreview() {
 
 async function fetchOnChainState() {
   try {
-    const res = await fetch(`${API_BASE}/contract/state`);
-    if (!res.ok) {
-      console.warn("[Midnight] Could not fetch on-chain state:", res.status);
+    if (!STATE.contractAddress) {
+      console.warn("[Midnight] No deployed contract address is configured.");
       return null;
     }
-    const data = await res.json();
+    const data = await window.ZkCredMidnight?.getLedgerState(STATE.contractAddress);
+    if (!data) throw new Error("Midnight client is not ready.");
     STATE.onChainState = data;
     // Update thresholds from live contract state
-    if (data.minCreditScore) STATE.minCreditScore = data.minCreditScore;
-    if (data.minAnnualIncome) STATE.minAnnualIncome = Number(data.minAnnualIncome);
-    if (data.minAge) STATE.minAge = data.minAge;
+    if (!Number.isSafeInteger(data.minCreditScore) || !Number.isSafeInteger(Number(data.minAnnualIncome)) || !Number.isSafeInteger(data.minAge)) {
+      throw new Error("Indexer returned an invalid contract state.");
+    }
+    STATE.minCreditScore = data.minCreditScore;
+    STATE.minAnnualIncome = Number(data.minAnnualIncome);
+    STATE.minAge = data.minAge;
     if (data.verificationCount !== undefined) STATE.verificationCount = Number(data.verificationCount);
-    if (data.contractAddress) STATE.contractAddress = data.contractAddress;
+    if (data.contractAddress) {
+      STATE.contractAddress = data.contractAddress;
+      localStorage.setItem("zkcred_contract_address", data.contractAddress);
+    }
     console.log("[Midnight] Live on-chain state loaded:", data);
     return data;
   } catch (err) {
@@ -261,94 +264,88 @@ async function generateProof() {
   ledgerFields.style.opacity = "0.4";
   txResult.hidden = true;
 
-  // ── Step 1: Fetch live on-chain thresholds ────────────────────────────────
-  setProofStatus("Fetching live thresholds from Midnight Indexer...");
-  await fetchOnChainState();
+  try {
+    // ── Step 1: Fetch live on-chain thresholds ──────────────────────────────
+    setProofStatus("Fetching live thresholds from Midnight Indexer...");
+    const onChainState = await fetchOnChainState();
+    if (!onChainState) throw new Error("Cannot create a proof until the deployed contract state has been verified.");
 
-  // Recalculate eligibility against live thresholds
-  const eligible = age >= STATE.minAge && score >= STATE.minCreditScore && income >= STATE.minAnnualIncome;
+    // This is preview-only. The result shown after submission is re-read from
+    // the finalized public contract state below.
+    const previewEligible = age >= STATE.minAge && score >= STATE.minCreditScore && income >= STATE.minAnnualIncome;
 
-  // The wallet owns proving and transaction submission. Private witnesses are
-  // passed only to the connected wallet provider and never to this API.
-  setProofStatus("Generating and submitting verifyEligibility through Lace...");
-  const laceProvider = findLaceProvider();
-  if (!laceProvider?.enable) {
-    setProofStatus("Midnight Lace provider is unavailable.", true);
-    proofAnimation.classList.remove("active"); ledgerFields.style.opacity = "1"; generateBtn.disabled = false; STATE.isGenerating = false;
-    return;
-  }
-  const api = await laceProvider.enable();
-  if (typeof api.balanceAndProveTransaction !== "function" || typeof api.submitTransaction !== "function") {
-    setProofStatus("This Lace version does not expose the required Midnight proving API.", true);
-    proofAnimation.classList.remove("active"); ledgerFields.style.opacity = "1"; generateBtn.disabled = false; STATE.isGenerating = false;
-    return;
-  }
-  const balancedTx = await api.balanceAndProveTransaction({
-    type: "callTx",
-    contractAddress: STATE.contractAddress,
-    circuit: "verifyEligibility",
-    witnesses: { creditScore: score, annualIncome: income, age, userSalt: STATE.userSalt },
-  });
-  const transactionHash = await api.submitTransaction(balancedTx);
-  if (!transactionHash || typeof transactionHash !== "string") {
-    setProofStatus("Lace did not return a submitted transaction hash.", true);
-    proofAnimation.classList.remove("active"); ledgerFields.style.opacity = "1"; generateBtn.disabled = false; STATE.isGenerating = false;
-    return;
-  }
+    // The official Midnight.js client builds the Compact circuit transaction;
+    // private witnesses are closed over in that browser module and never sent
+    // to this application API.
+    setProofStatus("Generating and submitting verifyEligibility through Lace...");
+    const result = await window.ZkCredMidnight?.submitEligibility(STATE.contractAddress, {
+      creditScore: score, annualIncome: income, age, userSalt: STATE.userSalt,
+    });
+    const transactionHash = result?.transactionId;
+    if (!transactionHash || typeof transactionHash !== "string") throw new Error("Lace did not return a finalized transaction ID.");
 
-  STATE.verificationCount++;
+    // Re-fetch on-chain state to confirm the finalized transaction's public result.
+    setProofStatus("Querying Midnight Indexer for finalized public state...");
+    const confirmedState = await fetchOnChainState();
+    if (!confirmedState) throw new Error("Transaction submitted, but its finalized public contract state could not be verified.");
+    const eligible = Boolean(confirmedState.isEligible);
 
-  // Re-fetch on-chain state to confirm the transaction's public result.
-  setProofStatus("Querying Midnight Indexer for updated on-chain state...");
-  await fetchOnChainState();
+    // ── Step 6: Update UI ──────────────────────────────────────────────────
+    proofAnimation.classList.remove("active");
+    ledgerFields.style.opacity = "1";
 
-  // ── Step 6: Update UI ────────────────────────────────────────────────────
-  proofAnimation.classList.remove("active");
-  ledgerFields.style.opacity = "1";
+    ledgerAddress.textContent = STATE.contractAddress;
+    eligibilityBadge.className = `eligibility-badge ${eligible ? "eligible" : "ineligible"}`;
+    eligibilityBadge.textContent = eligible ? "✓ true" : "✗ false";
 
-  ledgerAddress.textContent = STATE.contractAddress;
-  eligibilityBadge.className = `eligibility-badge ${eligible ? "eligible" : "ineligible"}`;
-  eligibilityBadge.textContent = eligible ? "✓ true" : "✗ false";
+    ledgerCount.textContent = STATE.onChainState?.verificationCount ?? "unavailable";
+    ledgerCount.style.animation = "none";
+    ledgerCount.offsetHeight;
+    ledgerCount.style.animation = "badgePop 0.4s ease-out";
 
-  ledgerCount.textContent = STATE.onChainState?.verificationCount ?? STATE.verificationCount;
-  ledgerCount.style.animation = "none";
-  ledgerCount.offsetHeight;
-  ledgerCount.style.animation = "badgePop 0.4s ease-out";
+    txResult.hidden = false;
+    txHashDisplay.textContent = transactionHash;
 
-  txResult.hidden = false;
-  txHashDisplay.textContent = transactionHash;
+    STATE.lastTxHash = transactionHash;
+    STATE.lastEligibility = eligible;
 
-  STATE.lastTxHash = transactionHash;
-  STATE.lastEligibility = eligible;
+    setProofStatus(`✓ Lace submitted a finalized transaction (preview: ${previewEligible}).`);
 
-  setProofStatus("✓ Lace submitted a real verifyEligibility transaction.");
+    generateBtn.disabled = false;
+    proofBtnText.textContent = eligible ? "✓ Proof Generated — Eligible" : "✗ Proof Generated — Ineligible";
 
-  generateBtn.disabled = false;
-  proofBtnText.textContent = eligible ? "✓ Proof Generated — Eligible" : "✗ Proof Generated — Ineligible";
+    setTimeout(() => {
+      proofBtnText.textContent = "Generate ZK Proof";
+      STATE.isGenerating = false;
+    }, 3000);
 
-  setTimeout(() => {
+    const heroResult = document.getElementById("hero-result");
+    if (heroResult) {
+      heroResult.className = `result-value ${eligible ? "eligible" : "ineligible"}`;
+      heroResult.innerHTML = `isEligible: <strong>${eligible}</strong>`;
+      heroResult.style.color = eligible ? "var(--green-400)" : "var(--red-400)";
+    }
+
+    updateProfileState(eligible, transactionHash, age, score, income);
+
+    await saveVerificationToMongoDB({
+      contractAddress: STATE.contractAddress,
+      circuit: "verifyEligibility",
+      isEligible: eligible,
+      verificationCount: Number(confirmedState.verificationCount),
+      transactionHash,
+    });
+
+    trackVercelEvent("proof_generated", { eligible, verificationCount: Number(confirmedState.verificationCount) });
+  } catch (err) {
+    console.error("Proof generation failed:", err);
+    setProofStatus(err instanceof Error ? err.message : "Proof generation failed.", true);
+    proofAnimation.classList.remove("active");
+    ledgerFields.style.opacity = "1";
+    generateBtn.disabled = false;
     proofBtnText.textContent = "Generate ZK Proof";
     STATE.isGenerating = false;
-  }, 3000);
-
-  const heroResult = document.getElementById("hero-result");
-  if (heroResult) {
-    heroResult.className = `result-value ${eligible ? "eligible" : "ineligible"}`;
-    heroResult.innerHTML = `isEligible: <strong>${eligible}</strong>`;
-    heroResult.style.color = eligible ? "var(--green-400)" : "var(--red-400)";
   }
-
-  updateProfileState(eligible, transactionHash, age, score, income);
-
-  await saveVerificationToMongoDB({
-    contractAddress: STATE.contractAddress,
-    circuit: "verifyEligibility",
-    isEligible: eligible,
-    verificationCount: STATE.verificationCount,
-    transactionHash,
-  });
-
-  trackVercelEvent("proof_generated", { eligible, verificationCount: STATE.verificationCount });
 }
 
 // ─── MongoDB Persistence Helpers ──────────────────────────────────────────────
@@ -501,21 +498,6 @@ function updateProfileState(eligible, txHash, age, score, income) {
   }
 }
 
-function findLaceProvider() {
-  return window.midnight?.mnLace || window.midnight?.lace ||
-    window.cardano?.laceMidnight || window.cardano?.lace || null;
-}
-
-async function detectLaceProvider(timeoutMs = 5000) {
-  const startTime = Date.now();
-  while (Date.now() - startTime < timeoutMs) {
-    const provider = findLaceProvider();
-    if (provider) return provider;
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  return findLaceProvider();
-}
-
 // ─── Lace Wallet Connector & Extension Check ──────────────────────────────────
 
 function initWalletConnect() {
@@ -584,63 +566,28 @@ function initWalletConnect() {
         return;
       }
 
-      walletTexts.forEach((t) => (t.textContent = "Detecting Lace..."));
+      walletTexts.forEach((t) => (t.textContent = "Connecting Lace..."));
 
       try {
-        // Poll up to 2s for Lace extension script injection
-        const laceProvider = await detectLaceProvider(5000);
+        // `ZkCredMidnight` polls the standard `window.midnight` connector map
+        // and calls InitialAPI.connect("preprod"); legacy provider fallbacks
+        // are intentionally not accepted.
+        const connection = await window.ZkCredMidnight?.connect("preprod");
+        if (!connection?.address) throw new Error("Midnight Lace did not provide a shielded address.");
+        STATE.walletAddress = connection.address;
+        STATE.walletConnected = true;
 
-        if (laceProvider && typeof laceProvider.enable === "function") {
-          let api;
-          try {
-            api = await laceProvider.enable();
-          } catch (enableErr) {
-            console.warn("Midnight Lace enable failed:", enableErr.message);
-            openModal(laceModal);
-            walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
-            STATE.walletConnected = false;
-            return;
-          }
-
-          let extAddr = null;
-          if (typeof api.state === "function") {
-            const st = await api.state();
-            extAddr = st?.address;
-          }
-          if (!extAddr && typeof api.getUnusedAddresses === "function") {
-            const unused = await api.getUnusedAddresses();
-            extAddr = unused?.[0];
-          }
-          if (!extAddr && typeof api.getUsedAddresses === "function") {
-            const used = await api.getUsedAddresses();
-            extAddr = used?.[0];
-          }
-          if (!extAddr && typeof api.getChangeAddress === "function") {
-            extAddr = await api.getChangeAddress();
-          }
-
-          if (!extAddr) throw new Error("Lace did not return a Midnight wallet address. Unlock Lace and select a Midnight wallet.");
-          STATE.walletAddress = extAddr;
-          STATE.walletConnected = true;
-
-          // Save wallet address to MongoDB profile
-          if (STATE.authToken) {
-            const profileRes = await fetch(`${API_BASE}/auth/profile`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${STATE.authToken}` },
-              body: JSON.stringify({ walletAddress: extAddr }),
-            });
-            if (!profileRes.ok) throw new Error("Failed to save wallet to your profile.");
-            const { user } = await profileRes.json();
-            STATE.currentUser = user;
-            localStorage.setItem("zkcred_user", JSON.stringify(user));
-            renderProfile(user);
-          }
-        } else {
-          // Extension not detected — prompt download modal
-          openModal(laceModal);
-          walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
-          return;
+        if (STATE.authToken) {
+          const profileRes = await fetch(`${API_BASE}/auth/profile`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${STATE.authToken}` },
+            body: JSON.stringify({ walletAddress: connection.address }),
+          });
+          if (!profileRes.ok) throw new Error("Failed to save wallet to your profile.");
+          const { user } = await profileRes.json();
+          STATE.currentUser = user;
+          localStorage.setItem("zkcred_user", JSON.stringify(user));
+          renderProfile(user);
         }
 
         const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
@@ -652,6 +599,9 @@ function initWalletConnect() {
         if (profileStatusDot) profileStatusDot.style.background = "var(--green-400)";
 
         trackVercelEvent("wallet_connected", { address: shortAddr });
+        fetchOnChainState().then((state) => {
+          if (state) updateEligibilityPreview();
+        });
         console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
       } catch (err) {
         console.error("Wallet connection failed:", err.message);
@@ -1120,9 +1070,9 @@ function init() {
   updateCreditScore();
   updateIncome();
 
-  ledgerAddress.textContent = STATE.contractAddress;
+  ledgerAddress.textContent = STATE.contractAddress || "Not configured";
   const profileWalletAddr = document.getElementById("profile-wallet-addr");
-  if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress;
+  if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress || "Not configured";
   const profileSalt = document.getElementById("profile-witness-salt");
   // Show the session salt (ephemeral, private — not derived from real committed value yet)
   if (profileSalt) profileSalt.textContent = STATE.userSalt.slice(0, 10) + "..." + STATE.userSalt.slice(-6);

@@ -16,7 +16,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || "zkcred_jwt_secret_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "";
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/zkcred";
 
 // Google OAuth 2.0 credentials — set these in your .env file
@@ -25,7 +25,7 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-api.onrender.com/api/auth/google/callback`;
 
 // Midnight Network config
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab";
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "";
 const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
 // Proof server runs locally via Docker: docker compose up -d (see docker-compose.yml)
 const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "http://localhost:6300";
@@ -51,6 +51,13 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+app.use((req, res, next) => {
+  if ((req.path.startsWith("/api/auth") || req.path.startsWith("/api/verifications")) && !JWT_SECRET) {
+    return res.status(503).json({ error: "Authentication is not configured. Set JWT_SECRET." });
+  }
+  next();
+});
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────
 
@@ -416,16 +423,13 @@ app.get("/api/verifications/count", authMiddleware, requireMongo, async (req, re
  */
 app.get("/api/contract/state", async (req, res) => {
   const address = req.query.address || CONTRACT_ADDRESS;
+  if (!address) return res.status(503).json({ error: "No deployed contract is configured. Set CONTRACT_ADDRESS after a verified Preprod deployment." });
 
   try {
     const graphqlQuery = {
-      query: `query GetZkCredState($address: String!) {
-        contractState(address: $address) {
-          minCreditScore
-          minAnnualIncome
-          minAge
-          isEligible
-          verificationCount
+      query: `query GetContractState($address: HexEncoded!) {
+        contractAction(address: $address) {
+          state
         }
       }`,
       variables: { address },
@@ -448,19 +452,13 @@ app.get("/api/contract/state", async (req, res) => {
       return res.status(502).json({ error: "Midnight Indexer GraphQL error", details: json.errors });
     }
 
-    const state = json?.data?.contractState;
+    const state = json?.data?.contractAction;
     if (!state) {
       return res.status(404).json({ error: `No contract state found for address ${address}` });
     }
-
-    return res.json({
-      contractAddress: address,
-      minCreditScore: Number(state.minCreditScore) || 700,
-      minAnnualIncome: String(state.minAnnualIncome || "5000000"),
-      minAge: Number(state.minAge) || 21,
-      isEligible: Boolean(state.isEligible),
-      verificationCount: String(state.verificationCount || "0"),
-    });
+    // State is encoded Compact data. It is decoded in the browser with the
+    // generated binding after verifier-key validation; never infer fields here.
+    return res.json({ contractAddress: address, state: state.state });
   } catch (err) {
     console.error("[Midnight Indexer] Unreachable:", err.message);
     return res.status(502).json({ error: "Failed to reach Midnight Indexer", message: err.message });

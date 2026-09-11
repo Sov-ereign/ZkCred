@@ -1,241 +1,92 @@
 # AegisID — ZkCred
 
-> **Privacy-First Multi-Attribute ZK Eligibility Gate on Midnight Network**
+ZkCred is a Midnight Compact dApp for proving an age, credit-score, and income threshold without putting those values on-chain. A user signs through Midnight Lace; the browser constructs the Compact transaction, retrieves proving material, and submits it through the wallet.
 
-[![CI](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg)](https://github.com/Sov-ereign/ZkCred/actions)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-zk--cred.vercel.app-7c3aed?logo=vercel)](https://zk-cred.vercel.app)
-[![Midnight Preprod](https://img.shields.io/badge/Midnight-Preprod-06b6d4)](https://indexer.preprod.midnight.network/api/v3/graphql)
-[![X / Twitter](https://img.shields.io/badge/%40ZK__CRED-000000?logo=x)](https://x.com/ZK_CRED)
-[![License: MIT](https://img.shields.io/badge/License-MIT-a78bfa)](LICENSE)
+## Privacy model
 
----
+The Compact contract has private witnesses for `age`, `creditScore`, `annualIncome`, and a 32-byte `salt`. The frontend closes over these values locally while the circuit is executed. They are not sent to the application API, indexer, or prover as JSON.
 
-## 🌐 Live Links
+An observer can learn the contract thresholds, the final `isEligible` Boolean, the public verification counter, and transaction identifiers. An observer cannot learn the raw age, credit score, annual income, salt, or the circuit's private transcript.
 
-| Resource | URL |
-|---|---|
-| **Live dApp** | [https://zk-cred.vercel.app](https://zk-cred.vercel.app) |
-| **Backend API** | [https://zkcred-api.onrender.com](https://zkcred-api.onrender.com) |
-| **Demo Video** | [https://youtu.be/InI_dsrYqFY](https://youtu.be/InI_dsrYqFY) |
-| **X / Twitter** | [https://x.com/ZK_CRED](https://x.com/ZK_CRED) |
-| **GitHub** | [https://github.com/Sov-ereign/ZkCred](https://github.com/Sov-ereign/ZkCred) |
+The contract source is [zkcred.compact](contract/src/zkcred.compact). Its generated ZKIR and proving keys are under `src/managed/` and are copied into the production web build.
 
----
+## Status
 
-## 📦 Contract Deployment
+The application is fail-closed. It does not create a fake proof, fake transaction ID, in-memory user, or default contract state.
 
-| Field | Value |
-|---|---|
-| **Network** | Midnight Preprod (`testnet-02`) |
-| **Contract Address** | `0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab` |
-| **Deployed** | September 2026 |
-| **Indexer** | `https://indexer.preprod.midnight.network/api/v3/graphql` |
-| **Circuit** | `verifyEligibility` (Compact PLONK zk-SNARK) |
+There is currently **no verified Preprod contract address configured in this repository**. The old address was queried against the public Preprod indexer on 11 September 2026 and returned `contractAction: null`, so it was removed. A funded, unlocked Lace account must deploy the contract and set the emitted address as `CONTRACT_ADDRESS` before a proof can be submitted. This is intentional: claiming a deployment before it exists would be misleading.
 
-### Verify Live Contract State via GraphQL
+## Run locally
 
-```graphql
-query GetZkCredContractAction {
-  contractAction(address: "0x0225677b7557435054732329333e104b4a0c5ce8e5fdd9d3cdcbdfc997a8bdab") {
-    address
-    state
-    zswapState
-    transaction {
-      hash
-    }
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "data": {
-    "contractState": {
-      "minCreditScore": 700,
-      "minAnnualIncome": "5000000",
-      "minAge": 21,
-      "isEligible": true,
-    "verificationCount": "14"
-    }
-  }
-}
-```
-
----
-
-## 🔒 Privacy Model
-
-AegisID uses Midnight's Compact language to prove multi-attribute financial eligibility **without exposing any private values on-chain**.
-
-| Data | Visibility |
-|---|---|
-| Age (e.g. `24`) | ❌ **Private** — never leaves the browser |
-| Credit Score (e.g. `720`) | ❌ **Private** — never leaves the browser |
-| Annual Income (e.g. `$60,000`) | ❌ **Private** — never leaves the browser |
-| User Salt (32-byte nonce) | ❌ **Private** — witness only, never serialized or stored |
-| `isEligible: true/false` | ✅ **Public** — disclosed via `disclose()` on Midnight ledger |
-| `verificationCount` | ✅ **Public** — integer counter, publicly incrementing |
-| Transaction Hash | ✅ **Public** — ZK proof commitment on-chain |
-
-### What an Observer Can and Cannot Learn
-
-**An observer querying the Midnight Preprod ledger CAN learn:**
-- Whether the prover is eligible (`true` or `false`)
-- How many total verifications have been submitted
-- The transaction hash of the proof submission
-
-**An observer CAN NOT learn:**
-- The prover's actual age
-- The prover's actual credit score
-- The prover's actual annual income
-- Any intermediate circuit witness values
-- The private salt used by the circuit
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Browser (Client)                       │
-│  window.midnight.lace  ←  Lace Wallet Extension          │
-│  Private Witnesses: age, creditScore, income, salt      │
-│  Compact Circuit: verifyEligibility()                   │
-│  PLONK zk-SNARK proof ← localhost:6300 (Docker)         │
-└──────────────────────────┬──────────────────────────────┘
-                           │ disclose(isEligible)
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│          Midnight Network (Preprod)                      │
-│  Public Ledger: isEligible, verificationCount, txHash   │
-│  Contract: 0x0225677b...bdab                            │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Stack:**
-- **Smart Contract**: Compact (`.compact`) → compiled to PLONK zk-SNARK circuits
-- **Frontend**: Vanilla HTML/CSS/JS hosted on Vercel
-- **Backend API**: Express.js on Render ([zkcred-api.onrender.com](https://zkcred-api.onrender.com)) — auth, MongoDB, indexer proxy
-- **Proof Server**: Midnight Docker container — runs **locally** at `localhost:6300`
-- **Wallet**: Lace DApp Connector (Midnight browser extension)
-- **Auth**: JWT + Google OAuth 2.0 via Render backend
-- **Audit Log**: MongoDB Atlas (verification records persisted per user)
-
-### Local Development Setup
+Prerequisites: Node 22+, Docker, Midnight Lace configured for Preprod, a funded Preprod account, MongoDB, and a Google OAuth client only if Google login is needed.
 
 ```bash
-# 1. Start the Midnight proof server (Docker required)
-docker compose up -d
-# → proof server available at http://localhost:6300
-
-# 2. Install dependencies
 npm install
+docker-compose up -d
+curl --fail http://127.0.0.1:6300/health
+cp .env.example .env
+npm run ui
+```
 
-# 3. Run tests
+Open the Vite URL (normally `http://localhost:5173`). Do not open `ui/index.html` directly: the Midnight client must be bundled by Vite.
+
+Set the following environment values in `.env` for the API server, and as environment variables in Vercel for a deployment:
+
+```dotenv
+JWT_SECRET=a-long-random-secret
+MONGODB_URI=mongodb+srv://...
+MIDNIGHT_INDEXER_URL=https://indexer.preprod.midnight.network/api/v3/graphql
+CONTRACT_ADDRESS=0x... # only after verifying deployment on Preprod
+```
+
+Start the API locally with `npm run server`. The browser calls `/api` when hosted with Vercel; for a separate local API, set `window.__RENDER_API__` before loading the page.
+
+## Wallet and circuit flow
+
+1. The user signs in. MongoDB is required; unauthenticated or database-unavailable operations are rejected.
+2. The user connects Midnight Lace. The app polls the standard `window.midnight` connector map and invokes `InitialAPI.connect("preprod")`.
+3. The browser gets the wallet's indexer/prover configuration, constructs official MidnightJS providers, and fetches the generated ZK assets.
+4. `verifyEligibility` runs with local private witness callbacks. The wallet balances the serialized transaction and submits it.
+5. The application records only the public transaction ID and disclosed result in MongoDB after submission; it never receives raw witness values.
+
+The implemented adapter is [midnight-client.ts](ui/midnight-client.ts). It uses `CompiledContract`, `findDeployedContract`, and `submitCallTx` from MidnightJS. It verifies the deployed verifier keys before it uses witnesses.
+
+## Deploy the Compact contract
+
+Compile first:
+
+```bash
+npm run compile
+```
+
+Deployment requires an interactive browser connection to Lace because the user must approve and fund it. After deployment, verify its address through the Preprod indexer, then set `CONTRACT_ADDRESS` in local/Vercel/server environments. The client will refuse to generate a proof if the address is absent, unrecognized by the indexer, or has verifier keys different from the compiled contract.
+
+For the initial deployment, connect Lace in the local dApp, then run this from the browser developer console:
+
+```js
+await window.ZkCredMidnight.deploy({
+  minCreditScore: 700,
+  minAnnualIncome: 5_000_000,
+  minAge: 21,
+});
+```
+
+Lace will display the real transaction for approval. The helper stores the returned address only in that browser; copy it into `CONTRACT_ADDRESS` only after independently checking it on the Preprod indexer.
+
+## Tests and CI
+
+```bash
 npm test
-
-# 4. Open the dApp
-# Open ui/index.html in browser, or serve via any static server
-# Install the Midnight Lace browser extension to connect wallet
+npx tsc --noEmit
+npm run ui:build
 ```
 
----
+The suite has 9 passing tests for the private-witness boundary, no salt disclosure, generated proving assets, strict indexer failures, and utility encoding. GitHub Actions compiles Compact, runs the test suite, TypeScript checks, and the Vite production build on push and pull requests; see [ci.yml](.github/workflows/ci.yml).
 
-## 🧪 Tests
+## Hosted deployment
 
-14 unit tests covering the full Midnight.js integration layer — all passing in CI.
+Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser bundle, WASM modules, and compiled proof assets. The `/api/*` rewrite targets `api/index.js`. Configure all required secrets and `CONTRACT_ADDRESS` in the Vercel project before treating a hosted URL as a working Preprod dApp.
 
-```
-PASS  tests/zkcred.test.ts
+## Submission evidence
 
-  ZkCred Runtime Contract — Initialization & Deployment
-    ✓ deployZkCredContract initializes contract state with admin authorization and thresholds
-    ✓ deployZkCredContract returns a valid Midnight Preprod contract address (0x02...)
-    ✓ createWitnessCallbacks returns all four required private witness callbacks
-
-  ZkCred Circuit — verifyEligibility() Eligibility Logic
-    ✓ verifyEligibility returns isEligible: true when all three attributes pass threshold
-    ✓ verifyEligibility returns isEligible: false when credit score is below minimum
-    ✓ verifyEligibility returns isEligible: false when annual income is below minimum
-    ✓ verifyEligibility returns isEligible: false when age is below minimum (Age Gate)
-    ✓ verifyEligibility returns isEligible: false when all three attributes fail
-    ✓ verifyEligibility increments verificationCount on each successful call
-
-  ZkCred Circuit — updateThresholds() Admin Authorization
-    ✓ updateThresholds rejects calls without admin key (authorization failure)
-    ✓ updateThresholds accepts and applies new thresholds when admin key matches
-
-  ZkCred — Cryptographic Utilities
-    ✓ saltToHex returns a valid 64-character hex representation
-
-  ZkCred — Midnight Indexer Integration
-    ✓ fetchLedgerStateFromIndexer reads live verificationCount from Midnight Preprod Indexer
-
-Tests: 14 passed, 14 total
-```
-
----
-
-## 🔁 CI/CD Pipeline
-
-GitHub Actions runs on every push to `main`:
-
-1. `npm ci` — install dependencies
-2. Validate Compact contract assets (`src/managed/`)
-3. `npm test` — 14 unit tests
-4. `npm run build` — TypeScript compilation
-
-[![CI Status](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg)](https://github.com/Sov-ereign/ZkCred/actions)
-
----
-
-## 📋 Submission Checklist
-
-### Level 2 — Wallet & Circuit Integration ✅
-- [x] Lace wallet connect / disconnect implemented
-- [x] Circuit called successfully from frontend (`verifyEligibility` via proof API)
-- [x] Observable privacy behavior — only `isEligible` disclosed, witnesses shielded
-- [x] Contract deployed to Midnight Preprod with verifiable address
-- [x] 40+ meaningful commits
-
-### Level 3 — Full dApp ✅
-- [x] Fully functional dApp using Midnight's privacy model
-- [x] 14 tests passing (3+ required)
-- [x] CI/CD pipeline running (workflow + passing runs)
-- [x] Approved idea: **Option 2 — Age / Eligibility Gate**
-- [x] README privacy model section (what observer can and cannot learn)
-- [x] Demo video: [youtu.be/InI_dsrYqFY](https://youtu.be/InI_dsrYqFY)
-- [x] 40+ meaningful commits (10+ required)
-
-### Level 4 — Working MVP Live on Preprod ✅
-- [x] Working MVP live: [zk-cred.vercel.app](https://zk-cred.vercel.app)
-- [x] Backend API live: [zkcred-api.onrender.com](https://zkcred-api.onrender.com)
-- [x] Contract address verifiable on Midnight Preprod indexer
-- [x] Full documentation (this README)
-- [x] CI/CD badge — passing
-- [x] Product X profile: [@ZK_CRED](https://x.com/ZK_CRED)
-- [x] Demo video: [youtu.be/InI_dsrYqFY](https://youtu.be/InI_dsrYqFY)
-- [x] 40+ meaningful commits (15+ required)
-
----
-
-## 🏆 Product Proposal
-
-**Track:** Midnight Hackathon — Option 2: Age / Financial Eligibility Gate
-
-**Problem:** DeFi protocols and gated communities need to verify user eligibility without storing or exposing sensitive personal data. Current solutions require full KYC disclosure — a privacy violation by design.
-
-**Solution:** AegisID (ZkCred) provides a **multi-attribute ZK eligibility gate** where users prove age ≥ 21, credit score ≥ 700, and annual income ≥ $50,000 — without revealing the actual values. Only a boolean `isEligible` is written to the Midnight public ledger.
-
-**Use Cases:**
-- DeFi lending eligibility gates
-- DAO governance voting rights
-- Age-gated content/services
-- Credit-based DeFi access without credit bureaus
-
----
-
-## 📄 License
-
-MIT © 2026 ZkCred Team — [@ZK_CRED](https://x.com/ZK_CRED)
+The repository contains the Compact source, CI workflow, and reproducible tests. A real submission still needs evidence that cannot be generated without the account owner: a public repository, a verified Preprod deployment address, a hosted deployment with configuration, a CI run, and a video showing Lace approval and finalized transaction.
