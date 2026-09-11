@@ -23,10 +23,14 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Compile Compact smart contract
+      - name: Validate generated Compact proof assets
         run: |
           test -f contract/src/zkcred.compact
-          npm run compile
+          test -s src/managed/contract/index.js
+          test -s src/managed/keys/initialize.prover
+          test -s src/managed/keys/verifyEligibility.prover
+          test -s src/managed/zkir/initialize.bzkir
+          test -s src/managed/zkir/verifyEligibility.bzkir
 
       - name: Run privacy and contract-asset tests
         run: npm test

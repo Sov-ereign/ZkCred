@@ -81,7 +81,7 @@ npx tsc --noEmit
 npm run ui:build
 ```
 
-The suite has 9 passing tests for the private-witness boundary, no salt disclosure, generated proving assets, strict indexer failures, and utility encoding. GitHub Actions compiles Compact, runs the test suite, TypeScript checks, and the Vite production build on push and pull requests; see [ci.yml](.github/workflows/ci.yml).
+The suite has 9 passing tests for the private-witness boundary, no salt disclosure, generated proving assets, strict indexer failures, and utility encoding. GitHub Actions validates the committed Compact proof assets, runs the test suite, TypeScript checks, and the Vite production build on push and pull requests; see [ci.yml](.github/workflows/ci.yml). The Compact CLI is required locally when contract source changes (`npm run compile`).
 
 ## Hosted deployment
 
