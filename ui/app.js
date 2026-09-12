@@ -274,7 +274,7 @@ async function generateProof() {
   try {
     // ── Step 1: Fetch live on-chain thresholds ──────────────────────────────
     setProofStatus("Fetching live thresholds from Midnight Indexer...");
-    const onChainState = await fetchOnChainState();
+    const onChainState = STATE.onChainState || await fetchOnChainState();
     if (!onChainState) throw new Error("Cannot create a proof until the deployed contract state has been verified.");
 
     // This is preview-only. The result shown after submission is re-read from
@@ -613,9 +613,8 @@ function initWalletConnect() {
         if (profileStatusDot) profileStatusDot.style.background = "var(--green-400)";
 
         trackVercelEvent("wallet_connected", { address: shortAddr });
-        fetchOnChainState().then((state) => {
-          if (state) updateEligibilityPreview();
-        });
+        await fetchOnChainState();
+        if (STATE.onChainState) updateEligibilityPreview();
         console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
       } catch (err) {
         console.error("Wallet connection failed:", err.message);
