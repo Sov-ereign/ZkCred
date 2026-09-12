@@ -214,13 +214,25 @@ async function deploy(
     age: 0,
     userSalt: bytesToHex(new Uint8Array(32)),
   });
+  // Compact 0.26 emits `initialize` as the constructor circuit. The current
+  // midnight-js runtime creates the contract state first, then invokes that
+  // circuit through the deployed call interface; passing args to
+  // deployContract would incorrectly feed them to initialState().
   const deployed = await deployContract(active.providers, {
     compiledContract: contract,
-    args: [BigInt(thresholds.minCreditScore), BigInt(thresholds.minAnnualIncome), BigInt(thresholds.minAge), adminKey],
   } as any);
+  const initialized = await deployed.callTx.initialize(
+    BigInt(thresholds.minCreditScore),
+    BigInt(thresholds.minAnnualIncome),
+    BigInt(thresholds.minAge),
+    adminKey,
+  );
   const address = String(deployed.deployTxData.public.contractAddress);
   localStorage.setItem("zkcred_contract_address", address);
-  return { contractAddress: address, transactionId: String(deployed.deployTxData.public.txId ?? "") };
+  return {
+    contractAddress: address,
+    transactionId: String((initialized as any).txId ?? (initialized as any).public?.txId ?? deployed.deployTxData.public.txId ?? ""),
+  };
 }
 
 (window as any).ZkCredMidnight = { connect, deploy, getLedgerState, submitEligibility, isConnected: () => Boolean(active) };
