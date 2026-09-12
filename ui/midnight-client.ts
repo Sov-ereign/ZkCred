@@ -13,7 +13,12 @@ import { httpClientProofProvider } from "@midnight-ntwrk/midnight-js-http-client
 import { indexerPublicDataProvider } from "@midnight-ntwrk/midnight-js-indexer-public-data-provider";
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { deployContract, findDeployedContract, submitCallTx } from "@midnight-ntwrk/midnight-js-contracts";
+import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
 import * as CompiledOutput from "../src/managed/contract/index.js";
+
+// The official Midnight SDK requires this global before constructing a
+// compiled contract, transaction, or provider. This client is Preprod-only.
+setNetworkId("preprod");
 
 type WitnessInput = { creditScore: number; annualIncome: number; age: number; userSalt: string };
 type ActiveConnection = { api: ConnectedAPI; address: string; providers: any; walletName: string };
