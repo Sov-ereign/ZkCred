@@ -14,6 +14,7 @@ import { indexerPublicDataProvider } from "@midnight-ntwrk/midnight-js-indexer-p
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { deployContract, findDeployedContract, submitCallTx } from "@midnight-ntwrk/midnight-js-contracts";
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
+import { parseCoinPublicKeyToHex, parseEncPublicKeyToHex } from "@midnight-ntwrk/midnight-js-utils";
 import { Buffer as NodeBuffer } from "buffer";
 import * as CompiledOutput from "../src/managed/contract/index.js";
 
@@ -113,8 +114,8 @@ async function buildProviders(api: ConnectedAPI, accountId: string) {
   const proofProvider = httpClientProofProvider(config.proverServerUri, zkConfigProvider);
   const shielded = await api.getShieldedAddresses();
   const walletProvider = {
-    getCoinPublicKey: () => shielded.shieldedCoinPublicKey as any,
-    getEncryptionPublicKey: () => shielded.shieldedEncryptionPublicKey as any,
+    getCoinPublicKey: () => parseCoinPublicKeyToHex(shielded.shieldedCoinPublicKey, "preprod") as any,
+    getEncryptionPublicKey: () => parseEncPublicKeyToHex(shielded.shieldedEncryptionPublicKey, "preprod") as any,
     async balanceTx(tx: any) {
       const result = await api.balanceUnsealedTransaction(bytesToHex(tx.serialize()));
       return Transaction.deserialize("signature", "proof", "binding", hexToBytes(result.tx)) as Transaction<SignatureEnabled, Proof, Binding>;
