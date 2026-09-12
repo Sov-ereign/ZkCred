@@ -204,7 +204,12 @@ async function getLedgerState(contractAddress: string) {
   const queried = await active.providers.publicDataProvider.queryZSwapAndContractState(contractAddress as any);
   if (!queried) throw new Error("The configured contract was not found on the wallet's Midnight indexer.");
   const [, publicState] = queried;
-  const ledger = CompiledOutput.ledger(publicState);
+  // midnight-js exposes ContractState with its charged ledger value under
+  // `data`, while Compact's generated ledger binding expects the historical
+  // `{ state: ChargedState }` shape. Adapt the SDK value without decoding or
+  // fabricating any state; the generated binding still validates the runtime
+  // ChargedState instance before reading fields.
+  const ledger = CompiledOutput.ledger({ state: (publicState as any).data });
   return {
     contractAddress,
     minCreditScore: Number(ledger.minCreditScore),
