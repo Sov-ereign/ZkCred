@@ -134,10 +134,21 @@ function authMiddleware(req, res, next) {
   const token = authHeader.split(" ")[1];
   try {
     req.user = jwt.verify(token, JWT_SECRET);
+    if (!authenticatedUserId(req)) return res.status(401).json({ error: "Unauthorized: invalid account identifier." });
     next();
   } catch {
     return res.status(401).json({ error: "Unauthorized: token verification failed. Please sign in again." });
   }
+}
+
+// JWT payloads created by older deployments may contain `id`, `_id`, or
+// `userId`. Normalize them before passing values to Mongoose so profile and
+// verification writes never fail with an opaque CastError/500.
+function authenticatedUserId(req) {
+  const candidate = req.user?.id ?? req.user?._id ?? req.user?.userId;
+  if (candidate == null) return null;
+  const value = String(candidate);
+  return mongoose.Types.ObjectId.isValid(value) ? value : null;
 }
 
 // Resolve the OAuth redirect URI dynamically from the incoming request host
@@ -304,7 +315,7 @@ async function getProfile(req, res) {
   await ensureMongoConnected();
   try {
     if (isMongoConnected) {
-      const user = await User.findById(req.user.id);
+      const user = await User.findById(authenticatedUserId(req));
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json({ user: publicProfile(user) });
     }
@@ -324,7 +335,7 @@ app.put("/api/auth/profile", authMiddleware, requireMongo, async (req, res) => {
   if (typeof req.body.walletAddress === "string") updates.walletAddress = req.body.walletAddress.trim() || null;
   try {
     if (isMongoConnected) {
-      const user = await User.findByIdAndUpdate(req.user.id, { $set: updates }, { new: true });
+      const user = await User.findByIdAndUpdate(authenticatedUserId(req), { $set: updates }, { new: true });
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json({ success: true, user: publicProfile(user) });
     }
@@ -344,7 +355,7 @@ app.put("/api/auth/wallet", authMiddleware, requireMongo, async (req, res) => {
 
   try {
     if (isMongoConnected) {
-      const user = await User.findByIdAndUpdate(req.user.id, { walletAddress }, { new: true });
+      const user = await User.findByIdAndUpdate(authenticatedUserId(req), { walletAddress }, { new: true });
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json({ success: true, walletAddress: user.walletAddress });
     }
@@ -363,7 +374,7 @@ app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) =>
 
     if (isMongoConnected) {
       const record = await Verification.create({
-        userId: req.user.id,
+        userId: authenticatedUserId(req),
         userEmail: req.user.email,
         contractAddress,
         circuit: circuit || "verifyEligibility",
@@ -374,7 +385,7 @@ app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) =>
       });
 
       if (Boolean(isEligible)) {
-        await User.findByIdAndUpdate(req.user.id, {
+        await User.findByIdAndUpdate(authenticatedUserId(req), {
           $inc: { proofCount: 1 },
           $set: {
             "verifiedCredentials.creditScoreVerified": true,
@@ -383,7 +394,7 @@ app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) =>
           },
         });
       } else {
-        await User.findByIdAndUpdate(req.user.id, { $inc: { proofCount: 1 } });
+        await User.findByIdAndUpdate(authenticatedUserId(req), { $inc: { proofCount: 1 } });
       }
 
       return res.json({ success: true, record });
@@ -399,7 +410,7 @@ app.get("/api/verifications", authMiddleware, requireMongo, async (req, res) => 
   await ensureMongoConnected();
   try {
     if (isMongoConnected) {
-      const records = await Verification.find({ userId: req.user.id }).sort({ timestamp: -1 }).limit(50);
+      const records = await Verification.find({ userId: authenticatedUserId(req) }).sort({ timestamp: -1 }).limit(50);
       return res.json({ records });
     }
   } catch (err) {
@@ -480,7 +491,7 @@ app.post("/api/proof", async (req, res) => {
 app.get("/api/verifications/count", authMiddleware, requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
-    const count = await Verification.countDocuments({ userId: req.user.id });
+    const count = await Verification.countDocuments({ userId: authenticatedUserId(req) });
     return res.json({ count });
   } catch (err) {
     res.status(500).json({ error: "Failed to count verifications" });
