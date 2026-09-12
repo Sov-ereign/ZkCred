@@ -578,16 +578,23 @@ function initWalletConnect() {
         STATE.walletConnected = true;
 
         if (STATE.authToken) {
-          const profileRes = await fetch(`${API_BASE}/auth/profile`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${STATE.authToken}` },
-            body: JSON.stringify({ walletAddress: connection.address }),
-          });
-          if (!profileRes.ok) throw new Error("Failed to save wallet to your profile.");
-          const { user } = await profileRes.json();
-          STATE.currentUser = user;
-          localStorage.setItem("zkcred_user", JSON.stringify(user));
-          renderProfile(user);
+          try {
+            const profileRes = await fetch(`${API_BASE}/auth/profile`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${STATE.authToken}` },
+              body: JSON.stringify({ walletAddress: connection.address }),
+            });
+            if (!profileRes.ok) throw new Error(`Profile API returned ${profileRes.status}`);
+            const { user } = await profileRes.json();
+            STATE.currentUser = user;
+            localStorage.setItem("zkcred_user", JSON.stringify(user));
+            renderProfile(user);
+          } catch (profileError) {
+            // Wallet authorization is independent of optional profile sync.
+            // Keep the real Lace connection usable when a hosted API has a
+            // temporary outage or rejects localhost CORS preflight.
+            console.warn("[MongoDB] Wallet connected; profile sync deferred:", profileError?.message || profileError);
+          }
         }
 
         const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;

@@ -134,7 +134,16 @@ async function connect(networkId = "preprod") {
   const api = await connector.connect(networkId);
   await api.hintUsage?.(["getShieldedAddresses", "balanceUnsealedTransaction", "submitTransaction"]);
   const shielded = await api.getShieldedAddresses();
-  active = { api, address: shielded.shieldedAddress, providers: await buildProviders(api, shielded.shieldedAddress), walletName: connector.name };
+  // Lace versions have returned the address object with slightly different
+  // wrapping while the connector API was stabilising. Accept only genuine
+  // values returned by the wallet; never invent an address.
+  const shieldedAddress = typeof shielded === "string"
+    ? shielded
+    : (shielded as any)?.shieldedAddress ?? (shielded as any)?.address;
+  const unshielded = !shieldedAddress ? await api.getUnshieldedAddress?.() : undefined;
+  const address = shieldedAddress ?? (unshielded as any)?.unshieldedAddress;
+  if (!address) throw new Error("Lace connected, but returned no Midnight address. Select a Midnight Preprod account in Lace and retry.");
+  active = { api, address, providers: await buildProviders(api, address), walletName: connector.name };
   return { address: active.address, walletName: active.walletName };
 }
 

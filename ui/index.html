@@ -16,6 +16,9 @@
 
   <!-- ─── Vercel Web Analytics & Speed Insights ──────────────────────── -->
   <script>
+    // Browser shim required by the scale-codec dependency used by the
+    // official Midnight SDK. It contains no secrets or environment values.
+    window.process = window.process || { env: {}, browser: true };
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
     // Render backend URL — API requests go here
