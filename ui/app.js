@@ -14,6 +14,7 @@ const API_BASE = isLocalDev ? "/api" : ((typeof window !== "undefined" && window
 // override it by deploying a newer verifier in their own browser; this is not
 // a synthetic fallback and is always checked against the live indexer.
 const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6";
+const LEGACY_V1_CONTRACT_ADDRESS = "56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -31,7 +32,16 @@ const STATE = {
   minAnnualIncome: null,
   minAge: null,
   verificationCount: null,
-  contractAddress: normalizeContractAddress(localStorage.getItem("zkcred_contract_address") || DEPLOYED_PREPROD_CONTRACT_ADDRESS),
+  // V1 and V2 use different generated verifier keys. Upgrade stale browser
+  // storage automatically so the V2 client is never used with V1 state.
+  contractAddress: (() => {
+    const stored = normalizeContractAddress(localStorage.getItem("zkcred_contract_address"));
+    if (stored === LEGACY_V1_CONTRACT_ADDRESS) {
+      localStorage.setItem("zkcred_contract_address", DEPLOYED_PREPROD_CONTRACT_ADDRESS);
+      return DEPLOYED_PREPROD_CONTRACT_ADDRESS;
+    }
+    return stored || DEPLOYED_PREPROD_CONTRACT_ADDRESS;
+  })(),
   isGenerating: false,
   walletConnected: false,
   walletAddress: null,
@@ -62,6 +72,24 @@ function normalizeContractAddress(address) {
   if (!address) return null;
   const hex = String(address).replace(/^0x/i, "");
   return /^[0-9a-f]+$/i.test(hex) ? hex : null;
+}
+
+function generatedAvatarUrl(name = "A") {
+  const initials = String(name).trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "A";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs><rect width="96" height="96" rx="48" fill="url(#g)"/><text x="48" y="58" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="white">${initials}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function setProfileAvatar(element, user) {
+  if (!element) return;
+  const fallback = generatedAvatarUrl(user?.displayName || user?.name || user?.email || "A");
+  const candidate = typeof user?.avatarUrl === "string" && /^https:\/\//i.test(user.avatarUrl) ? user.avatarUrl : fallback;
+  element.referrerPolicy = "no-referrer";
+  element.onerror = () => {
+    element.onerror = null;
+    element.src = fallback;
+  };
+  element.src = candidate;
 }
 
 // ─── Modal Accessibility Helpers ──────────────────────────────────────────────
@@ -746,7 +774,7 @@ function updateAuthUI() {
   if (STATE.currentUser) {
     if (navAuthBtn) navAuthBtn.hidden = true;
     if (userBadge) userBadge.hidden = false;
-    if (userAvatar) userAvatar.src = STATE.currentUser.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(STATE.currentUser.name)}`;
+    setProfileAvatar(userAvatar, STATE.currentUser);
     if (userName) userName.textContent = STATE.currentUser.name;
 
     const profileName = document.getElementById("profile-user-name");
@@ -766,7 +794,6 @@ function setCredentialBadge(id, statusId, verified) {
 
 function renderProfile(user = STATE.currentUser) {
   if (!user) return;
-  const fallbackAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(user.name || user.email)}`;
   const credentials = user.verifiedCredentials || {};
   const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Unknown";
   const wallet = user.walletAddress || "Not connected";
@@ -784,7 +811,8 @@ function renderProfile(user = STATE.currentUser) {
     if (el) el.textContent = value;
   });
   const avatar = document.getElementById("modal-profile-avatar");
-  if (avatar) avatar.src = user.avatarUrl || fallbackAvatar;
+  setProfileAvatar(avatar, user);
+  setProfileAvatar(document.getElementById("profile-page-avatar"), user);
   const mainCount = document.getElementById("profile-proof-count");
   if (mainCount) mainCount.textContent = `${user.proofCount || 0} Proof${user.proofCount === 1 ? "" : "s"}`;
   const firstName = document.getElementById("profile-first-name");
