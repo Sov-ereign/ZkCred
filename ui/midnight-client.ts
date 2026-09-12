@@ -14,11 +14,13 @@ import { indexerPublicDataProvider } from "@midnight-ntwrk/midnight-js-indexer-p
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { deployContract, findDeployedContract, submitCallTx } from "@midnight-ntwrk/midnight-js-contracts";
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
+import { Buffer as NodeBuffer } from "buffer";
 import * as CompiledOutput from "../src/managed/contract/index.js";
 
 // The official Midnight SDK requires this global before constructing a
 // compiled contract, transaction, or provider. This client is Preprod-only.
 setNetworkId("preprod");
+(globalThis as any).Buffer = (globalThis as any).Buffer ?? NodeBuffer;
 
 type WitnessInput = { creditScore: number; annualIncome: number; age: number; userSalt: string };
 type ActiveConnection = { api: ConnectedAPI; address: string; providers: any; walletName: string };
