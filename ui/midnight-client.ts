@@ -46,7 +46,18 @@ function storagePassword(): string {
 }
 
 function selectConnector(): InitialAPI {
-  const candidates = Object.values((window as any).midnight ?? {}) as InitialAPI[];
+  const injected = window as any;
+  // Lace has shipped a few connector injection shapes across extension
+  // versions. These are all real DApp Connector objects; we only select an
+  // object exposing the official `connect` method and never fabricate one.
+  const candidates = [
+    ...Object.values(injected.midnight ?? {}),
+    injected.midnight,
+    injected.midnight?.mnLace,
+    injected.midnight?.lace,
+    injected.cardano?.laceMidnight,
+    injected.cardano?.lace,
+  ] as InitialAPI[];
   const connector = candidates.find((candidate) => typeof candidate?.connect === "function");
   if (!connector) {
     throw new Error("No Midnight DApp Connector was found. Unlock/update Midnight Lace, then retry.");
