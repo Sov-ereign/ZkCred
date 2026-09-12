@@ -207,10 +207,10 @@ async function getLedgerState(contractAddress: string) {
   const [, publicState] = queried;
   // The indexer and generated binding can be bundled with distinct copies of
   // the WASM runtime. Re-serialize through this app's runtime copy so its
-  // ChargedState identity check succeeds, then adapt the SDK's `data` field to
-  // the generated binding's historical `{ state: ChargedState }` shape.
+  // ChargedState identity check succeeds. The generated ledger binding accepts
+  // the charged state itself (not the enclosing ContractState).
   const normalizedState = CompactContractState.deserialize((publicState as any).serialize());
-  const ledger = CompiledOutput.ledger({ state: (normalizedState as any).data });
+  const ledger = CompiledOutput.ledger((normalizedState as any).data);
   return {
     contractAddress,
     minCreditScore: Number(ledger.minCreditScore),
