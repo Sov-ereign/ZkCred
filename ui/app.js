@@ -40,7 +40,7 @@ const STATE = {
 function normalizeContractAddress(address) {
   if (!address) return null;
   const hex = String(address).replace(/^0x/i, "");
-  return /^[0-9a-f]+$/i.test(hex) ? `0x${hex}` : null;
+  return /^[0-9a-f]+$/i.test(hex) ? hex : null;
 }
 
 // ─── Modal Accessibility Helpers ──────────────────────────────────────────────

@@ -27,7 +27,13 @@ type WitnessInput = { creditScore: number; annualIncome: number; age: number; us
 function normalizeContractAddress(address: string): string {
   const hex = address.replace(/^0x/i, "");
   if (!/^[0-9a-f]+$/i.test(hex)) throw new Error("Invalid Midnight contract address.");
-  return `0x${hex}`;
+  // Midnight's indexer and ledger APIs expect the 64-character hex form
+  // without an Ethereum-style 0x prefix.
+  return hex;
+}
+
+function isContractAddress(address: string): boolean {
+  return /^[0-9a-f]{64}$/i.test(String(address).replace(/^0x/i, ""));
 }
 type ActiveConnection = { api: ConnectedAPI; address: string; providers: any; walletName: string };
 
@@ -172,7 +178,7 @@ async function connect(networkId = "preprod") {
 
 async function submitEligibility(contractAddress: string, input: WitnessInput) {
   if (!active) throw new Error("Connect Midnight Lace before generating a proof.");
-  if (!contractAddress || !/^0x[0-9a-f]+$/i.test(contractAddress)) throw new Error("A deployed Midnight contract address is required.");
+  if (!contractAddress || !isContractAddress(contractAddress)) throw new Error("A deployed Midnight contract address is required.");
   if (!Number.isSafeInteger(input.creditScore) || !Number.isSafeInteger(input.age) || !Number.isSafeInteger(input.annualIncome)) {
     throw new Error("Witness inputs must be safe integers.");
   }
@@ -191,7 +197,7 @@ async function submitEligibility(contractAddress: string, input: WitnessInput) {
 /** Reads and decodes the public ledger with the generated Compact binding. */
 async function getLedgerState(contractAddress: string) {
   if (!active) throw new Error("Connect Midnight Lace before reading contract state.");
-  if (!contractAddress || !/^0x[0-9a-f]+$/i.test(contractAddress)) throw new Error("A deployed Midnight contract address is required.");
+  if (!contractAddress || !isContractAddress(contractAddress)) throw new Error("A deployed Midnight contract address is required.");
   const contract = compiledContract({ creditScore: 0, annualIncome: 0, age: 0, userSalt: bytesToHex(new Uint8Array(32)) });
   // Match verifier keys before trusting or displaying state from this address.
   await findDeployedContract(active.providers, { compiledContract: contract, contractAddress: contractAddress as any });
