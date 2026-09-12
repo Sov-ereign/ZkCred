@@ -6,9 +6,10 @@
 // ─── API Base Configuration ───────────────────────────────────────────────────
 // If RENDER_BACKEND_URL env is injected at build time, use it; otherwise use same-origin /api.
 // To connect to a Render backend, set window.__RENDER_API__ before this script loads.
-const API_BASE = (typeof window !== "undefined" && window.__RENDER_API__)
+const isLocalDev = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+const API_BASE = isLocalDev ? "/api" : ((typeof window !== "undefined" && window.__RENDER_API__)
   ? window.__RENDER_API__.replace(/\/$/, "")
-  : "/api";
+  : "/api");
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);

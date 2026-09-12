@@ -38,5 +38,14 @@ export default defineConfig({
     target: "esnext",
     rollupOptions: { input: path.join(root, "ui/index.html") },
   },
-  server: { fs: { allow: [root] } },
+  server: {
+    fs: { allow: [root] },
+    proxy: {
+      "/api": {
+        target: "https://zkcred-api.onrender.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 });
