@@ -55,10 +55,16 @@ function ensureMongoConnected() {
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  firstName: { type: String, default: "" },
+  lastName: { type: String, default: "" },
+  displayName: { type: String, default: "" },
   email: { type: String, required: true, unique: true },
+  emailVerified: { type: Boolean, default: false },
   passwordHash: { type: String },
   avatarUrl: { type: String },
   googleId: { type: String },
+  authProvider: { type: String, enum: ["manual", "google"], default: "manual" },
+  locale: { type: String, default: "" },
   walletAddress: { type: String, default: null },
   proofCount: { type: Number, default: 0 },
   verifiedCredentials: {
@@ -104,6 +110,7 @@ const ALLOWED_ORIGINS = [
   /\.vercel\.app$/,
   /\.onrender\.com$/,
   "http://localhost:3000",
+  "http://localhost:5173",
   "http://localhost:5000",
 ];
 app.use(cors({
@@ -167,7 +174,7 @@ function getRedirectUri(req) {
 app.post("/api/auth/register", requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
-    const { name, email, password, walletAddress } = req.body;
+      const { name, email, password, walletAddress } = req.body;
     if (!name || !email || !password)
       return res.status(400).json({ error: "Name, email, and password are required" });
 
@@ -179,12 +186,13 @@ app.post("/api/auth/register", requireMongo, async (req, res) => {
 
       const passwordHash = await bcrypt.hash(password, 10);
       const user = await User.create({
-        name, email: normalizedEmail, passwordHash,
+        name: name.trim(), firstName: name.trim().split(/\s+/)[0] || "", lastName: name.trim().split(/\s+/).slice(1).join(" "), displayName: name.trim(),
+        email: normalizedEmail, passwordHash, authProvider: "manual",
         walletAddress: walletAddress || null,
         avatarUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}`,
       });
       const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
-      return res.json({ token, user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
+      return res.json({ token, user: publicProfile(user) });
     }
   } catch (err) {
     console.error("Register error:", err);
@@ -209,7 +217,7 @@ app.post("/api/auth/login", requireMongo, async (req, res) => {
       if (!await bcrypt.compare(password, user.passwordHash))
         return res.status(401).json({ error: "Invalid email or password" });
       const token = jwt.sign({ id: user._id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "7d" });
-      return res.json({ token, user: { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress } });
+      return res.json({ token, user: publicProfile(user) });
     }
   } catch (err) {
     console.error("Login error:", err);
@@ -274,7 +282,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
-    const { id: googleId, name, email, picture: avatarUrl } = await userInfoRes.json();
+    const { id: googleId, name, email, picture: avatarUrl, verified_email: emailVerified, given_name: firstName, family_name: lastName, locale } = await userInfoRes.json();
 
     if (!email || !name) throw new Error("Google did not return email/name");
 
@@ -285,13 +293,19 @@ app.get("/api/auth/google/callback", async (req, res) => {
     if (isMongoConnected) {
       let user = await User.findOne({ email: normalizedEmail });
       if (!user) {
-        user = await User.create({ name, email: normalizedEmail, googleId, avatarUrl: avatar });
+        user = await User.create({ name, firstName: firstName || "", lastName: lastName || "", displayName: name, email: normalizedEmail, emailVerified: Boolean(emailVerified), googleId, avatarUrl: avatar, authProvider: "google", locale: locale || "" });
       } else {
         user.googleId = googleId;
+        user.authProvider = "google";
+        user.emailVerified = Boolean(emailVerified);
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.displayName = user.displayName || name;
+        user.locale = locale || user.locale;
         if (avatarUrl) user.avatarUrl = avatarUrl;
         await user.save();
       }
-      appUser = { id: String(user._id), name: user.name, email: user.email, avatarUrl: user.avatarUrl, walletAddress: user.walletAddress };
+      appUser = publicProfile(user);
     }
 
     const token = jwt.sign({ id: appUser.id, email: appUser.email, name: appUser.name }, JWT_SECRET, { expiresIn: "7d" });
@@ -304,8 +318,9 @@ app.get("/api/auth/google/callback", async (req, res) => {
 
 function publicProfile(user) {
   return {
-    id: String(user._id), name: user.name, email: user.email,
+    id: String(user._id), name: user.name, firstName: user.firstName || "", lastName: user.lastName || "", displayName: user.displayName || user.name, email: user.email, emailVerified: Boolean(user.emailVerified),
     avatarUrl: user.avatarUrl, googleId: user.googleId || null, walletAddress: user.walletAddress || null,
+    authProvider: user.authProvider || (user.googleId ? "google" : "manual"), locale: user.locale || "",
     proofCount: user.proofCount || 0,
     verifiedCredentials: user.verifiedCredentials || { creditScoreVerified: false, incomeVerified: false, ageVerified: false },
     createdAt: user.createdAt,
@@ -332,6 +347,10 @@ app.put("/api/auth/profile", authMiddleware, requireMongo, async (req, res) => {
   await ensureMongoConnected();
   const updates = {};
   if (typeof req.body.name === "string" && req.body.name.trim()) updates.name = req.body.name.trim().slice(0, 100);
+  if (typeof req.body.displayName === "string" && req.body.displayName.trim()) updates.displayName = req.body.displayName.trim().slice(0, 100);
+  if (typeof req.body.firstName === "string") updates.firstName = req.body.firstName.trim().slice(0, 60);
+  if (typeof req.body.lastName === "string") updates.lastName = req.body.lastName.trim().slice(0, 60);
+  if (typeof req.body.locale === "string") updates.locale = req.body.locale.trim().slice(0, 20);
   if (typeof req.body.avatarUrl === "string") updates.avatarUrl = req.body.avatarUrl.trim().slice(0, 2048);
   if (typeof req.body.walletAddress === "string") updates.walletAddress = req.body.walletAddress.trim() || null;
   try {

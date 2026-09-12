@@ -98,7 +98,7 @@
   <!-- ─── Navbar ─────────────────────────────────────────────────────────── -->
   <nav class="navbar" role="navigation" aria-label="Main navigation">
     <div class="nav-inner">
-      <a href="#" class="nav-logo" aria-label="AegisID Home">
+      <a href="#/home" class="nav-logo" aria-label="AegisID Home">
         <div class="logo-icon" aria-hidden="true">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="none"/>
@@ -115,11 +115,9 @@
         <span class="logo-badge">ZkCred</span>
       </a>
       <div class="nav-links">
-        <a href="#how-it-works" class="nav-link">How It Works</a>
-        <a href="#verify" class="nav-link">Verify</a>
-        <a href="#demo" class="nav-link" style="color: #c4b5fd;">Verify Live State</a>
-        <a href="#privacy" class="nav-link">Privacy</a>
-        <a href="#profile" class="nav-link" id="nav-profile-link">Profile</a>
+        <a href="#/home" class="nav-link">Home</a>
+        <a href="#/dashboard" class="nav-link">Dashboard</a>
+        <a href="#/profile" class="nav-link" id="nav-profile-link">Profile</a>
         
         <!-- Lace Wallet Connect Button -->
         <button id="wallet-connect-btn" class="btn-wallet-connect" aria-label="Connect Lace Wallet">
@@ -160,11 +158,9 @@
         <button id="mobile-drawer-close" class="mobile-drawer-close" aria-label="Close menu">✕</button>
       </div>
       <div class="mobile-drawer-links">
-        <a href="#how-it-works" class="mobile-drawer-link">How It Works</a>
-        <a href="#verify" class="mobile-drawer-link">Verify ZK Gate</a>
-        <a href="#privacy" class="mobile-drawer-link">Privacy Model</a>
-        <a href="#profile" class="mobile-drawer-link">Profile & Credentials</a>
-        <a href="#setup" class="mobile-drawer-link">Developer Setup</a>
+        <a href="#/home" class="mobile-drawer-link">Home</a>
+        <a href="#/dashboard" class="mobile-drawer-link">ZK Dashboard</a>
+        <a href="#/profile" class="mobile-drawer-link">Profile & Credentials</a>
         
         <div class="mobile-drawer-actions">
           <button id="mobile-wallet-connect-btn" class="btn-wallet-connect btn-wallet-mobile">
@@ -180,7 +176,7 @@
   </div>
 
   <!-- ─── Hero Section ──────────────────────────────────────────────────── -->
-  <section class="hero" id="top" aria-labelledby="hero-heading">
+  <section class="hero" id="top" data-app-page="home" aria-labelledby="hero-heading">
     <div class="hero-inner">
       <div class="hero-badge" role="note">
         <span class="badge-dot" aria-hidden="true"></span>
@@ -253,7 +249,7 @@
   </section>
 
   <!-- ─── How It Works ─────────────────────────────────────────────────── -->
-  <section class="section" id="how-it-works" aria-labelledby="how-heading">
+  <section class="section" id="how-it-works" data-app-page="home" aria-labelledby="how-heading">
     <div class="section-inner">
       <div class="section-header">
         <span class="section-tag">Zero-Knowledge Architecture</span>
@@ -318,7 +314,7 @@
   </section>
 
   <!-- ─── Main Verifier ─────────────────────────────────────────────────── -->
-  <section class="section" id="verify" aria-labelledby="verify-heading">
+  <section class="section" id="verify" data-app-page="dashboard" aria-labelledby="verify-heading">
     <div class="section-inner">
       <div class="section-header">
         <span class="section-tag">Live Demo</span>
@@ -596,11 +592,25 @@
           </div>
         </div>
       </div>
+      <section class="admin-control-card glass-card" id="admin-controls" hidden aria-labelledby="admin-controls-heading">
+        <div>
+          <span class="section-tag">Contract operator</span>
+          <h3 id="admin-controls-heading">Update public eligibility thresholds</h3>
+          <p>Only the browser that deployed this contract holds its private administrator witness. This updates public thresholds; it never exposes applicant credentials.</p>
+        </div>
+        <form id="threshold-update-form" class="threshold-update-form">
+          <label>Minimum score<input id="admin-min-score" type="number" min="300" max="850" required></label>
+          <label>Minimum income (cents)<input id="admin-min-income" type="number" min="0" step="1" required></label>
+          <label>Minimum age<input id="admin-min-age" type="number" min="18" max="120" required></label>
+          <button type="submit" class="btn-primary">Submit threshold update</button>
+        </form>
+        <p id="threshold-update-status" class="form-alert" hidden></p>
+      </section>
     </div>
   </section>
 
   <!-- ─── Privacy Section ──────────────────────────────────────────────── -->
-  <section class="section section-dark" id="privacy" aria-labelledby="privacy-heading">
+  <section class="section section-dark" id="privacy" data-app-page="home" aria-labelledby="privacy-heading">
     <div class="section-inner">
       <div class="section-header">
         <span class="section-tag">Public State vs Private Witness</span>
@@ -666,7 +676,7 @@
   </section>
 
   <!-- ─── Profile & ZK Credentials Section ───────────────────────────── -->
-  <section class="section" id="profile" aria-labelledby="profile-heading">
+  <section class="section" id="profile" data-app-page="profile" aria-labelledby="profile-heading">
     <div class="section-inner">
       <div class="section-header">
         <span class="section-tag">User Identity & ZK Passport</span>
@@ -767,6 +777,23 @@
         </div>
       </div>
 
+      <div class="glass-card profile-editor-card">
+        <div class="audit-header">
+          <div><h3>Account details</h3><p class="panel-sub">The same profile shape is used for manual and Google accounts. Google supplies only consented name, email, verified-email status, locale, and avatar data.</p></div>
+          <span id="profile-provider-chip" class="audit-badge">Manual account</span>
+        </div>
+        <form id="profile-editor-form" class="profile-editor-grid">
+          <label>First name <input id="profile-first-name" class="form-input" maxlength="60" autocomplete="given-name" /></label>
+          <label>Last name <input id="profile-last-name" class="form-input" maxlength="60" autocomplete="family-name" /></label>
+          <label>Display name <input id="profile-display-name" class="form-input" maxlength="100" autocomplete="nickname" /></label>
+          <label>Locale <input id="profile-locale" class="form-input" maxlength="20" autocomplete="language" placeholder="en" /></label>
+          <div class="profile-editor-meta"><span>Email</span><strong id="profile-email-value">Sign in to view</strong></div>
+          <div class="profile-editor-meta"><span>Email status</span><strong id="profile-email-verified">—</strong></div>
+          <button class="btn-primary" type="submit">Save profile</button>
+          <p id="profile-editor-status" class="form-alert" hidden></p>
+        </form>
+      </div>
+
       <!-- Proof Audit Log Table -->
       <div class="glass-card audit-log-card">
         <div class="audit-header">
@@ -796,7 +823,7 @@
   </section>
 
   <!-- ─── How It Works Section ────────────────────────────────────── -->
-  <section class="section" id="how-it-works" aria-labelledby="how-heading">
+  <section class="section" id="architecture" data-app-page="home" aria-labelledby="how-heading">
     <div class="section-inner">
       <div class="section-header">
         <span class="section-tag">Zero-Knowledge Architecture</span>

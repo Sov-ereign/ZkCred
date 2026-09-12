@@ -1072,6 +1072,20 @@ body {
   word-break: break-all;
   line-height: 1.5;
 }
+
+/* ─── Application routes: landing, dashboard, profile and authentication ─── */
+body[data-route] [data-app-page] { display: none; }
+body[data-route="home"] [data-app-page="home"],
+body[data-route="dashboard"] [data-app-page="dashboard"],
+body[data-route="profile"] [data-app-page="profile"] { display: block; }
+body[data-route="dashboard"] #verify,
+body[data-route="profile"] #profile { padding-top: 8.5rem; min-height: calc(100vh - 150px); }
+.profile-editor-card { margin-top: 1.5rem; padding: 1.25rem; }
+.profile-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: end; }
+.profile-editor-grid label { display: grid; gap: 0.45rem; color: var(--text-muted); font-size: 0.8rem; }
+.profile-editor-meta { padding: 0.75rem; border: 1px solid rgba(167,139,250,.18); border-radius: 10px; display: grid; gap: .3rem; color: var(--text-muted); font-size: .8rem; }
+.profile-editor-meta strong { color: var(--text-main); overflow-wrap: anywhere; }
+@media (max-width: 720px) { .profile-editor-grid { grid-template-columns: 1fr; } }
 .tx-verification {
   margin-top: 0.75rem;
   display: flex;
@@ -2457,3 +2471,23 @@ html, body {
   color: var(--text-muted);
   margin-top: 4px;
 }
+
+.admin-control-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-color: rgba(124, 58, 237, 0.42);
+}
+
+.admin-control-card h3 { margin: 0.45rem 0; font-size: 1.15rem; }
+.admin-control-card p { color: var(--text-muted); max-width: 760px; }
+.threshold-update-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+  align-items: end;
+}
+.threshold-update-form label { display: grid; gap: 0.35rem; font-size: 0.78rem; color: var(--text-muted); }
+.threshold-update-form input { min-width: 0; padding: 0.7rem; color: var(--text-primary); background: rgba(0,0,0,.22); border: 1px solid var(--color-border); border-radius: 8px; }
+@media (max-width: 800px) { .threshold-update-form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .threshold-update-form { grid-template-columns: 1fr; } }

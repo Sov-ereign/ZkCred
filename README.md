@@ -8,9 +8,9 @@ ZkCred is a Midnight Compact dApp for proving an age, credit-score, and income t
 
 ## Privacy model
 
-The Compact contract has private witnesses for `age`, `creditScore`, `annualIncome`, and a 32-byte `salt`. The frontend closes over these values locally while the circuit is executed. They are not sent to the application API, indexer, or prover as JSON.
+The Compact contract has private witnesses for `age`, `creditScore`, `annualIncome`, and a 32-byte `salt`. The frontend closes over these values locally while the circuit is executed. They are not sent to the application API, indexer, or prover as JSON. Each successful proof stores a domain-separated, one-way salt nullifier in contract state; this prevents replay of the same credential secret without revealing the salt or making it reusable across protocols.
 
-An observer can learn the contract thresholds, the final `isEligible` Boolean, the public verification counter, and transaction identifiers. An observer cannot learn the raw age, credit score, annual income, salt, or the circuit's private transcript.
+An observer can learn the contract thresholds, the final `isEligible` Boolean, the public verification counter, salt nullifiers, and transaction identifiers. An observer cannot learn the raw age, credit score, annual income, salt, or the circuit's private transcript.
 
 The contract source is [zkcred.compact](contract/src/zkcred.compact). Its generated ZKIR and proving keys are under `src/managed/` and are copied into the production web build.
 
@@ -27,6 +27,8 @@ Successful eligibility transaction: 00504ed93fec3cdbfd5dda625986a95f1d5d7e7b5d7f
 ```
 
 The app verifies the contract and every submitted transaction through Midnight Preprod's GraphQL indexer before showing a success state. A visitor can override the address only by deploying another compatible contract through Lace; no unverified address is trusted.
+
+> Upgrade note: the replay-nullifier ledger field changes the Compact verifier keys. The address above is the verified V1 deployment; the V2 source in this branch must be deployed as a new Preprod contract before this change is released. Do not point production at V2 until its new address and initialization transaction have been verified.
 
 ## Run locally
 
@@ -85,6 +87,10 @@ await window.ZkCredMidnight.deploy({
 
 Lace will display the real transaction for approval. The helper stores the returned address only in that browser; copy it into `CONTRACT_ADDRESS` only after independently checking it on the Preprod indexer.
 
+## Administrator threshold updates
+
+The deployment helper creates a random 32-byte administrator witness and stores it only in the deploying browser's local storage. That browser exposes an **Update public eligibility thresholds** panel after it connects Lace. `updateThresholds` is a real wallet-backed Compact call and requires this private witness; other users cannot authorize the circuit. Keep that browser profile backed up and do not clear its site storage before handing off contract administration.
+
 ## Tests and CI
 
 ```bash
@@ -93,7 +99,7 @@ npx tsc --noEmit
 npm run ui:build
 ```
 
-The suite has 9 passing tests for the private-witness boundary, no salt disclosure, generated proving assets, strict indexer failures, and utility encoding. GitHub Actions validates the committed Compact proof assets, runs the test suite, TypeScript checks, and the Vite production build on push and pull requests; see [ci.yml](.github/workflows/ci.yml). The Compact CLI is required locally when contract source changes (`npm run compile`).
+The suite has 11 passing tests for the private-witness boundary, salt-nullifier replay protection, generated proving assets, actual generated Compact-runtime circuit execution, strict indexer failures, administrator authorization, and utility encoding. GitHub Actions validates the committed Compact proof assets, runs the test suite, TypeScript checks, and the Vite production build on push and pull requests; see [ci.yml](.github/workflows/ci.yml). The Compact CLI is required locally when contract source changes (`npm run compile`).
 
 ## Hosted deployment
 
@@ -103,6 +109,6 @@ Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser b
 
 The repository contains the Compact source, CI workflow, reproducible tests, and a test-output screenshot.
 
-![Test output: 9 passing tests](assets/npm_test.png)
+![Test output: current repository test run](assets/npm_test.png)
 
 For final submission, record/upload the current one-minute walkthrough showing Lace connection and a finalized proof transaction, then replace the demo-video URL above if needed. Idea approval is maintained in the external submission process.

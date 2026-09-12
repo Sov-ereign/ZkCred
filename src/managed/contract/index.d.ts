@@ -60,6 +60,12 @@ export type Ledger = {
   readonly isEligible: boolean;
   readonly verificationCount: bigint;
   readonly admin: Uint8Array;
+  usedSaltNullifiers: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(elem_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<Uint8Array>
+  };
 }
 
 export type ContractReferenceLocations = any;

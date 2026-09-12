@@ -41,6 +41,23 @@ const STATE = {
   userSalt: generateDynamicHex(32, "0x"), // ephemeral per-session salt
 };
 
+function currentRoute() {
+  const route = window.location.hash.replace(/^#\/?/, "").split("/")[0];
+  return ["home", "dashboard", "profile", "auth"].includes(route) ? route : "home";
+}
+
+function applyRoute() {
+  const route = currentRoute();
+  document.body.dataset.route = route === "auth" ? "home" : route;
+  if (route === "auth") openModal(document.getElementById("auth-modal"));
+  else closeModal(document.getElementById("auth-modal"));
+  window.scrollTo(0, 0);
+}
+
+function navigate(route) {
+  window.location.hash = `/${route}`;
+}
+
 function normalizeContractAddress(address) {
   if (!address) return null;
   const hex = String(address).replace(/^0x/i, "");
@@ -329,6 +346,10 @@ async function generateProof() {
     const confirmedState = await fetchOnChainState();
     if (!confirmedState) throw new Error("Transaction submitted, but its finalized public contract state could not be verified.");
     const eligible = Boolean(confirmedState.isEligible);
+
+    // The contract stores a domain-separated nullifier for this private salt.
+    // Rotate after a confirmed call so a later proof cannot replay it.
+    STATE.userSalt = generateDynamicHex(32, "0x");
 
     // ── Step 6: Update UI ──────────────────────────────────────────────────
     proofAnimation.classList.remove("active");
@@ -658,7 +679,10 @@ function initWalletConnect() {
 
         trackVercelEvent("wallet_connected", { address: shortAddr });
         await fetchOnChainState();
-        if (STATE.onChainState) updateEligibilityPreview();
+        if (STATE.onChainState) {
+          updateEligibilityPreview();
+          renderAdminControls();
+        }
         console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
       } catch (err) {
         console.error("Wallet connection failed:", err.message);
@@ -763,9 +787,36 @@ function renderProfile(user = STATE.currentUser) {
   if (avatar) avatar.src = user.avatarUrl || fallbackAvatar;
   const mainCount = document.getElementById("profile-proof-count");
   if (mainCount) mainCount.textContent = `${user.proofCount || 0} Proof${user.proofCount === 1 ? "" : "s"}`;
+  const firstName = document.getElementById("profile-first-name");
+  const lastName = document.getElementById("profile-last-name");
+  const displayName = document.getElementById("profile-display-name");
+  const locale = document.getElementById("profile-locale");
+  const emailValue = document.getElementById("profile-email-value");
+  const emailVerified = document.getElementById("profile-email-verified");
+  const providerChip = document.getElementById("profile-provider-chip");
+  if (firstName) firstName.value = user.firstName || "";
+  if (lastName) lastName.value = user.lastName || "";
+  if (displayName) displayName.value = user.displayName || user.name || "";
+  if (locale) locale.value = user.locale || "";
+  if (emailValue) emailValue.textContent = user.email || "—";
+  if (emailVerified) emailVerified.textContent = user.emailVerified ? "Verified by Google" : "Password account";
+  if (providerChip) providerChip.textContent = user.authProvider === "google" || user.googleId ? "Google account" : "Manual account";
   setCredentialBadge("badge-credit", "status-credit", Boolean(credentials.creditScoreVerified));
   setCredentialBadge("badge-income", "status-income", Boolean(credentials.incomeVerified));
   setCredentialBadge("badge-age", "status-age", Boolean(credentials.ageVerified));
+}
+
+function renderAdminControls() {
+  const panel = document.getElementById("admin-controls");
+  const hasAdminKey = Boolean(STATE.contractAddress && window.ZkCredMidnight?.hasAdminKey?.(STATE.contractAddress));
+  if (panel) panel.hidden = !hasAdminKey;
+  if (!hasAdminKey) return;
+  const score = document.getElementById("admin-min-score");
+  const income = document.getElementById("admin-min-income");
+  const age = document.getElementById("admin-min-age");
+  if (score) score.value = String(STATE.minCreditScore ?? 700);
+  if (income) income.value = String(STATE.minAnnualIncome ?? 5000000);
+  if (age) age.value = String(STATE.minAge ?? 21);
 }
 
 async function fetchProfileFromMongoDB() {
@@ -828,13 +879,14 @@ function initAuth() {
 
   if (navAuthBtn) {
     navAuthBtn.addEventListener("click", () => {
-      openModal(authModal);
+      navigate("auth");
     });
   }
 
   if (authModalClose) {
     authModalClose.addEventListener("click", () => {
       closeModal(authModal);
+      if (currentRoute() === "auth") navigate("home");
     });
   }
 
@@ -892,6 +944,7 @@ function initAuth() {
         updateAuthUI();
         fetchProfileFromMongoDB();
         closeModal(authModal);
+        navigate("dashboard");
         fetchVerificationsFromMongoDB();
         console.log(`[Google OAuth] Signed in as ${user.name} (${user.email})`);
 
@@ -938,6 +991,7 @@ function initAuth() {
           updateAuthUI();
           fetchProfileFromMongoDB();
           closeModal(authModal);
+          navigate("dashboard");
           fetchVerificationsFromMongoDB();
         } else {
           if (authAlert) {
@@ -1063,7 +1117,9 @@ function setupCopyButtons() {
 function setupSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener("click", (e) => {
-      const target = document.querySelector(link.getAttribute("href"));
+      const href = link.getAttribute("href");
+      if (href?.startsWith("#/")) return;
+      const target = document.querySelector(href);
       if (!target) return;
       e.preventDefault();
       target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1111,6 +1167,82 @@ function setupCardGlow() {
     card.addEventListener("mouseleave", () => {
       card.style.background = "";
     });
+  });
+}
+
+function initRouting() {
+  window.addEventListener("hashchange", applyRoute);
+  applyRoute();
+  document.getElementById("nav-profile-link")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (!STATE.authToken) return navigate("auth");
+    navigate("profile");
+    fetchProfileFromMongoDB();
+  });
+}
+
+function initProfileEditor() {
+  const form = document.getElementById("profile-editor-form");
+  const status = document.getElementById("profile-editor-status");
+  if (!form) return;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!STATE.authToken) {
+      navigate("auth");
+      return;
+    }
+    const payload = {
+      firstName: document.getElementById("profile-first-name")?.value || "",
+      lastName: document.getElementById("profile-last-name")?.value || "",
+      displayName: document.getElementById("profile-display-name")?.value || "",
+      locale: document.getElementById("profile-locale")?.value || "",
+    };
+    try {
+      const response = await fetch(`${API_BASE}/auth/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${STATE.authToken}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to save profile.");
+      STATE.currentUser = data.user;
+      localStorage.setItem("zkcred_user", JSON.stringify(data.user));
+      renderProfile(data.user);
+      updateAuthUI();
+      if (status) { status.hidden = false; status.className = "auth-alert success"; status.textContent = "Profile saved."; }
+    } catch (error) {
+      if (status) { status.hidden = false; status.className = "auth-alert error"; status.textContent = error.message || "Unable to save profile."; }
+    }
+  });
+}
+
+function initThresholdControls() {
+  const form = document.getElementById("threshold-update-form");
+  const status = document.getElementById("threshold-update-status");
+  if (!form) return;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!STATE.walletConnected) {
+      setProofStatus("Connect the administrator Lace wallet before updating thresholds.", true);
+      return;
+    }
+    const thresholds = {
+      minCreditScore: Number(document.getElementById("admin-min-score")?.value),
+      minAnnualIncome: Number(document.getElementById("admin-min-income")?.value),
+      minAge: Number(document.getElementById("admin-min-age")?.value),
+    };
+    try {
+      if (status) { status.hidden = false; status.className = "auth-alert"; status.textContent = "Submitting administrator-authorized transaction through Lace…"; }
+      const result = await window.ZkCredMidnight?.updateThresholds(STATE.contractAddress, thresholds);
+      if (!result?.transactionId) throw new Error("Lace did not return a threshold-update transaction ID.");
+      const liveState = await fetchOnChainState();
+      if (!liveState) throw new Error("Threshold transaction was sent but live contract state could not be read.");
+      renderAdminControls();
+      updateEligibilityPreview();
+      if (status) { status.className = "auth-alert success"; status.textContent = `Threshold update finalized: ${result.transactionId}`; }
+    } catch (error) {
+      if (status) { status.className = "auth-alert error"; status.textContent = error.message || "Unable to update thresholds."; }
+    }
   });
 }
 
@@ -1167,7 +1299,8 @@ function init() {
   const profileWalletAddr = document.getElementById("profile-wallet-addr");
   if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress || "Not configured";
   const profileSalt = document.getElementById("profile-witness-salt");
-  // Show the session salt (ephemeral, private — not derived from real committed value yet)
+  // The raw salt is private. The circuit records only a domain-separated
+  // nullifier, so this value is never published to the ledger.
   if (profileSalt) profileSalt.textContent = STATE.userSalt.slice(0, 10) + "..." + STATE.userSalt.slice(-6);
 
   observeSection("#stat-proofs .stat-value", async (el) => {
@@ -1197,6 +1330,9 @@ function init() {
 
   initWalletConnect();
   initAuth();
+  initRouting();
+  initProfileEditor();
+  initThresholdControls();
   initMobileDrawer();
   initExportAttestation();
   setupCopyButtons();
@@ -1220,6 +1356,7 @@ function init() {
         minAnnualIncome: STATE.minAnnualIncome,
         minAge: STATE.minAge,
       });
+      renderAdminControls();
     }
   });
 

@@ -23,7 +23,7 @@ import * as CompiledOutput from "../src/managed/contract/index.js";
 setNetworkId("preprod");
 (globalThis as any).Buffer = (globalThis as any).Buffer ?? NodeBuffer;
 
-type WitnessInput = { creditScore: number; annualIncome: number; age: number; userSalt: string };
+type WitnessInput = { creditScore: number; annualIncome: number; age: number; userSalt: string; adminKey?: Uint8Array };
 
 function normalizeContractAddress(address: string): string {
   const hex = address.replace(/^0x/i, "");
@@ -63,6 +63,23 @@ function storagePassword(): string {
     sessionStorage.setItem(key, secret);
   }
   return secret;
+}
+
+function adminKeyStorageKey(contractAddress: string): string {
+  return `zkcred_admin_key_${normalizeContractAddress(contractAddress)}`;
+}
+
+function saveAdminKey(contractAddress: string, adminKey: Uint8Array): void {
+  // The secret never leaves this browser. It is required only for the optional
+  // admin circuit and follows the same browser-storage risk model Lace warns
+  // about for local private state; users must export/back up browser data.
+  localStorage.setItem(adminKeyStorageKey(contractAddress), bytesToHex(adminKey));
+}
+
+function loadAdminKey(contractAddress: string): Uint8Array | null {
+  const encoded = localStorage.getItem(adminKeyStorageKey(contractAddress));
+  if (!encoded || !/^[0-9a-f]{64}$/i.test(encoded)) return null;
+  return hexToBytes(encoded);
 }
 
 function selectConnector(): InitialAPI {
@@ -107,7 +124,7 @@ function compiledContract(input?: WitnessInput) {
     getPrivateAnnualIncome: (context: any) => [context.privateState, BigInt(witnessInput.annualIncome)],
     getPrivateAge: (context: any) => [context.privateState, BigInt(witnessInput.age)],
     getPrivateSalt: (context: any) => [context.privateState, saltBytes(witnessInput.userSalt)],
-    getPrivateAdminKey: (context: any) => [context.privateState, new Uint8Array(32)],
+    getPrivateAdminKey: (context: any) => [context.privateState, witnessInput.adminKey ?? new Uint8Array(32)],
   };
   return CompiledContract.make<any>("ZkCred", CompiledOutput.Contract).pipe(
     CompiledContract.withWitnesses(witnesses as any),
@@ -195,6 +212,24 @@ async function submitEligibility(contractAddress: string, input: WitnessInput) {
   return { transactionId: String((tx as any).txId ?? (tx as any).public?.txId ?? "") };
 }
 
+async function updateThresholds(contractAddress: string, thresholds: { minCreditScore: number; minAnnualIncome: number; minAge: number }) {
+  if (!active) throw new Error("Connect Midnight Lace before updating thresholds.");
+  const adminKey = loadAdminKey(contractAddress);
+  if (!adminKey) throw new Error("This browser does not hold the administrator key for this contract.");
+  if (![thresholds.minCreditScore, thresholds.minAnnualIncome, thresholds.minAge].every(Number.isSafeInteger)) {
+    throw new Error("Threshold values must be safe integers.");
+  }
+  const contract = compiledContract({ creditScore: 0, annualIncome: 0, age: 0, userSalt: bytesToHex(new Uint8Array(32)), adminKey });
+  const deployed = await findDeployedContract(active.providers, { compiledContract: contract, contractAddress: contractAddress as any });
+  const tx = await submitCallTx(active.providers, {
+    compiledContract: contract,
+    contractAddress: deployed.deployTxData.public.contractAddress,
+    circuitId: "updateThresholds" as any,
+    args: [BigInt(thresholds.minCreditScore), BigInt(thresholds.minAnnualIncome), BigInt(thresholds.minAge)],
+  } as any);
+  return { transactionId: String((tx as any).txId ?? (tx as any).public?.txId ?? "") };
+}
+
 /** Reads and decodes the public ledger with the generated Compact binding. */
 async function getLedgerState(contractAddress: string) {
   if (!active) throw new Error("Connect Midnight Lace before reading contract state.");
@@ -254,10 +289,11 @@ async function deploy(
   );
   const address = normalizeContractAddress(String(deployed.deployTxData.public.contractAddress));
   localStorage.setItem("zkcred_contract_address", address);
+  saveAdminKey(address, adminKey);
   return {
     contractAddress: address,
     transactionId: String((initialized as any).txId ?? (initialized as any).public?.txId ?? deployed.deployTxData.public.txId ?? ""),
   };
 }
 
-(window as any).ZkCredMidnight = { connect, deploy, getLedgerState, submitEligibility, isConnected: () => Boolean(active) };
+(window as any).ZkCredMidnight = { connect, deploy, getLedgerState, submitEligibility, updateThresholds, hasAdminKey: (address: string) => Boolean(loadAdminKey(address)), isConnected: () => Boolean(active) };

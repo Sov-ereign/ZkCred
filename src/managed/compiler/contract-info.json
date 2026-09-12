@@ -207,6 +207,16 @@
         "type-name": "Bytes",
         "length": 32
       }
+    },
+    {
+      "name": "usedSaltNullifiers",
+      "index": 6,
+      "exported": true,
+      "storage": "Set",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
     }
   ]
 }

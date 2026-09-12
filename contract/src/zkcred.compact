@@ -1,4 +1,5 @@
 pragma language_version 0.23.0;
+import CompactStandardLibrary;
 
 // =============================================================================
 // ZkCred (AegisID) — Multi-Attribute Age & Financial Eligibility Gate
@@ -23,6 +24,10 @@ export ledger minAge: Uint<32>;
 export ledger isEligible: Boolean;
 export ledger verificationCount: Uint<64>;
 export ledger admin: Bytes<32>;
+// Domain-separated nullifiers are public one-way commitments of a private
+// salt. They prevent the same credential witness from being replayed without
+// revealing its salt, age, credit score, or income.
+export ledger usedSaltNullifiers: Set<Bytes<32>>;
 
 // --- Private Witness Declarations (local off-chain only) ---
 witness getPrivateCreditScore(): Uint<32>;
@@ -55,7 +60,16 @@ export circuit verifyEligibility(): [] {
   const creditScore: Uint<32> = getPrivateCreditScore();
   const annualIncome: Uint<64> = getPrivateAnnualIncome();
   const age: Uint<32> = getPrivateAge();
-  const _salt: Bytes<32> = getPrivateSalt();
+  const salt: Bytes<32> = getPrivateSalt();
+
+  // A salt is private input; only its domain-separated nullifier is stored.
+  // This prevents replay of a proof with the same credential secret while
+  // avoiding cross-protocol linkability from an unscoped hash.
+  const saltNullifier: Bytes<32> = disclose(persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "zkcred:eligibility:nullifier:v1"),
+    salt
+  ]));
+  assert(!usedSaltNullifiers.member(saltNullifier), "Credential salt already used");
 
   // Evaluate thresholds inside ZK circuit (zero-knowledge proof)
   const meetsScoreThreshold: Boolean = creditScore >= minCreditScore;
@@ -70,8 +84,7 @@ export circuit verifyEligibility(): [] {
   // Increment public verification counter with explicit Uint<64> cast
   const newCount: Uint<64> = (verificationCount + (1 as Uint<64>)) as Uint<64>;
   verificationCount = disclose(newCount);
-
-  // Keep the salt in the private witness. It is intentionally not disclosed.
+  usedSaltNullifiers.insert(disclose(saltNullifier));
 }
 
 // --- Admin Circuit: Update Thresholds ---
