@@ -27,7 +27,7 @@ const STATE = {
   minAnnualIncome: null,
   minAge: null,
   verificationCount: null,
-  contractAddress: localStorage.getItem("zkcred_contract_address") || null,
+  contractAddress: normalizeContractAddress(localStorage.getItem("zkcred_contract_address")),
   isGenerating: false,
   walletConnected: false,
   walletAddress: null,
@@ -36,6 +36,12 @@ const STATE = {
   onChainState: null, // populated from /api/contract/state
   userSalt: generateDynamicHex(32, "0x"), // ephemeral per-session salt
 };
+
+function normalizeContractAddress(address) {
+  if (!address) return null;
+  const hex = String(address).replace(/^0x/i, "");
+  return /^[0-9a-f]+$/i.test(hex) ? `0x${hex}` : null;
+}
 
 // ─── Modal Accessibility Helpers ──────────────────────────────────────────────
 

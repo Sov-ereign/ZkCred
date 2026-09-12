@@ -23,6 +23,12 @@ setNetworkId("preprod");
 (globalThis as any).Buffer = (globalThis as any).Buffer ?? NodeBuffer;
 
 type WitnessInput = { creditScore: number; annualIncome: number; age: number; userSalt: string };
+
+function normalizeContractAddress(address: string): string {
+  const hex = address.replace(/^0x/i, "");
+  if (!/^[0-9a-f]+$/i.test(hex)) throw new Error("Invalid Midnight contract address.");
+  return `0x${hex}`;
+}
 type ActiveConnection = { api: ConnectedAPI; address: string; providers: any; walletName: string };
 
 let active: ActiveConnection | null = null;
@@ -234,7 +240,7 @@ async function deploy(
     BigInt(thresholds.minAge),
     adminKey,
   );
-  const address = String(deployed.deployTxData.public.contractAddress);
+  const address = normalizeContractAddress(String(deployed.deployTxData.public.contractAddress));
   localStorage.setItem("zkcred_contract_address", address);
   return {
     contractAddress: address,
