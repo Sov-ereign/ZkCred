@@ -14,7 +14,6 @@ import { indexerPublicDataProvider } from "@midnight-ntwrk/midnight-js-indexer-p
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { deployContract, findDeployedContract, submitCallTx } from "@midnight-ntwrk/midnight-js-contracts";
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
-import { parseCoinPublicKeyToHex, parseEncPublicKeyToHex } from "@midnight-ntwrk/midnight-js-utils";
 import { Buffer as NodeBuffer } from "buffer";
 import * as CompiledOutput from "../src/managed/contract/index.js";
 
@@ -81,7 +80,16 @@ async function waitForConnector(timeoutMs = 7_500): Promise<InitialAPI> {
   return selectConnector();
 }
 
-function compiledContract(input: WitnessInput) {
+function compiledContract(input?: WitnessInput) {
+  if (!input) {
+    // Deployment does not execute witness-backed eligibility circuits. Using
+    // vacant witnesses matches Midnight's official wallet dApp deployment
+    // flow and avoids creating a phantom private witness state at deploy time.
+    return CompiledContract.make<any>("ZkCred", CompiledOutput.Contract).pipe(
+      CompiledContract.withVacantWitnesses,
+      CompiledContract.withCompiledFileAssets("./contract/compiled"),
+    );
+  }
   const witnesses = {
     getPrivateCreditScore: () => [undefined, BigInt(input.creditScore)],
     getPrivateAnnualIncome: () => [undefined, BigInt(input.annualIncome)],
@@ -114,8 +122,10 @@ async function buildProviders(api: ConnectedAPI, accountId: string) {
   const proofProvider = httpClientProofProvider(config.proverServerUri, zkConfigProvider);
   const shielded = await api.getShieldedAddresses();
   const walletProvider = {
-    getCoinPublicKey: () => parseCoinPublicKeyToHex(shielded.shieldedCoinPublicKey, "preprod") as any,
-    getEncryptionPublicKey: () => parseEncPublicKeyToHex(shielded.shieldedEncryptionPublicKey, "preprod") as any,
+    // dapp-connector returns Bech32m keys. midnight-js-contracts performs
+    // its own network-aware decoding, as in Midnight's official wallet dApp.
+    getCoinPublicKey: () => shielded.shieldedCoinPublicKey as any,
+    getEncryptionPublicKey: () => shielded.shieldedEncryptionPublicKey as any,
     async balanceTx(tx: any) {
       const result = await api.balanceUnsealedTransaction(bytesToHex(tx.serialize()));
       return Transaction.deserialize("signature", "proof", "binding", hexToBytes(result.tx)) as Transaction<SignatureEnabled, Proof, Binding>;
@@ -209,12 +219,7 @@ async function deploy(
   }
   const adminKey = new Uint8Array(32);
   crypto.getRandomValues(adminKey);
-  const contract = compiledContract({
-    creditScore: 0,
-    annualIncome: 0,
-    age: 0,
-    userSalt: bytesToHex(new Uint8Array(32)),
-  });
+  const contract = compiledContract();
   // Compact 0.26 emits `initialize` as the constructor circuit. The current
   // midnight-js runtime creates the contract state first, then invokes that
   // circuit through the deployed call interface; passing args to
