@@ -6,6 +6,7 @@
  * API, indexer, or proof server as JSON.
  */
 import { CompiledContract } from "@midnight-ntwrk/compact-js";
+import { ContractState as CompactContractState } from "@midnight-ntwrk/compact-runtime";
 import { Transaction, Binding, Proof, SignatureEnabled } from "@midnight-ntwrk/ledger-v8";
 import type { ConnectedAPI, InitialAPI } from "@midnight-ntwrk/dapp-connector-api";
 import { FetchZkConfigProvider } from "@midnight-ntwrk/midnight-js-fetch-zk-config-provider";
@@ -204,12 +205,12 @@ async function getLedgerState(contractAddress: string) {
   const queried = await active.providers.publicDataProvider.queryZSwapAndContractState(contractAddress as any);
   if (!queried) throw new Error("The configured contract was not found on the wallet's Midnight indexer.");
   const [, publicState] = queried;
-  // midnight-js exposes ContractState with its charged ledger value under
-  // `data`, while Compact's generated ledger binding expects the historical
-  // `{ state: ChargedState }` shape. Adapt the SDK value without decoding or
-  // fabricating any state; the generated binding still validates the runtime
-  // ChargedState instance before reading fields.
-  const ledger = CompiledOutput.ledger({ state: (publicState as any).data });
+  // The indexer and generated binding can be bundled with distinct copies of
+  // the WASM runtime. Re-serialize through this app's runtime copy so its
+  // ChargedState identity check succeeds, then adapt the SDK's `data` field to
+  // the generated binding's historical `{ state: ChargedState }` shape.
+  const normalizedState = CompactContractState.deserialize((publicState as any).serialize());
+  const ledger = CompiledOutput.ledger({ state: (normalizedState as any).data });
   return {
     contractAddress,
     minCreditScore: Number(ledger.minCreditScore),
