@@ -81,21 +81,20 @@ async function waitForConnector(timeoutMs = 7_500): Promise<InitialAPI> {
 }
 
 function compiledContract(input?: WitnessInput) {
-  if (!input) {
-    // Deployment does not execute witness-backed eligibility circuits. Using
-    // vacant witnesses matches Midnight's official wallet dApp deployment
-    // flow and avoids creating a phantom private witness state at deploy time.
-    return CompiledContract.make<any>("ZkCred", CompiledOutput.Contract).pipe(
-      CompiledContract.withVacantWitnesses,
-      CompiledContract.withCompiledFileAssets("./contract/compiled"),
-    );
-  }
+  const witnessInput = input ?? {
+    creditScore: 0,
+    annualIncome: 0,
+    age: 0,
+    userSalt: bytesToHex(new Uint8Array(32)),
+  };
   const witnesses = {
-    getPrivateCreditScore: () => [undefined, BigInt(input.creditScore)],
-    getPrivateAnnualIncome: () => [undefined, BigInt(input.annualIncome)],
-    getPrivateAge: () => [undefined, BigInt(input.age)],
-    getPrivateSalt: () => [undefined, saltBytes(input.userSalt)],
-    getPrivateAdminKey: () => [undefined, new Uint8Array(32)],
+    // Preserve the opaque state managed by the Midnight runtime. Returning
+    // `undefined` here corrupts the state threaded through the contract.
+    getPrivateCreditScore: (context: any) => [context.privateState, BigInt(witnessInput.creditScore)],
+    getPrivateAnnualIncome: (context: any) => [context.privateState, BigInt(witnessInput.annualIncome)],
+    getPrivateAge: (context: any) => [context.privateState, BigInt(witnessInput.age)],
+    getPrivateSalt: (context: any) => [context.privateState, saltBytes(witnessInput.userSalt)],
+    getPrivateAdminKey: (context: any) => [context.privateState, new Uint8Array(32)],
   };
   return CompiledContract.make<any>("ZkCred", CompiledOutput.Contract).pipe(
     CompiledContract.withWitnesses(witnesses as any),
