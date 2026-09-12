@@ -1,5 +1,5 @@
 import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
-__compactRuntime.checkRuntimeVersion('0.19.0');
+__compactRuntime.checkRuntimeVersion('0.16.0');
 
 const _descriptor_0 = __compactRuntime.CompactTypeBoolean;
 
@@ -74,7 +74,7 @@ export class Contract {
     }
     this.witnesses = witnesses_0;
     this.circuits = {
-      initialize: async (...args_1) => {
+      initialize: (...args_1) => {
         if (args_1.length !== 5) {
           throw new __compactRuntime.CompactError(`initialize: expected 5 arguments (as invoked from Typescript), received ${args_1.length}`);
         }
@@ -83,7 +83,7 @@ export class Contract {
         const annualIncomeThreshold_0 = args_1[2];
         const ageThreshold_0 = args_1[3];
         const adminAddress_0 = args_1[4];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.callContext.currentQueryContext != undefined)) {
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('initialize',
                                      'argument 1 (as invoked from Typescript)',
                                      'zkcred.compact line 35 char 1',
@@ -118,7 +118,7 @@ export class Contract {
                                      'Bytes<32>',
                                      adminAddress_0)
         }
-        const context = __compactRuntime.copyCircuitContext(contextOrig_0);
+        const context = { ...contextOrig_0, gasCost: __compactRuntime.emptyRunningCost() };
         const partialProofData = {
           input: {
             value: _descriptor_2.toValue(creditScoreThreshold_0).concat(_descriptor_1.toValue(annualIncomeThreshold_0).concat(_descriptor_2.toValue(ageThreshold_0).concat(_descriptor_3.toValue(adminAddress_0)))),
@@ -128,42 +128,39 @@ export class Contract {
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = await this._initialize_0(context,
-                                                  partialProofData,
-                                                  creditScoreThreshold_0,
-                                                  annualIncomeThreshold_0,
-                                                  ageThreshold_0,
-                                                  adminAddress_0);
+        const result_0 = this._initialize_0(context,
+                                            partialProofData,
+                                            creditScoreThreshold_0,
+                                            annualIncomeThreshold_0,
+                                            ageThreshold_0,
+                                            adminAddress_0);
         partialProofData.output = { value: [], alignment: [] };
-        __compactRuntime.finalizeCallProofData(context, partialProofData);
-        return { result: result_0, context: context, gasCost: context.callContext.currentGasCost };
+        return { result: result_0, context: context, proofData: partialProofData, gasCost: context.gasCost };
       },
-      verifyEligibility: async (...args_1) => {
+      verifyEligibility: (...args_1) => {
         if (args_1.length !== 1) {
           throw new __compactRuntime.CompactError(`verifyEligibility: expected 1 argument (as invoked from Typescript), received ${args_1.length}`);
         }
         const contextOrig_0 = args_1[0];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.callContext.currentQueryContext != undefined)) {
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('verifyEligibility',
                                      'argument 1 (as invoked from Typescript)',
                                      'zkcred.compact line 53 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
-        const context = __compactRuntime.copyCircuitContext(contextOrig_0);
+        const context = { ...contextOrig_0, gasCost: __compactRuntime.emptyRunningCost() };
         const partialProofData = {
           input: { value: [], alignment: [] },
           output: undefined,
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = await this._verifyEligibility_0(context,
-                                                         partialProofData);
+        const result_0 = this._verifyEligibility_0(context, partialProofData);
         partialProofData.output = { value: [], alignment: [] };
-        __compactRuntime.finalizeCallProofData(context, partialProofData);
-        return { result: result_0, context: context, gasCost: context.callContext.currentGasCost };
+        return { result: result_0, context: context, proofData: partialProofData, gasCost: context.gasCost };
       },
-      updateThresholds: async (...args_1) => {
+      updateThresholds: (...args_1) => {
         if (args_1.length !== 4) {
           throw new __compactRuntime.CompactError(`updateThresholds: expected 4 arguments (as invoked from Typescript), received ${args_1.length}`);
         }
@@ -171,7 +168,7 @@ export class Contract {
         const newMinCreditScore_0 = args_1[1];
         const newMinAnnualIncome_0 = args_1[2];
         const newMinAge_0 = args_1[3];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.callContext.currentQueryContext != undefined)) {
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('updateThresholds',
                                      'argument 1 (as invoked from Typescript)',
                                      'zkcred.compact line 78 char 1',
@@ -199,7 +196,7 @@ export class Contract {
                                      'Uint<0..4294967296>',
                                      newMinAge_0)
         }
-        const context = __compactRuntime.copyCircuitContext(contextOrig_0);
+        const context = { ...contextOrig_0, gasCost: __compactRuntime.emptyRunningCost() };
         const partialProofData = {
           input: {
             value: _descriptor_2.toValue(newMinCreditScore_0).concat(_descriptor_1.toValue(newMinAnnualIncome_0).concat(_descriptor_2.toValue(newMinAge_0))),
@@ -209,39 +206,36 @@ export class Contract {
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = await this._updateThresholds_0(context,
-                                                        partialProofData,
-                                                        newMinCreditScore_0,
-                                                        newMinAnnualIncome_0,
-                                                        newMinAge_0);
+        const result_0 = this._updateThresholds_0(context,
+                                                  partialProofData,
+                                                  newMinCreditScore_0,
+                                                  newMinAnnualIncome_0,
+                                                  newMinAge_0);
         partialProofData.output = { value: [], alignment: [] };
-        __compactRuntime.finalizeCallProofData(context, partialProofData);
-        return { result: result_0, context: context, gasCost: context.callContext.currentGasCost };
+        return { result: result_0, context: context, proofData: partialProofData, gasCost: context.gasCost };
       },
-      getEligibilityStatus: async (...args_1) => {
+      getEligibilityStatus: (...args_1) => {
         if (args_1.length !== 1) {
           throw new __compactRuntime.CompactError(`getEligibilityStatus: expected 1 argument (as invoked from Typescript), received ${args_1.length}`);
         }
         const contextOrig_0 = args_1[0];
-        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.callContext.currentQueryContext != undefined)) {
+        if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('getEligibilityStatus',
                                      'argument 1 (as invoked from Typescript)',
                                      'zkcred.compact line 94 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
-        const context = __compactRuntime.copyCircuitContext(contextOrig_0);
+        const context = { ...contextOrig_0, gasCost: __compactRuntime.emptyRunningCost() };
         const partialProofData = {
           input: { value: [], alignment: [] },
           output: undefined,
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = await this._getEligibilityStatus_0(context,
-                                                            partialProofData);
+        const result_0 = this._getEligibilityStatus_0(context, partialProofData);
         partialProofData.output = { value: _descriptor_0.toValue(result_0), alignment: _descriptor_0.alignment() };
-        __compactRuntime.finalizeCallProofData(context, partialProofData);
-        return { result: result_0, context: context, gasCost: context.callContext.currentGasCost };
+        return { result: result_0, context: context, proofData: partialProofData, gasCost: context.gasCost };
       }
     };
     this.impureCircuits = {
@@ -257,7 +251,7 @@ export class Contract {
       getEligibilityStatus: this.circuits.getEligibilityStatus
     };
   }
-  async initialState(...args_0) {
+  initialState(...args_0) {
     if (args_0.length !== 1) {
       throw new __compactRuntime.CompactError(`Contract state constructor: expected 1 argument (as invoked from Typescript), received ${args_0.length}`);
     }
@@ -287,7 +281,7 @@ export class Contract {
     state_0.setOperation('verifyEligibility', new __compactRuntime.ContractOperation());
     state_0.setOperation('updateThresholds', new __compactRuntime.ContractOperation());
     state_0.setOperation('getEligibilityStatus', new __compactRuntime.ContractOperation());
-    const context = __compactRuntime.createCircuitContext('constructor', __compactRuntime.dummyContractAddress(), constructorContext_0.initialZswapLocalState.coinPublicKey, state_0.data, constructorContext_0.initialPrivateState);
+    const context = __compactRuntime.createCircuitContext(__compactRuntime.dummyContractAddress(), constructorContext_0.initialZswapLocalState.coinPublicKey, state_0.data, constructorContext_0.initialPrivateState);
     const partialProofData = {
       input: { value: [], alignment: [] },
       output: undefined,
@@ -354,17 +348,17 @@ export class Contract {
                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_3.toValue(new Uint8Array(32)),
                                                                                               alignment: _descriptor_3.alignment() }).encode() } },
                                        { ins: { cached: false, n: 1 } }]);
-    state_0.data = new __compactRuntime.ChargedState(context.callContext.currentQueryContext.state.state);
+    state_0.data = new __compactRuntime.ChargedState(context.currentQueryContext.state.state);
     return {
       currentContractState: state_0,
-      currentPrivateState: context.callContext.currentPrivateState,
-      currentZswapLocalState: context.callContext.currentZswapLocalState
+      currentPrivateState: context.currentPrivateState,
+      currentZswapLocalState: context.currentZswapLocalState
     }
   }
   _getPrivateCreditScore_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.callContext.currentQueryContext.state), context.callContext.currentPrivateState, context.callContext.currentQueryContext.address);
+    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
     const [nextPrivateState_0, result_0] = this.witnesses.getPrivateCreditScore(witnessContext_0);
-    context.callContext.currentPrivateState = nextPrivateState_0;
+    context.currentPrivateState = nextPrivateState_0;
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 4294967295n)) {
       __compactRuntime.typeError('getPrivateCreditScore',
                                  'return value',
@@ -379,9 +373,9 @@ export class Contract {
     return result_0;
   }
   _getPrivateAnnualIncome_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.callContext.currentQueryContext.state), context.callContext.currentPrivateState, context.callContext.currentQueryContext.address);
+    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
     const [nextPrivateState_0, result_0] = this.witnesses.getPrivateAnnualIncome(witnessContext_0);
-    context.callContext.currentPrivateState = nextPrivateState_0;
+    context.currentPrivateState = nextPrivateState_0;
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 18446744073709551615n)) {
       __compactRuntime.typeError('getPrivateAnnualIncome',
                                  'return value',
@@ -396,9 +390,9 @@ export class Contract {
     return result_0;
   }
   _getPrivateAge_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.callContext.currentQueryContext.state), context.callContext.currentPrivateState, context.callContext.currentQueryContext.address);
+    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
     const [nextPrivateState_0, result_0] = this.witnesses.getPrivateAge(witnessContext_0);
-    context.callContext.currentPrivateState = nextPrivateState_0;
+    context.currentPrivateState = nextPrivateState_0;
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 4294967295n)) {
       __compactRuntime.typeError('getPrivateAge',
                                  'return value',
@@ -413,9 +407,9 @@ export class Contract {
     return result_0;
   }
   _getPrivateSalt_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.callContext.currentQueryContext.state), context.callContext.currentPrivateState, context.callContext.currentQueryContext.address);
+    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
     const [nextPrivateState_0, result_0] = this.witnesses.getPrivateSalt(witnessContext_0);
-    context.callContext.currentPrivateState = nextPrivateState_0;
+    context.currentPrivateState = nextPrivateState_0;
     if (!(result_0.buffer instanceof ArrayBuffer && result_0.BYTES_PER_ELEMENT === 1 && result_0.length === 32)) {
       __compactRuntime.typeError('getPrivateSalt',
                                  'return value',
@@ -430,9 +424,9 @@ export class Contract {
     return result_0;
   }
   _getPrivateAdminKey_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.callContext.currentQueryContext.state), context.callContext.currentPrivateState, context.callContext.currentQueryContext.address);
+    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
     const [nextPrivateState_0, result_0] = this.witnesses.getPrivateAdminKey(witnessContext_0);
-    context.callContext.currentPrivateState = nextPrivateState_0;
+    context.currentPrivateState = nextPrivateState_0;
     if (!(result_0.buffer instanceof ArrayBuffer && result_0.BYTES_PER_ELEMENT === 1 && result_0.length === 32)) {
       __compactRuntime.typeError('getPrivateAdminKey',
                                  'return value',
@@ -446,12 +440,12 @@ export class Contract {
     });
     return result_0;
   }
-  async _initialize_0(context,
-                      partialProofData,
-                      creditScoreThreshold_0,
-                      annualIncomeThreshold_0,
-                      ageThreshold_0,
-                      adminAddress_0)
+  _initialize_0(context,
+                partialProofData,
+                creditScoreThreshold_0,
+                annualIncomeThreshold_0,
+                ageThreshold_0,
+                adminAddress_0)
   {
     __compactRuntime.queryLedgerState(context,
                                       partialProofData,
@@ -516,7 +510,7 @@ export class Contract {
                                        { ins: { cached: false, n: 1 } }]);
     return [];
   }
-  async _verifyEligibility_0(context, partialProofData) {
+  _verifyEligibility_0(context, partialProofData) {
     const creditScore_0 = this._getPrivateCreditScore_0(context,
                                                         partialProofData);
     const annualIncome_0 = this._getPrivateAnnualIncome_0(context,
@@ -609,11 +603,11 @@ export class Contract {
                                        { ins: { cached: false, n: 1 } }]);
     return [];
   }
-  async _updateThresholds_0(context,
-                            partialProofData,
-                            newMinCreditScore_0,
-                            newMinAnnualIncome_0,
-                            newMinAge_0)
+  _updateThresholds_0(context,
+                      partialProofData,
+                      newMinCreditScore_0,
+                      newMinAnnualIncome_0,
+                      newMinAge_0)
   {
     const callerKey_0 = this._getPrivateAdminKey_0(context, partialProofData);
     __compactRuntime.assert(this._equal_0(callerKey_0,
@@ -672,7 +666,7 @@ export class Contract {
                                        { ins: { cached: false, n: 1 } }]);
     return [];
   }
-  async _getEligibilityStatus_0(context, partialProofData) {
+  _getEligibilityStatus_0(context, partialProofData) {
     return _descriptor_0.fromValue(__compactRuntime.queryLedgerState(context,
                                                                      partialProofData,
                                                                      [
@@ -695,7 +689,7 @@ export function ledger(stateOrChargedState) {
   const state = stateOrChargedState instanceof __compactRuntime.StateValue ? stateOrChargedState : stateOrChargedState.state;
   const chargedState = stateOrChargedState instanceof __compactRuntime.StateValue ? new __compactRuntime.ChargedState(stateOrChargedState) : stateOrChargedState;
   const context = {
-    callContext: { currentQueryContext: new __compactRuntime.QueryContext(chargedState, __compactRuntime.dummyContractAddress()), currentGasCost: __compactRuntime.emptyRunningCost() },
+    currentQueryContext: new __compactRuntime.QueryContext(chargedState, __compactRuntime.dummyContractAddress()),
     costModel: __compactRuntime.CostModel.initialCostModel()
   };
   const partialProofData = {
@@ -792,7 +786,7 @@ export function ledger(stateOrChargedState) {
   };
 }
 const _emptyContext = {
-  callContext: { currentQueryContext: new __compactRuntime.QueryContext(new __compactRuntime.ContractState().data, __compactRuntime.dummyContractAddress()), currentGasCost: __compactRuntime.emptyRunningCost() }
+  currentQueryContext: new __compactRuntime.QueryContext(new __compactRuntime.ContractState().data, __compactRuntime.dummyContractAddress())
 };
 const _dummyContract = new Contract({
   getPrivateCreditScore: (...args) => undefined,
@@ -804,11 +798,4 @@ const _dummyContract = new Contract({
 export const pureCircuits = {};
 export const contractReferenceLocations =
   { tag: 'publicLedgerArray', indices: { } };
-export const expectedVk = {
-  'getEligibilityStatus': '95a209a810ddd347aa984bb6c6a5c57ba66ef29b4221f1fafd3f04e1fa4fdec9',
-  'initialize': '02be370eaccae4af0325d3d1ba2c4b76f9be40ad931a26dc97cd9be2d43ddfab',
-  'updateThresholds': 'dd4fdb2646939aafee2808111d2c7cc033816c7a9d33df2d6874a40ede94c44a',
-  'verifyEligibility': 'a2b530151383366918cf8f26d536533ee260719ed57915900f0b6783f381cea8',
-};
-
 //# sourceMappingURL=index.js.map

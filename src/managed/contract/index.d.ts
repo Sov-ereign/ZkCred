@@ -13,13 +13,13 @@ export type ImpureCircuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminAddress_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  verifyEligibility(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
+             adminAddress_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+  verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
                    newMinCreditScore_0: bigint,
                    newMinAnnualIncome_0: bigint,
-                   newMinAge_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, boolean>>;
+                   newMinAge_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, boolean>;
 }
 
 export type ProvableCircuits<PS> = {
@@ -27,13 +27,13 @@ export type ProvableCircuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminAddress_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  verifyEligibility(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
+             adminAddress_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+  verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
                    newMinCreditScore_0: bigint,
                    newMinAnnualIncome_0: bigint,
-                   newMinAge_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, boolean>>;
+                   newMinAge_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, boolean>;
 }
 
 export type PureCircuits = {
@@ -44,13 +44,13 @@ export type Circuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminAddress_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  verifyEligibility(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, []>>;
+             adminAddress_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+  verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
                    newMinCreditScore_0: bigint,
                    newMinAnnualIncome_0: bigint,
-                   newMinAge_0: bigint): Promise<__compactRuntime.CircuitResults<PS, []>>;
-  getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, boolean>>;
+                   newMinAge_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, boolean>;
 }
 
 export type Ledger = {
@@ -72,9 +72,8 @@ export declare class Contract<PS = any, W extends Witnesses<PS> = Witnesses<PS>>
   impureCircuits: ImpureCircuits<PS>;
   provableCircuits: ProvableCircuits<PS>;
   constructor(witnesses: W);
-  initialState(context: __compactRuntime.ConstructorContext<PS>): Promise<__compactRuntime.ConstructorResult<PS>>;
+  initialState(context: __compactRuntime.ConstructorContext<PS>): __compactRuntime.ConstructorResult<PS>;
 }
 
 export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;
 export declare const pureCircuits: PureCircuits;
-export declare const expectedVk: Record<string, string>;

@@ -1,4 +1,4 @@
-pragma language_version 0.26.0;
+pragma language_version 0.23.0;
 
 // =============================================================================
 // ZkCred (AegisID) — Multi-Attribute Age & Financial Eligibility Gate

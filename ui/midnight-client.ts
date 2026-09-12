@@ -225,6 +225,8 @@ async function deploy(
   // deployContract would incorrectly feed them to initialState().
   const deployed = await deployContract(active.providers, {
     compiledContract: contract,
+    privateStateId: "zkcred-private-state",
+    initialPrivateState: {},
   } as any);
   const initialized = await deployed.callTx.initialize(
     BigInt(thresholds.minCreditScore),
