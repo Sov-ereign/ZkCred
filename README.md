@@ -21,14 +21,13 @@ The application is fail-closed. It does not create a fake proof, fake transactio
 The deployed Preprod verifier is configured in the browser and API defaults:
 
 ```text
-Contract: 56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a
-Deployment transaction: 0000f3f761e53f045ae12de5b6689fbf4df1ff2214a3c2edc427d75dc6368fa116
-Successful eligibility transaction: 00504ed93fec3cdbfd5dda625986a95f1d5d7e7b5d7f521bedbeec375c0ac43e42
+Contract: a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6
+Initialization transaction: 0044ac4d7ec9c41c79dbbf45385e5c1a70237693c1c6d03b1440103e0354c99d6f
 ```
 
 The app verifies the contract and every submitted transaction through Midnight Preprod's GraphQL indexer before showing a success state. A visitor can override the address only by deploying another compatible contract through Lace; no unverified address is trusted.
 
-> Upgrade note: the replay-nullifier ledger field changes the Compact verifier keys. The address above is the verified V1 deployment; the V2 source in this branch must be deployed as a new Preprod contract before this change is released. Do not point production at V2 until its new address and initialization transaction have been verified.
+This is the V2 deployment, whose contract state was read successfully from the canonical Midnight Preprod GraphQL indexer after deployment. It includes replay-nullifier enforcement and the admin-authorized threshold circuit.
 
 ## Run locally
 
@@ -50,7 +49,7 @@ Set the following environment values in `.env` for the API server, and as enviro
 JWT_SECRET=a-long-random-secret
 MONGODB_URI=mongodb+srv://...
 MIDNIGHT_INDEXER_URL=https://indexer.preprod.midnight.network/api/v3/graphql
-CONTRACT_ADDRESS=56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a
+CONTRACT_ADDRESS=a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6
 ```
 
 Start the API locally with `npm run server`. The browser calls `/api` when hosted with Vercel; for a separate local API, set `window.__RENDER_API__` before loading the page.
