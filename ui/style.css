@@ -1072,6 +1072,18 @@ body {
   word-break: break-all;
   line-height: 1.5;
 }
+.tx-verification {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.tx-verification-status.verified {
+  color: var(--green-400);
+}
 
 /* ─── Privacy Section ────────────────────────────────────── */
 .privacy-grid {

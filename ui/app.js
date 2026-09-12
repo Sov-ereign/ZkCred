@@ -84,6 +84,35 @@ const ledgerCount = document.getElementById("ledger-count");
 const ledgerAddress = document.getElementById("ledger-address");
 const txResult = document.getElementById("tx-result");
 const txHashDisplay = document.getElementById("tx-hash-display");
+const verifyLedgerBtn = document.getElementById("verify-ledger-btn");
+const verifyTxBtn = document.getElementById("verify-tx-btn");
+const txVerificationStatus = document.getElementById("tx-verification-status");
+
+const MIDNIGHT_INDEXER_GRAPHQL = "https://indexer.preprod.midnight.network/api/v3/graphql";
+
+async function verifyTransactionOnChain(transactionId) {
+  if (!transactionId) throw new Error("No finalized transaction ID is available yet.");
+  const query = `query($offset:TransactionOffset!){transactions(offset:$offset){id hash block{height hash timestamp} ... on RegularTransaction { identifiers transactionResult{status} }}}`;
+  const response = await fetch(MIDNIGHT_INDEXER_GRAPHQL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables: { offset: { identifier: transactionId } } }),
+  });
+  if (!response.ok) throw new Error(`Indexer returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  if (payload.errors?.length) throw new Error(payload.errors[0].message || "Indexer query failed.");
+  const transaction = payload.data?.transactions?.[0];
+  if (!transaction) throw new Error("Transaction is not indexed yet. Try again shortly.");
+  return transaction;
+}
+
+function renderTransactionVerification(transaction) {
+  if (!txVerificationStatus) return;
+  const status = transaction?.transactionResult?.status || "INDEXED";
+  const block = transaction?.block?.height;
+  txVerificationStatus.textContent = `✓ ${status}${block ? ` · block ${block}` : ""}`;
+  txVerificationStatus.classList.add("verified");
+}
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -315,6 +344,17 @@ async function generateProof() {
 
     STATE.lastTxHash = transactionHash;
     STATE.lastEligibility = eligible;
+
+    // Verify the submitted transaction directly against the public Preprod
+    // indexer. This is a real POST query; the indexer endpoint is not a web
+    // page and must not be presented as a broken outbound explorer link.
+    try {
+      const indexedTransaction = await verifyTransactionOnChain(transactionHash);
+      renderTransactionVerification(indexedTransaction);
+    } catch (verificationError) {
+      if (txVerificationStatus) txVerificationStatus.textContent = verificationError.message;
+      console.warn("[Midnight] Transaction verification pending:", verificationError.message);
+    }
 
     setProofStatus(`✓ Lace submitted a finalized transaction (preview: ${previewEligible}).`);
 
@@ -976,7 +1016,7 @@ function initExportAttestation() {
       transactionHash: STATE.lastTxHash || "Not available until a real transaction is submitted",
       proofSystem: "PLONK ZK-SNARK",
       witnessProtection: "100% Zero-Knowledge Witness (Age, Credit Score, Income shielded)",
-      indexerVerificationUrl: `https://indexer.preprod.midnight.network/api/v1/graphql`,
+      indexerVerificationUrl: MIDNIGHT_INDEXER_GRAPHQL,
       timestamp: new Date().toISOString(),
     };
 
@@ -1078,6 +1118,42 @@ function init() {
   incomeSlider.addEventListener("input", updateIncome);
 
   generateBtn.addEventListener("click", generateProof);
+
+  verifyLedgerBtn?.addEventListener("click", async () => {
+    if (!STATE.walletConnected) {
+      setProofStatus("Connect Lace before verifying live state.", true);
+      return;
+    }
+    verifyLedgerBtn.disabled = true;
+    verifyLedgerBtn.textContent = "Checking…";
+    try {
+      const state = await fetchOnChainState();
+      if (!state) throw new Error("The contract state is not available yet.");
+      verifyLedgerBtn.textContent = "✓ State Verified";
+    } catch (error) {
+      verifyLedgerBtn.textContent = "Retry Verification";
+      setProofStatus(error.message || "Indexer verification failed.", true);
+    } finally {
+      verifyLedgerBtn.disabled = false;
+    }
+  });
+
+  verifyTxBtn?.addEventListener("click", async () => {
+    if (!STATE.lastTxHash) {
+      if (txVerificationStatus) txVerificationStatus.textContent = "Generate a proof first.";
+      return;
+    }
+    verifyTxBtn.disabled = true;
+    verifyTxBtn.textContent = "Checking…";
+    try {
+      renderTransactionVerification(await verifyTransactionOnChain(STATE.lastTxHash));
+    } catch (error) {
+      if (txVerificationStatus) txVerificationStatus.textContent = error.message;
+    } finally {
+      verifyTxBtn.disabled = false;
+      verifyTxBtn.textContent = "Verify transaction on Preprod";
+    }
+  });
 
   updateAge();
   updateCreditScore();
