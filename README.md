@@ -1,5 +1,9 @@
 # AegisID — ZkCred
 
+[![ZkCred CI/CD Pipeline](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml)
+
+**Live demo:** [zk-cred.vercel.app](https://zk-cred.vercel.app) · **Product X:** [@ZK_CRED](https://x.com/ZK_CRED) · **Demo video:** [watch on YouTube](https://youtu.be/InI_dsrYqFY)
+
 ZkCred is a Midnight Compact dApp for proving an age, credit-score, and income threshold without putting those values on-chain. A user signs through Midnight Lace; the browser constructs the Compact transaction, retrieves proving material, and submits it through the wallet.
 
 ## Privacy model
@@ -14,7 +18,15 @@ The contract source is [zkcred.compact](contract/src/zkcred.compact). Its genera
 
 The application is fail-closed. It does not create a fake proof, fake transaction ID, in-memory user, or default contract state.
 
-There is currently **no verified Preprod contract address configured in this repository**. The old address was queried against the public Preprod indexer on 11 September 2026 and returned `contractAction: null`, so it was removed. A funded, unlocked Lace account must deploy the contract and set the emitted address as `CONTRACT_ADDRESS` before a proof can be submitted. This is intentional: claiming a deployment before it exists would be misleading.
+The deployed Preprod verifier is configured in the browser and API defaults:
+
+```text
+Contract: 56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a
+Deployment transaction: 0000f3f761e53f045ae12de5b6689fbf4df1ff2214a3c2edc427d75dc6368fa116
+Successful eligibility transaction: 00504ed93fec3cdbfd5dda625986a95f1d5d7e7b5d7f521bedbeec375c0ac43e42
+```
+
+The app verifies the contract and every submitted transaction through Midnight Preprod's GraphQL indexer before showing a success state. A visitor can override the address only by deploying another compatible contract through Lace; no unverified address is trusted.
 
 ## Run locally
 
@@ -36,7 +48,7 @@ Set the following environment values in `.env` for the API server, and as enviro
 JWT_SECRET=a-long-random-secret
 MONGODB_URI=mongodb+srv://...
 MIDNIGHT_INDEXER_URL=https://indexer.preprod.midnight.network/api/v3/graphql
-CONTRACT_ADDRESS=0x... # only after verifying deployment on Preprod
+CONTRACT_ADDRESS=56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a
 ```
 
 Start the API locally with `npm run server`. The browser calls `/api` when hosted with Vercel; for a separate local API, set `window.__RENDER_API__` before loading the page.
@@ -59,7 +71,7 @@ Compile first:
 npm run compile
 ```
 
-Deployment requires an interactive browser connection to Lace because the user must approve and fund it. After deployment, verify its address through the Preprod indexer, then set `CONTRACT_ADDRESS` in local/Vercel/server environments. The client will refuse to generate a proof if the address is absent, unrecognized by the indexer, or has verifier keys different from the compiled contract.
+Deployment requires an interactive browser connection to Lace because the user must approve and fund it. The shipped app defaults to the verified Preprod contract above; after a new deployment, verify its address through the Preprod indexer before choosing it in a browser or configuring `CONTRACT_ADDRESS` for the API.
 
 For the initial deployment, connect Lace in the local dApp, then run this from the browser developer console:
 
@@ -85,8 +97,12 @@ The suite has 9 passing tests for the private-witness boundary, no salt disclosu
 
 ## Hosted deployment
 
-Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser bundle, WASM modules, and compiled proof assets. The `/api/*` rewrite targets `api/index.js`. Configure all required secrets and `CONTRACT_ADDRESS` in the Vercel project before treating a hosted URL as a working Preprod dApp.
+Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser bundle, WASM modules, and compiled proof assets. The `/api/*` rewrite targets `api/index.js`. Vercel does **not** host the prover: Lace provides the configured remote Preprod prover URI to the browser. The public contract address is compiled into the client and API defaults; `CONTRACT_ADDRESS` is an optional server-side override.
 
 ## Submission evidence
 
-The repository contains the Compact source, CI workflow, and reproducible tests. A real submission still needs evidence that cannot be generated without the account owner: a public repository, a verified Preprod deployment address, a hosted deployment with configuration, a CI run, and a video showing Lace approval and finalized transaction.
+The repository contains the Compact source, CI workflow, reproducible tests, and a test-output screenshot.
+
+![Test output: 9 passing tests](assets/npm_test.png)
+
+For final submission, record/upload the current one-minute walkthrough showing Lace connection and a finalized proof transaction, then replace the demo-video URL above if needed. Idea approval is maintained in the external submission process.

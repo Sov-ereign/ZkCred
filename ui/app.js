@@ -10,6 +10,10 @@ const isLocalDev = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/
 const API_BASE = isLocalDev ? "/api" : ((typeof window !== "undefined" && window.__RENDER_API__)
   ? window.__RENDER_API__.replace(/\/$/, "")
   : "/api");
+// Public, verified Midnight Preprod contract configuration. A visitor may
+// override it by deploying a newer verifier in their own browser; this is not
+// a synthetic fallback and is always checked against the live indexer.
+const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
   const bytes = new Uint8Array(lenBytes);
@@ -27,7 +31,7 @@ const STATE = {
   minAnnualIncome: null,
   minAge: null,
   verificationCount: null,
-  contractAddress: normalizeContractAddress(localStorage.getItem("zkcred_contract_address")),
+  contractAddress: normalizeContractAddress(localStorage.getItem("zkcred_contract_address") || DEPLOYED_PREPROD_CONTRACT_ADDRESS),
   isGenerating: false,
   walletConnected: false,
   walletAddress: null,
