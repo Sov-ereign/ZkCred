@@ -1459,6 +1459,7 @@ function initThreeSculpture() {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
 
   // Lighting Setup (Studio Lighting matching Midnight)
   const ambientLight = new THREE.AmbientLight(0x7c3aed, 0.9);

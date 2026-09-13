@@ -74,16 +74,22 @@ body {
   display: none !important;
 }
 
-/* ─── Background Canvas ──────────────────────────────────── */
+/* ─── Background Canvas & Atmosphere Layers ───────────────── */
 .bg-canvas {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -2;
   pointer-events: none;
 }
 .bg-svg {
   width: 100%;
   height: 100%;
+}
+#three-sculpture-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Star twinkle animations */

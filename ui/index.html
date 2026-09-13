@@ -30,23 +30,20 @@
 </head>
 <body class="bg-[#07060b] text-white selection:bg-purple-500/30">
 
-  <!-- ─── 3D WebGL Background Canvas ──────────────────────────────────── -->
-  <canvas id="three-sculpture-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-85"></canvas>
-
-  <!-- ─── SVG Background Constellation ─────────────────────────────────── -->
+  <!-- ─── Base Atmosphere SVG Background (Layer -2) ────────────────── -->
   <div class="bg-canvas" aria-hidden="true">
     <svg class="bg-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stop-color="#0d0b1a" />
-          <stop offset="100%" stop-color="#050408" />
+        <radialGradient id="bgGrad" cx="50%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="#0c0919" />
+          <stop offset="100%" stop-color="#040308" />
         </radialGradient>
-        <radialGradient id="glowPurple" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.3" />
+        <radialGradient id="glowPurple" cx="35%" cy="30%" r="50%">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.22" />
           <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
         </radialGradient>
-        <radialGradient id="glowCyan" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.2" />
+        <radialGradient id="glowCyan" cx="80%" cy="65%" r="45%">
+          <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.18" />
           <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
         </radialGradient>
         <filter id="glow">
@@ -55,50 +52,33 @@
         </filter>
       </defs>
       <rect width="1440" height="900" fill="url(#bgGrad)" />
-      <!-- Ambient glow orbs -->
-      <ellipse cx="300" cy="200" rx="400" ry="300" fill="url(#glowPurple)" />
-      <ellipse cx="1100" cy="600" rx="350" ry="250" fill="url(#glowCyan)" />
-      <!-- Stars / particles -->
+      <!-- Ambient purple & cyan nebula glows -->
+      <ellipse cx="350" cy="250" rx="500" ry="380" fill="url(#glowPurple)" />
+      <ellipse cx="1150" cy="650" rx="450" ry="320" fill="url(#glowCyan)" />
+      <!-- Subtle twinkling stars -->
       <g class="stars" filter="url(#glow)">
-        <circle cx="120" cy="80" r="1.5" fill="#a78bfa" opacity="0.8" class="star s1"/>
-        <circle cx="350" cy="140" r="1" fill="#7dd3fc" opacity="0.6" class="star s2"/>
-        <circle cx="680" cy="60" r="2" fill="#c4b5fd" opacity="0.7" class="star s3"/>
+        <circle cx="120" cy="80" r="1.5" fill="#a78bfa" opacity="0.7" class="star s1"/>
+        <circle cx="350" cy="140" r="1" fill="#7dd3fc" opacity="0.5" class="star s2"/>
+        <circle cx="680" cy="60" r="1.5" fill="#c4b5fd" opacity="0.6" class="star s3"/>
         <circle cx="900" cy="120" r="1" fill="#a78bfa" opacity="0.5" class="star s4"/>
-        <circle cx="1200" cy="90" r="1.5" fill="#67e8f9" opacity="0.8" class="star s5"/>
-        <circle cx="1380" cy="200" r="1" fill="#a78bfa" opacity="0.6" class="star s6"/>
+        <circle cx="1200" cy="90" r="1.5" fill="#67e8f9" opacity="0.7" class="star s5"/>
+        <circle cx="1380" cy="200" r="1" fill="#a78bfa" opacity="0.5" class="star s6"/>
         <circle cx="200" cy="400" r="1" fill="#c4b5fd" opacity="0.4" class="star s1"/>
         <circle cx="480" cy="350" r="1.5" fill="#7dd3fc" opacity="0.5" class="star s3"/>
-        <circle cx="750" cy="300" r="1" fill="#a78bfa" opacity="0.6" class="star s2"/>
-        <circle cx="1050" cy="250" r="2" fill="#67e8f9" opacity="0.4" class="star s4"/>
-        <circle cx="1300" cy="350" r="1" fill="#c4b5fd" opacity="0.7" class="star s5"/>
+        <circle cx="750" cy="300" r="1" fill="#a78bfa" opacity="0.5" class="star s2"/>
+        <circle cx="1050" cy="250" r="1.5" fill="#67e8f9" opacity="0.4" class="star s4"/>
+        <circle cx="1300" cy="350" r="1" fill="#c4b5fd" opacity="0.6" class="star s5"/>
         <circle cx="80" cy="620" r="1.5" fill="#a78bfa" opacity="0.5" class="star s6"/>
-        <circle cx="440" cy="700" r="1" fill="#7dd3fc" opacity="0.6" class="star s1"/>
+        <circle cx="440" cy="700" r="1" fill="#7dd3fc" opacity="0.5" class="star s1"/>
         <circle cx="820" cy="760" r="1.5" fill="#c4b5fd" opacity="0.4" class="star s3"/>
-        <circle cx="1150" cy="800" r="1" fill="#67e8f9" opacity="0.7" class="star s2"/>
-        <circle cx="1420" cy="750" r="2" fill="#a78bfa" opacity="0.5" class="star s4"/>
-        <circle cx="600" cy="480" r="1" fill="#c4b5fd" opacity="0.5" class="star s5"/>
-        <circle cx="960" cy="520" r="1.5" fill="#7dd3fc" opacity="0.4" class="star s6"/>
-        <circle cx="1260" cy="580" r="1" fill="#a78bfa" opacity="0.6" class="star s1"/>
-      </g>
-      <!-- Moon (crescent) — thematic for Midnight -->
-      <g class="moon-group" transform="translate(1300, 120)">
-        <circle cx="0" cy="0" r="40" fill="#1a1035" opacity="0.9"/>
-        <circle cx="12" cy="-5" r="34" fill="#0d0b1a"/>
-        <circle cx="0" cy="0" r="40" fill="none" stroke="#7c3aed" stroke-width="0.5" opacity="0.4"/>
-      </g>
-      <!-- Grid lines (very subtle) -->
-      <g opacity="0.03">
-        <line x1="0" y1="200" x2="1440" y2="200" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="0" y1="400" x2="1440" y2="400" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="0" y1="600" x2="1440" y2="600" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="200" y1="0" x2="200" y2="900" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="500" y1="0" x2="500" y2="900" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="800" y1="0" x2="800" y2="900" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="1100" y1="0" x2="1100" y2="900" stroke="#a78bfa" stroke-width="1"/>
-        <line x1="1400" y1="0" x2="1400" y2="900" stroke="#a78bfa" stroke-width="1"/>
+        <circle cx="1150" cy="800" r="1" fill="#67e8f9" opacity="0.6" class="star s2"/>
+        <circle cx="1420" cy="750" r="1.5" fill="#a78bfa" opacity="0.5" class="star s4"/>
       </g>
     </svg>
   </div>
+
+  <!-- ─── 3D WebGL Background Canvas (Layer -1) ────────────────────────── -->
+  <canvas id="three-sculpture-canvas" class="fixed inset-0 z-[-1] pointer-events-none opacity-80"></canvas>
 
   <!-- ─── Unified Dark Glass Floating Pill Navigation ─────────────────── -->
   <header class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-6xl px-4 pointer-events-none" id="top">
