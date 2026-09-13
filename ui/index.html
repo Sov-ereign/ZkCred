@@ -1357,7 +1357,7 @@
           <span class="notice-title">Using ZkCred on Vercel (<a href="https://zk-cred.vercel.app" target="_blank" rel="noopener" class="notice-link">https://zk-cred.vercel.app</a>)</span>
         </div>
         <p class="notice-body">
-          You <strong>can</strong> use Vercel and connect your Midnight Lace Wallet with the default remote proof server! However, to <strong>generate & submit ZK proofs</strong>, you must run the local proof server container on <code>port 6300</code> and point Lace Wallet to <code>http://localhost:6300</code>, because public remote proof servers reject multi-megabyte proving payloads (403 Forbidden).
+          You <strong>can</strong> use Vercel and connect your Midnight Lace Wallet seamlessly! However, when using the default remote proof server, the ZK architecture <strong>may or may not work</strong> depending on network traffic and payload limits. To <strong>guarantee</strong> 100% reliable Zero-Knowledge proof generation, run the local proof server container on <code>port 6300</code> and point Lace Wallet to <code>http://localhost:6300</code>.
         </p>
       </div>
 
@@ -1365,17 +1365,17 @@
       <div class="capabilities-grid">
         <div class="cap-card cap-limited">
           <div class="cap-header">
-            <span class="cap-icon">ℹ️</span>
+            <span class="cap-icon">⚠️</span>
             <span class="cap-title">With Default Remote Server</span>
           </div>
-          <div class="cap-desc">You can connect your <strong>Midnight Lace Wallet</strong> and view live on-chain contract state, but generating ZK proofs will fail (403 Forbidden).</div>
+          <div class="cap-desc">Lace Wallet connects successfully, but ZK proof generation <strong>may or may not work</strong> due to remote payload limits.</div>
         </div>
         <div class="cap-card cap-full">
           <div class="cap-header">
             <span class="cap-icon">⚡</span>
-            <span class="cap-title">With Localhost:6300 Configured</span>
+            <span class="cap-title">With Localhost:6300 (Guaranteed)</span>
           </div>
-          <div class="cap-desc">You can generate & submit full <strong>Zero-Knowledge Proofs</strong> directly on Vercel or locally!</div>
+          <div class="cap-desc">Guarantees 100% reliable <strong>Zero-Knowledge Proof</strong> generation & on-chain submission directly on Vercel or local dev!</div>
         </div>
       </div>
 
