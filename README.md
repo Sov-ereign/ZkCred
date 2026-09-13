@@ -18,14 +18,14 @@ The contract source is [zkcred.compact](contract/src/zkcred.compact). Its genera
 
 You can generate and submit Zero-Knowledge Proofs directly on the live Vercel app ([https://zk-cred.vercel.app](https://zk-cred.vercel.app)) or on a local dev instance (`http://localhost:5173`)! 
 
-> **Important**: If your Midnight Lace Wallet extension is configured to the default remote proof server (`https://proof-server.preprod.midnight.network`), proof generation will fail (`403 Forbidden`) because public remote proof servers reject multi-megabyte proving payloads, and wallet transaction balancing won't connect.
+> **Important**: You can connect your Midnight Lace Wallet and view live on-chain contract state with the default remote proof server (`https://proof-server.preprod.midnight.network`). However, generating ZK proofs requires setting your Lace Wallet Proof Server URL to `http://localhost:6300` (because public remote proof servers reject multi-megabyte proving payloads with `403 Forbidden`).
 
 ### Setup Overview
 
-| Configuration | Proof Server Setting in Lace Wallet | ZK Proof Generation |
-| :--- | :--- | :---: |
-| **Default Remote** | `https://proof-server.preprod.midnight.network` | ❌ Fails (403 Forbidden) |
-| **Configured Local Container** | `http://localhost:6300` | ⚡ **Full ZK Proving Enabled** |
+| Configuration | Proof Server Setting in Lace Wallet | Lace Wallet Connect & Live State | ZK Proof Generation |
+| :--- | :--- | :---: | :---: |
+| **Default Remote** | `https://proof-server.preprod.midnight.network` | ✅ Connected | ❌ Fails (403 Forbidden) |
+| **Configured Local Container** | `http://localhost:6300` | ✅ Connected | ⚡ **Full ZK Proving Enabled** |
 
 ---
 

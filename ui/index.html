@@ -1357,7 +1357,7 @@
           <span class="notice-title">Using ZkCred on Vercel (<a href="https://zk-cred.vercel.app" target="_blank" rel="noopener" class="notice-link">https://zk-cred.vercel.app</a>)</span>
         </div>
         <p class="notice-body">
-          You <strong>can</strong> generate ZK proofs directly on Vercel! However, if your Midnight Lace Wallet is set to the default remote proof server (<code>https://proof-server.preprod.midnight.network</code>), proving will fail (403 Forbidden) and wallet transactions won't connect. Simply run the local proof server container on <code>port 6300</code> and point Lace Wallet to <code>http://localhost:6300</code>.
+          You <strong>can</strong> use Vercel and connect your Midnight Lace Wallet with the default remote proof server! However, to <strong>generate & submit ZK proofs</strong>, you must run the local proof server container on <code>port 6300</code> and point Lace Wallet to <code>http://localhost:6300</code>, because public remote proof servers reject multi-megabyte proving payloads (403 Forbidden).
         </p>
       </div>
 
@@ -1365,10 +1365,10 @@
       <div class="capabilities-grid">
         <div class="cap-card cap-limited">
           <div class="cap-header">
-            <span class="cap-icon">⚠️</span>
+            <span class="cap-icon">ℹ️</span>
             <span class="cap-title">With Default Remote Server</span>
           </div>
-          <div class="cap-desc">If Lace Wallet is set to <code>proof-server.preprod.midnight.network</code>, multi-megabyte ZK proving payloads fail (403 Forbidden) and wallet transactions won't connect.</div>
+          <div class="cap-desc">You can connect your <strong>Midnight Lace Wallet</strong> and view live on-chain contract state, but generating ZK proofs will fail (403 Forbidden).</div>
         </div>
         <div class="cap-card cap-full">
           <div class="cap-header">
