@@ -261,9 +261,10 @@ body {
   position: relative;
   z-index: 1;
   min-height: calc(100vh - 80px);
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  align-items: start;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) !important;
+  align-items: start !important;
+  align-content: start !important;
   padding: 7rem 2rem 5rem;
   max-width: 1200px;
   margin: 0 auto;
@@ -271,11 +272,12 @@ body {
 }
 
 .hero-inner {
-  grid-column: 1;
-  grid-row: 1;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
   width: 100%;
   max-width: 620px;
-  align-self: start;
+  align-self: start !important;
+  height: fit-content !important;
 }
 
 .hero-badge {
@@ -439,15 +441,16 @@ body {
 
 /* ─── Hero Visual (Code Card) ────────────────────────────── */
 .hero-visual {
-  grid-column: 2;
-  grid-row: 1;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
   width: 100%;
   max-width: 480px;
-  justify-self: end;
+  justify-self: end !important;
   align-self: start !important;
   position: relative;
   z-index: 1;
   margin-top: 0 !important;
+  height: fit-content !important;
 }
 
 .zkproof-card {
@@ -1786,12 +1789,12 @@ html, body {
   .mobile-menu-btn { display: flex; }
 
   .hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     padding: 5.5rem 1rem 2.5rem;
     gap: 2.5rem;
   }
-  .hero-inner { grid-column: 1; grid-row: 1; max-width: 100%; }
-  .hero-visual { grid-column: 1; grid-row: 2; max-width: 100%; width: 100%; justify-self: stretch; align-self: auto !important; margin-top: 0 !important; }
+  .hero-inner { grid-column: 1 !important; grid-row: 1 !important; max-width: 100%; }
+  .hero-visual { grid-column: 1 !important; grid-row: 2 !important; max-width: 100%; width: 100%; justify-self: stretch !important; align-self: auto !important; margin-top: 0 !important; }
   .hero-title { font-size: clamp(1.85rem, 6vw, 2.5rem); line-height: 1.25; }
   .hero-sub { font-size: 0.98rem; }
   .hero-actions { flex-direction: column; width: 100%; gap: 0.75rem; }
