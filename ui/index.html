@@ -1348,16 +1348,16 @@
         </p>
       </div>
 
-      <!-- Vercel Security Notice Box -->
+      <!-- Setup Notice Box -->
       <div class="setup-notice-box">
         <div class="notice-header">
           <svg class="w-5 h-5 text-amber-400 shrink-0 inline-block mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          <span class="notice-title">Notice for Live Deployment (<a href="https://zk-cred.vercel.app" target="_blank" rel="noopener" class="notice-link">https://zk-cred.vercel.app</a>)</span>
+          <span class="notice-title">Using ZkCred on Vercel (<a href="https://zk-cred.vercel.app" target="_blank" rel="noopener" class="notice-link">https://zk-cred.vercel.app</a>)</span>
         </div>
         <p class="notice-body">
-          Because this app is hosted over <strong>HTTPS</strong> on Vercel (<a href="https://zk-cred.vercel.app" target="_blank" rel="noopener" class="text-purple-300 underline font-mono">https://zk-cred.vercel.app</a>), web browsers block unencrypted calls to <code>http://localhost:6300</code> due to <em>HTTPS Mixed Content Security Restrictions</em>. Remote preprod servers also reject multi-megabyte transaction proving payloads (403 Forbidden).
+          You <strong>can</strong> generate ZK proofs directly on Vercel! However, if your Midnight Lace Wallet is set to the default remote proof server (<code>https://proof-server.preprod.midnight.network</code>), proving will fail (403 Forbidden) and wallet transactions won't connect. Simply run the local proof server container on <code>port 6300</code> and point Lace Wallet to <code>http://localhost:6300</code>.
         </p>
       </div>
 
@@ -1365,31 +1365,34 @@
       <div class="capabilities-grid">
         <div class="cap-card cap-limited">
           <div class="cap-header">
-            <span class="cap-icon">ℹ️</span>
-            <span class="cap-title">Without Local Proof Server</span>
+            <span class="cap-icon">⚠️</span>
+            <span class="cap-title">With Default Remote Server</span>
           </div>
-          <div class="cap-desc">You can connect your <strong>Midnight Lace Wallet</strong> and view live on-chain contract state & credit eligibility scores.</div>
+          <div class="cap-desc">If Lace Wallet is set to <code>proof-server.preprod.midnight.network</code>, multi-megabyte ZK proving payloads fail (403 Forbidden) and wallet transactions won't connect.</div>
         </div>
         <div class="cap-card cap-full">
           <div class="cap-header">
             <span class="cap-icon">⚡</span>
-            <span class="cap-title">With Local Proof Server Running</span>
+            <span class="cap-title">With Localhost:6300 Configured</span>
           </div>
-          <div class="cap-desc">You can generate & submit full <strong>Zero-Knowledge Proofs</strong> directly on-chain!</div>
+          <div class="cap-desc">You can generate & submit full <strong>Zero-Knowledge Proofs</strong> directly on Vercel or locally!</div>
         </div>
       </div>
 
       <!-- Step by Step Setup Instructions -->
       <div class="setup-steps-container">
-        <h4 class="steps-heading">Step-by-Step Setup Guide:</h4>
+        <h4 class="steps-heading">Quick Setup to enable ZK Proofs on Vercel or Localhost:</h4>
 
         <div class="setup-step-item">
           <div class="step-num">1</div>
           <div class="step-content">
-            <div class="step-title">Clone Repository & Install Dependencies</div>
+            <div class="step-title">Run Midnight Proof Server Container</div>
             <div class="code-block-wrapper">
-              <code>git clone https://github.com/Sov-ereign/ZkCred.git && cd ZkCred && npm install</code>
-              <button class="btn-copy-code" data-code="git clone https://github.com/Sov-ereign/ZkCred.git && cd ZkCred && npm install">Copy</button>
+              <code>docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0</code>
+              <button class="btn-copy-code" data-code="docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0">Copy</button>
+            </div>
+            <div class="step-text" style="margin-top: 0.35rem;">
+              *(Ensure Docker Desktop is running on your machine)*
             </div>
           </div>
         </div>
@@ -1397,10 +1400,9 @@
         <div class="setup-step-item">
           <div class="step-num">2</div>
           <div class="step-content">
-            <div class="step-title">Run Midnight Proof Server Container</div>
-            <div class="code-block-wrapper">
-              <code>docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0</code>
-              <button class="btn-copy-code" data-code="docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0">Copy</button>
+            <div class="step-title">Set Proof Server URL in Midnight Lace Wallet</div>
+            <div class="step-text">
+              In your Midnight Lace Wallet extension: Open <strong>Settings</strong> ➔ <strong>Network</strong> ➔ change <strong>Proof Server URL</strong> to <code>http://localhost:6300</code> (instead of <code>https://proof-server.preprod.midnight.network</code>).
             </div>
           </div>
         </div>
@@ -1408,23 +1410,9 @@
         <div class="setup-step-item">
           <div class="step-num">3</div>
           <div class="step-content">
-            <div class="step-title">Configure Midnight Lace Wallet Settings</div>
+            <div class="step-title">Generate ZK Proofs on Vercel or Local Dev!</div>
             <div class="step-text">
-              In your Midnight Lace Wallet extension: Open <strong>Settings</strong> ➔ <strong>Network</strong> ➔ set <strong>Proof Server URL</strong> to <code>http://localhost:6300</code>.
-            </div>
-          </div>
-        </div>
-
-        <div class="setup-step-item">
-          <div class="step-num">4</div>
-          <div class="step-content">
-            <div class="step-title">Start Local Frontend Dev Server</div>
-            <div class="code-block-wrapper">
-              <code>npm run dev</code>
-              <button class="btn-copy-code" data-code="npm run dev">Copy</button>
-            </div>
-            <div class="step-text" style="margin-top: 0.4rem;">
-              Open <strong>http://localhost:5173</strong> in your browser to generate ZK proofs seamlessly!
+              Once Lace Wallet is set to <code>http://localhost:6300</code>, you can generate & submit ZK proofs directly on <strong>https://zk-cred.vercel.app</strong>! Alternatively, developers can clone the repo (<code>git clone https://github.com/Sov-ereign/ZkCred.git</code>) and run <code>npm run dev</code>.
             </div>
           </div>
         </div>

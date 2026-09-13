@@ -16,49 +16,50 @@ The contract source is [zkcred.compact](contract/src/zkcred.compact). Its genera
 
 ## ⚡ ZK Proof Generation & Local Setup Guide
 
-When visiting the live web app on Vercel ([https://zk-cred.vercel.app](https://zk-cred.vercel.app)), browser security enforcement (**HTTPS Mixed Content Restrictions**) prevents the web application from making unencrypted network requests to local `http://localhost:6300`. Remote public proof servers also reject multi-megabyte transaction proving payloads (`403 Forbidden`).
+You can generate and submit Zero-Knowledge Proofs directly on the live Vercel app ([https://zk-cred.vercel.app](https://zk-cred.vercel.app)) or on a local dev instance (`http://localhost:5173`)! 
 
-### Capability Overview
+> **Important**: If your Midnight Lace Wallet extension is configured to the default remote proof server (`https://proof-server.preprod.midnight.network`), proof generation will fail (`403 Forbidden`) because public remote proof servers reject multi-megabyte proving payloads, and wallet transaction balancing won't connect.
 
-| Mode | Midnight Lace Wallet | On-Chain State Reading | ZK Proof Generation |
-| :--- | :---: | :---: | :---: |
-| **Live Vercel Web App** ([zk-cred.vercel.app](https://zk-cred.vercel.app)) | ✅ Connected | ✅ Read Live State | ⚠️ Requires Local Host |
-| **Local Host App** (`http://localhost:5173`) | ✅ Connected | ✅ Read Live State | ⚡ **Full ZK Proving Enabled** |
+### Setup Overview
+
+| Configuration | Proof Server Setting in Lace Wallet | ZK Proof Generation |
+| :--- | :--- | :---: |
+| **Default Remote** | `https://proof-server.preprod.midnight.network` | ❌ Fails (403 Forbidden) |
+| **Configured Local Container** | `http://localhost:6300` | ⚡ **Full ZK Proving Enabled** |
 
 ---
 
-### Step-by-Step Local Setup
+### Quick 2-Step Setup
 
-To generate and submit Zero-Knowledge Proofs on the Midnight Preprod network, follow these steps:
-
-1. **Clone the Repository & Install Dependencies**:
-   ```bash
-   git clone https://github.com/Sov-ereign/ZkCred.git
-   cd ZkCred
-   npm install
-   ```
-
-2. **Run the Midnight Proof Server Container**:
+1. **Run the Midnight Proof Server Container**:
+   Run the official Midnight proof server container on your machine:
    ```bash
    docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0
    ```
-   *(Verify it is responding: `curl http://localhost:6300/health`)*
+   *(Verify it is running: `curl http://localhost:6300/health`)*
 
-3. **Configure Midnight Lace Wallet Settings**:
+2. **Configure Midnight Lace Wallet Settings**:
    In your Midnight Lace Wallet browser extension:
    - Open **Settings** ➔ **Network**
-   - Set **Proof Server URL** to `http://localhost:6300`
+   - Change **Proof Server URL** to `http://localhost:6300` (instead of `https://proof-server.preprod.midnight.network`)
 
-4. **Launch Local Frontend Dev Server**:
-   ```bash
-   npm run dev
-   ```
-   Open **[http://localhost:5173](http://localhost:5173)** in your browser.
+3. **Generate & Submit ZK Proofs**:
+   - Open **[https://zk-cred.vercel.app](https://zk-cred.vercel.app)** (or local `http://localhost:5173`).
+   - Connect your Midnight Lace Wallet and click **Generate & Verify ZK Proof**.
+   - Lace Wallet will communicate directly with your local container on port 6300 and submit the ZK proof on-chain to Midnight Preprod!
 
-5. **Generate & Submit ZK Proofs**:
-   - Connect your Midnight Lace Wallet.
-   - Enter your credential inputs and click **Generate & Verify ZK Proof**.
-   - Your local container on port 6300 will construct the 2.82 MB proof and submit it on-chain to Midnight Preprod!
+---
+
+### Optional: Running Full Application Locally
+
+Developers can also clone and run the entire dApp locally:
+
+```bash
+git clone https://github.com/Sov-ereign/ZkCred.git
+cd ZkCred
+npm install
+npm run dev
+```
 
 ## Status
 
