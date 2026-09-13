@@ -68,24 +68,16 @@ function applyRoute() {
   }
 
   closeModal(document.getElementById("auth-modal"));
+  window.scrollTo(0, 0);
 
-  if (route === "home") {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } else if (route === "dashboard") {
-    const dashboardSection = document.getElementById("dashboard");
-    if (dashboardSection) {
-      dashboardSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  } else if (route === "profile") {
+  if (route === "profile") {
     if (!STATE.authToken) {
       openModal(document.getElementById("auth-modal"));
     } else {
-      const profileSection = document.getElementById("profile");
-      if (profileSection) {
-        profileSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
       fetchProfileFromMongoDB();
     }
+  } else if (route === "dashboard") {
+    fetchVerificationsFromMongoDB();
   }
 }
 
@@ -1228,11 +1220,7 @@ function setupCardGlow() {
 
 function initRouting() {
   window.addEventListener("hashchange", applyRoute);
-
-  // Apply route on load if non-home hash is present
-  if (window.location.hash && window.location.hash !== "#/home") {
-    setTimeout(applyRoute, 150);
-  }
+  applyRoute();
 
   document.querySelectorAll('a[href="#/profile"], #nav-profile-link').forEach((link) => {
     link.addEventListener("click", (event) => {
