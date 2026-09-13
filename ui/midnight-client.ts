@@ -84,18 +84,17 @@ function loadAdminKey(contractAddress: string): Uint8Array | null {
 
 function selectConnector(): InitialAPI {
   const injected = window as any;
-  // Lace has shipped a few connector injection shapes across extension
-  // versions. These are all real DApp Connector objects; we only select an
-  // object exposing the official `connect` method and never fabricate one.
+  const midnightObj = injected.midnight ?? {};
+  // Midnight connectors inject strictly under window.midnight (e.g. mnLace).
+  // Do NOT include window.cardano.lace: that is Lace's Cardano CIP-30 interface,
+  // which causes Cardano wallet connection errors and auto-locks Lace on Midnight.
   const candidates = [
-    ...Object.values(injected.midnight ?? {}),
+    midnightObj.mnLace,
+    midnightObj.lace,
+    ...Object.values(midnightObj),
     injected.midnight,
-    injected.midnight?.mnLace,
-    injected.midnight?.lace,
-    injected.cardano?.laceMidnight,
-    injected.cardano?.lace,
   ] as InitialAPI[];
-  const connector = candidates.find((candidate) => typeof candidate?.connect === "function");
+  const connector = candidates.find((candidate) => candidate && typeof candidate.connect === "function");
   if (!connector) {
     throw new Error("No Midnight DApp Connector was found. Unlock/update Midnight Lace, then retry.");
   }
@@ -133,12 +132,20 @@ function compiledContract(input?: WitnessInput) {
 }
 
 async function buildProviders(api: ConnectedAPI, accountId: string) {
-  const config = await api.getConfiguration();
-  if (!config.proverServerUri) throw new Error("The connected wallet has no prover server configured.");
+  let config: any = {};
+  try {
+    config = await api.getConfiguration();
+  } catch (err) {
+    console.warn("[Midnight] getConfiguration warning:", err);
+  }
+  const indexerUri = config.indexerUri || "https://indexer.preprod.midnight.network/api/v3/graphql";
+  const indexerWsUri = config.indexerWsUri || "wss://indexer.preprod.midnight.network/api/v3/graphql/ws";
+  const proverServerUri = config.proverServerUri || "http://localhost:6300";
+
   const zkConfigProvider = new FetchZkConfigProvider<any>(`${window.location.origin}/contract/compiled`, fetch.bind(window));
   // Pass the browser WebSocket explicitly. This avoids relying on Node's
   // isomorphic-ws export in the web bundle.
-  const rawPublicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri, WebSocket as any);
+  const rawPublicDataProvider = indexerPublicDataProvider(indexerUri, indexerWsUri, WebSocket as any);
   const publicDataProvider = {
     ...rawPublicDataProvider,
     async queryZSwapAndContractState(contractAddress: any, queryConfig?: any) {
@@ -148,13 +155,16 @@ async function buildProviders(api: ConnectedAPI, accountId: string) {
       return [zswapChainState.postBlockUpdate(new Date()), contractState, ledgerParameters] as typeof result;
     },
   };
-  const proofProvider = httpClientProofProvider(config.proverServerUri, zkConfigProvider);
-  const shielded = await api.getShieldedAddresses();
+  const proofProvider = httpClientProofProvider(proverServerUri, zkConfigProvider);
   const walletProvider = {
-    // dapp-connector returns Bech32m keys. midnight-js-contracts performs
-    // its own network-aware decoding, as in Midnight's official wallet dApp.
-    getCoinPublicKey: () => shielded.shieldedCoinPublicKey as any,
-    getEncryptionPublicKey: () => shielded.shieldedEncryptionPublicKey as any,
+    getCoinPublicKey: async () => {
+      const shielded = await api.getShieldedAddresses();
+      return (shielded as any).shieldedCoinPublicKey;
+    },
+    getEncryptionPublicKey: async () => {
+      const shielded = await api.getShieldedAddresses();
+      return (shielded as any).shieldedEncryptionPublicKey;
+    },
     async balanceTx(tx: any) {
       const result = await api.balanceUnsealedTransaction(bytesToHex(tx.serialize()));
       return Transaction.deserialize("signature", "proof", "binding", hexToBytes(result.tx)) as Transaction<SignatureEnabled, Proof, Binding>;
@@ -176,22 +186,32 @@ async function buildProviders(api: ConnectedAPI, accountId: string) {
   };
 }
 
+let connectInFlight: Promise<{ address: string; walletName: string }> | null = null;
+
 async function connect(networkId = "preprod") {
-  const connector = await waitForConnector();
-  const api = await connector.connect(networkId);
-  await api.hintUsage?.(["getShieldedAddresses", "balanceUnsealedTransaction", "submitTransaction"]);
-  const shielded = await api.getShieldedAddresses();
-  // Lace versions have returned the address object with slightly different
-  // wrapping while the connector API was stabilising. Accept only genuine
-  // values returned by the wallet; never invent an address.
-  const shieldedAddress = typeof shielded === "string"
-    ? shielded
-    : (shielded as any)?.shieldedAddress ?? (shielded as any)?.address;
-  const unshielded = !shieldedAddress ? await api.getUnshieldedAddress?.() : undefined;
-  const address = shieldedAddress ?? (unshielded as any)?.unshieldedAddress;
-  if (!address) throw new Error("Lace connected, but returned no Midnight address. Select a Midnight Preprod account in Lace and retry.");
-  active = { api, address, providers: await buildProviders(api, address), walletName: connector.name };
-  return { address: active.address, walletName: active.walletName };
+  if (active) return { address: active.address, walletName: active.walletName };
+  if (connectInFlight) return connectInFlight;
+
+  connectInFlight = (async () => {
+    const connector = await waitForConnector();
+    const api = await connector.connect(networkId);
+    const shielded = await api.getShieldedAddresses();
+    const shieldedAddress = typeof shielded === "string"
+      ? shielded
+      : (shielded as any)?.shieldedAddress ?? (shielded as any)?.address;
+    const unshielded = !shieldedAddress ? await api.getUnshieldedAddress?.() : undefined;
+    const address = shieldedAddress ?? (unshielded as any)?.unshieldedAddress;
+    if (!address) throw new Error("Lace connected, but returned no Midnight address. Select a Midnight Preprod account in Lace and retry.");
+    const providers = await buildProviders(api, address);
+    active = { api, address, providers, walletName: connector.name ?? "Lace" };
+    return { address: active.address, walletName: active.walletName };
+  })();
+
+  try {
+    return await connectInFlight;
+  } finally {
+    connectInFlight = null;
+  }
 }
 
 async function submitEligibility(contractAddress: string, input: WitnessInput) {
