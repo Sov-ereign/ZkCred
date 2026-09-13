@@ -26,8 +26,12 @@
     window.__RENDER_API__ = "https://zkcred-api.onrender.com/api";
   </script>
   <!-- Vercel injects analytics in the hosted build; omit the scripts locally. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-<body>
+<body class="bg-[#07060b] text-white selection:bg-purple-500/30">
+
+  <!-- ─── 3D WebGL Background Canvas ──────────────────────────────────── -->
+  <canvas id="three-sculpture-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-85"></canvas>
 
   <!-- ─── SVG Background Constellation ─────────────────────────────────── -->
   <div class="bg-canvas" aria-hidden="true">

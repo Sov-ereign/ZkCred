@@ -1442,6 +1442,120 @@ function initFaqSearch() {
   });
 }
 
+function initThreeSculpture() {
+  const canvas = document.getElementById("three-sculpture-canvas");
+  if (!canvas || typeof THREE === "undefined") return;
+
+  const scene = new THREE.Scene();
+  
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 0, 24);
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true,
+    preserveDrawingBuffer: true,
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Lighting Setup (Studio Lighting matching Midnight)
+  const ambientLight = new THREE.AmbientLight(0x7c3aed, 0.9);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+  keyLight.position.set(10, 20, 15);
+  scene.add(keyLight);
+
+  const cyanLight = new THREE.DirectionalLight(0x06b6d4, 2.0);
+  cyanLight.position.set(-10, -10, -10);
+  scene.add(cyanLight);
+
+  const purpleLight = new THREE.DirectionalLight(0xa78bfa, 1.8);
+  purpleLight.position.set(0, 0, 15);
+  scene.add(purpleLight);
+
+  // InstancedMesh Mathematical Ribbon Sculpture
+  const count = 150;
+  const geometry = new THREE.BoxGeometry(3.6, 0.28, 3.6);
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0x9333ea,
+    emissive: 0x2e1065,
+    roughness: 0.15,
+    metalness: 0.25,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.1,
+    transmission: 0.2,
+    transparent: true,
+    opacity: 0.9,
+  });
+
+  const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+  scene.add(instancedMesh);
+
+  const dummy = new THREE.Object3D();
+
+  function animate(time) {
+    requestAnimationFrame(animate);
+    const tSec = time * 0.001;
+
+    for (let i = 0; i < count; i++) {
+      const baseT = i / count;
+      const t = (baseT + tSec * 0.04) % 1;
+
+      // S-curve spring coordinates
+      const y = (0.5 - t) * 20;
+      const springRadius = 3.6;
+      const coils = 2.2;
+      const angle = t * Math.PI * 2 * coils;
+
+      const x = Math.sin(angle) * springRadius + 3.8;
+      const z = Math.cos(angle) * springRadius;
+
+      // Scale entry/exit fading
+      let scale = 1;
+      if (t < 0.1) scale = t / 0.1;
+      else if (t > 0.9) scale = (1 - t) / 0.1;
+
+      dummy.position.set(x, y, z);
+
+      // Orientation & Twisting along the path
+      const t2 = t + 0.001;
+      const angle2 = t2 * Math.PI * 2 * coils;
+      const target = new THREE.Vector3(
+        Math.sin(angle2) * springRadius + 3.8,
+        (0.5 - t2) * 20,
+        Math.cos(angle2) * springRadius
+      );
+
+      dummy.lookAt(target);
+      dummy.rotateX(Math.PI / 2);
+
+      const twist = t * Math.PI * 4 - tSec * 0.3;
+      dummy.rotateY(twist);
+
+      dummy.scale.set(scale, scale, scale);
+      dummy.updateMatrix();
+
+      instancedMesh.setMatrixAt(i, dummy.matrix);
+    }
+
+    instancedMesh.instanceMatrix.needsUpdate = true;
+    instancedMesh.rotation.y = Math.sin(tSec * 0.15) * 0.15;
+
+    renderer.render(scene, camera);
+  }
+
+  requestAnimationFrame(animate);
+
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
   initWalletConnect();
   initAuth();
   initRouting();
@@ -1454,6 +1568,7 @@ function initFaqSearch() {
   setupParallax();
   setupCardGlow();
   initFaqSearch();
+  initThreeSculpture();
 
   fetchVerificationsFromMongoDB();
   fetchProfileFromMongoDB();
