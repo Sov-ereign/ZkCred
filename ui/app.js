@@ -998,6 +998,9 @@ function initAuth() {
 
         if (btnText) btnText.textContent = "Sign in with Google";
         googleOAuthBtn.disabled = false;
+
+        // Show setup guide on signup/signin
+        showProofSetupModal(true);
       });
 
       // Re-enable button after a short delay to handle popup block / cancel
@@ -1005,6 +1008,24 @@ function initAuth() {
         if (btnText) btnText.textContent = "Sign in with Google";
         googleOAuthBtn.disabled = false;
       }, 3000);
+    });
+  }
+
+  // Standalone Auth Page Google Button
+  const authPageGoogleBtn = document.getElementById("auth-page-google-btn");
+  if (authPageGoogleBtn) {
+    authPageGoogleBtn.addEventListener("click", () => {
+      launchGoogleOAuthPopup((token, user) => {
+        STATE.authToken = token;
+        STATE.currentUser = user;
+        localStorage.setItem("zkcred_auth_token", token);
+        localStorage.setItem("zkcred_user", JSON.stringify(user));
+        updateAuthUI();
+        fetchProfileFromMongoDB();
+        navigate("dashboard");
+        fetchVerificationsFromMongoDB();
+        showProofSetupModal(true);
+      });
     });
   }
 
@@ -1041,6 +1062,9 @@ function initAuth() {
           closeModal(authModal);
           navigate("dashboard");
           fetchVerificationsFromMongoDB();
+
+          // Show setup guide on signup/signin
+          showProofSetupModal(true);
         } else {
           if (authAlert) {
             authAlert.className = "auth-alert error";
@@ -1064,6 +1088,64 @@ function initAuth() {
     openProfile();
   });
   document.getElementById("profile-modal-close")?.addEventListener("click", () => closeModal(document.getElementById("user-profile-modal")));
+}
+
+// ─── Proof Environment Setup Modal Helpers ─────────────────────────────────────
+
+function showProofSetupModal(force = false) {
+  const isHidden = localStorage.getItem("zkcred_hide_proof_setup_modal") === "true";
+  if (!force && isHidden) return;
+
+  const modal = document.getElementById("proof-setup-modal");
+  if (modal) {
+    const chk = document.getElementById("chk-dont-show-proof-modal");
+    if (chk) chk.checked = isHidden;
+    openModal(modal);
+  }
+}
+
+function closeProofSetupModal() {
+  const modal = document.getElementById("proof-setup-modal");
+  const chk = document.getElementById("chk-dont-show-proof-modal");
+  if (chk && chk.checked) {
+    localStorage.setItem("zkcred_hide_proof_setup_modal", "true");
+  } else {
+    localStorage.removeItem("zkcred_hide_proof_setup_modal");
+  }
+  if (modal) closeModal(modal);
+}
+
+function initProofSetupModal() {
+  const modal = document.getElementById("proof-setup-modal");
+  const closeBtn = document.getElementById("proof-setup-modal-close");
+  const confirmBtn = document.getElementById("btn-close-proof-setup-modal");
+
+  if (closeBtn) closeBtn.addEventListener("click", closeProofSetupModal);
+  if (confirmBtn) confirmBtn.addEventListener("click", closeProofSetupModal);
+
+  // Setup 1-click copy buttons
+  document.querySelectorAll(".btn-copy-code").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const code = btn.dataset.code;
+      if (code) {
+        navigator.clipboard.writeText(code);
+        const originalText = btn.textContent;
+        btn.textContent = "Copied! ✓";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove("copied");
+        }, 2000);
+      }
+    });
+  });
+
+  // On page refresh / initial load: if user is signed in, show pop-up unless "Don't show again" was checked
+  if (STATE.currentUser) {
+    setTimeout(() => {
+      showProofSetupModal(false);
+    }, 600);
+  }
 }
 
 // ─── Mobile Drawer & Interactive UI Helpers ─────────────────────────────────────
@@ -1580,6 +1662,7 @@ function initThreeSculpture() {
 
   initWalletConnect();
   initAuth();
+  initProofSetupModal();
   initRouting();
   initProfileEditor();
   initThresholdControls();

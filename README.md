@@ -14,6 +14,52 @@ An observer can learn the contract thresholds, the final `isEligible` Boolean, t
 
 The contract source is [zkcred.compact](contract/src/zkcred.compact). Its generated ZKIR and proving keys are under `src/managed/` and are copied into the production web build.
 
+## ⚡ ZK Proof Generation & Local Setup Guide
+
+When visiting the live web app on Vercel ([https://zk-cred.vercel.app](https://zk-cred.vercel.app)), browser security enforcement (**HTTPS Mixed Content Restrictions**) prevents the web application from making unencrypted network requests to local `http://localhost:6300`. Remote public proof servers also reject multi-megabyte transaction proving payloads (`403 Forbidden`).
+
+### Capability Overview
+
+| Mode | Midnight Lace Wallet | On-Chain State Reading | ZK Proof Generation |
+| :--- | :---: | :---: | :---: |
+| **Live Vercel Web App** ([zk-cred.vercel.app](https://zk-cred.vercel.app)) | ✅ Connected | ✅ Read Live State | ⚠️ Requires Local Host |
+| **Local Host App** (`http://localhost:5173`) | ✅ Connected | ✅ Read Live State | ⚡ **Full ZK Proving Enabled** |
+
+---
+
+### Step-by-Step Local Setup
+
+To generate and submit Zero-Knowledge Proofs on the Midnight Preprod network, follow these steps:
+
+1. **Clone the Repository & Install Dependencies**:
+   ```bash
+   git clone https://github.com/Sov-ereign/ZkCred.git
+   cd ZkCred
+   npm install
+   ```
+
+2. **Run the Midnight Proof Server Container**:
+   ```bash
+   docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0
+   ```
+   *(Verify it is responding: `curl http://localhost:6300/health`)*
+
+3. **Configure Midnight Lace Wallet Settings**:
+   In your Midnight Lace Wallet browser extension:
+   - Open **Settings** ➔ **Network**
+   - Set **Proof Server URL** to `http://localhost:6300`
+
+4. **Launch Local Frontend Dev Server**:
+   ```bash
+   npm run dev
+   ```
+   Open **[http://localhost:5173](http://localhost:5173)** in your browser.
+
+5. **Generate & Submit ZK Proofs**:
+   - Connect your Midnight Lace Wallet.
+   - Enter your credential inputs and click **Generate & Verify ZK Proof**.
+   - Your local container on port 6300 will construct the 2.82 MB proof and submit it on-chain to Midnight Preprod!
+
 ## Status
 
 The application is fail-closed. It does not create a fake proof, fake transaction ID, in-memory user, or default contract state.
