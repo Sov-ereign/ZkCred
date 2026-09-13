@@ -473,15 +473,19 @@ async function saveVerificationToMongoDB(recordData) {
 }
 
 async function fetchVerificationsFromMongoDB() {
+  if (!STATE.authToken) return;
   try {
-    const headers = {};
-    if (STATE.authToken) {
-      headers["Authorization"] = `Bearer ${STATE.authToken}`;
-    }
+    const headers = { Authorization: `Bearer ${STATE.authToken}` };
     const res = await fetch(`${API_BASE}/verifications`, { headers });
     if (res.ok) {
       const data = await res.json();
       renderAuditTableFromMongoDB(data.records || []);
+    } else if (res.status === 401) {
+      STATE.authToken = null;
+      STATE.currentUser = null;
+      localStorage.removeItem("zkcred_auth_token");
+      localStorage.removeItem("zkcred_user");
+      updateAuthUI();
     }
   } catch (err) {
     console.warn("[MongoDB] Verification fetch warning:", err.message);
