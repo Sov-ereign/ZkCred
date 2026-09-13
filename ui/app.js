@@ -59,7 +59,7 @@ function currentRoute() {
 
 function applyRoute() {
   const route = currentRoute();
-  document.body.dataset.route = route === "auth" ? "home" : route;
+  document.body.dataset.route = route;
   if (route === "auth") openModal(document.getElementById("auth-modal"));
   else closeModal(document.getElementById("auth-modal"));
   window.scrollTo(0, 0);
@@ -1360,6 +1360,88 @@ function init() {
     sectionObserver.observe(el);
   });
 
+function initFaqSearch() {
+  const searchInput = document.getElementById("faq-search-input");
+  const pillsContainer = document.getElementById("faq-topic-pills");
+  const resultsCount = document.getElementById("faq-results-count");
+  const faqList = document.getElementById("faq-list");
+  const emptyState = document.getElementById("faq-empty-state");
+
+  if (!faqList) return;
+
+  const items = Array.from(faqList.querySelectorAll(".faq-item"));
+  let currentTopic = "all";
+
+  function filterFaq() {
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+    let visibleCount = 0;
+
+    items.forEach((item) => {
+      const topic = item.getAttribute("data-topic");
+      const question = item.querySelector(".faq-question")?.textContent.toLowerCase() || "";
+      const answer = item.querySelector(".faq-answer")?.textContent.toLowerCase() || "";
+
+      const matchesTopic = currentTopic === "all" || topic === currentTopic;
+      const matchesSearch = !query || question.includes(query) || answer.includes(query);
+
+      if (matchesTopic && matchesSearch) {
+        item.style.display = "";
+        visibleCount++;
+      } else {
+        item.style.display = "none";
+      }
+    });
+
+    if (resultsCount) {
+      resultsCount.textContent = `Showing ${visibleCount} question${visibleCount === 1 ? "" : "s"}`;
+    }
+
+    if (emptyState) {
+      if (visibleCount === 0) {
+        emptyState.classList.remove("hidden");
+      } else {
+        emptyState.classList.add("hidden");
+      }
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", filterFaq);
+  }
+
+  if (pillsContainer) {
+    const pills = pillsContainer.querySelectorAll(".faq-pill");
+    pills.forEach((pill) => {
+      pill.addEventListener("click", () => {
+        pills.forEach((p) => {
+          p.classList.remove("active", "bg-neutral-900", "text-white", "border-neutral-700");
+          p.classList.add("bg-neutral-950/60", "text-neutral-400", "border-neutral-800");
+        });
+        pill.classList.add("active", "bg-neutral-900", "text-white", "border-neutral-700");
+        pill.classList.remove("bg-neutral-950/60", "text-neutral-400", "border-neutral-800");
+
+        currentTopic = pill.getAttribute("data-topic") || "all";
+        filterFaq();
+      });
+    });
+  }
+
+  document.querySelectorAll(".faq-thumb-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const parent = btn.parentElement;
+      if (parent) {
+        parent.querySelectorAll(".faq-thumb-btn").forEach((b) => {
+          b.classList.remove("bg-purple-600", "text-white");
+          b.classList.add("bg-neutral-800/50", "text-neutral-400");
+        });
+        btn.classList.remove("bg-neutral-800/50", "text-neutral-400");
+        btn.classList.add("bg-purple-600", "text-white");
+      }
+    });
+  });
+}
+
   initWalletConnect();
   initAuth();
   initRouting();
@@ -1371,6 +1453,7 @@ function init() {
   setupSmoothScroll();
   setupParallax();
   setupCardGlow();
+  initFaqSearch();
 
   fetchVerificationsFromMongoDB();
   fetchProfileFromMongoDB();

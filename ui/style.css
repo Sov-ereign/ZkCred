@@ -1080,6 +1080,7 @@ body[data-route] [data-app-page] { display: none; }
 body[data-route="home"] [data-app-page="home"],
 body[data-route="dashboard"] [data-app-page="dashboard"],
 body[data-route="profile"] [data-app-page="profile"] { display: block; }
+body[data-route="auth"] [data-app-page="auth"] { display: grid; }
 body[data-route="dashboard"] #verify,
 body[data-route="profile"] #profile { padding-top: 8.5rem; min-height: calc(100vh - 150px); }
 .profile-editor-card { margin-top: 1.5rem; padding: 1.25rem; }
