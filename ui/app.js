@@ -874,18 +874,12 @@ async function fetchProfileFromMongoDB() {
 
 function openProfile() {
   if (!STATE.currentUser || !STATE.authToken) {
-    const authAlert = document.getElementById("auth-alert");
-    if (authAlert) {
-      authAlert.className = "auth-alert error";
-      authAlert.textContent = "Please sign in to view your profile.";
-      authAlert.hidden = false;
-    }
-    openModal(document.getElementById("auth-modal"));
+    navigate("auth");
     return;
   }
   renderProfile();
   fetchProfileFromMongoDB();
-  openModal(document.getElementById("user-profile-modal"));
+  navigate("profile");
 }
 
 function initAuth() {
@@ -914,6 +908,11 @@ function initAuth() {
     navAuthBtn.addEventListener("click", () => {
       navigate("auth");
     });
+  }
+
+  const userBadge = document.getElementById("user-badge");
+  if (userBadge) {
+    userBadge.addEventListener("click", () => openProfile());
   }
 
   if (authModalClose) {
