@@ -257,7 +257,7 @@ body {
   min-height: calc(100vh - 80px);
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  align-items: center;
+  align-items: start;
   padding: 7rem 2rem 5rem;
   max-width: 1200px;
   margin: 0 auto;
@@ -435,6 +435,7 @@ body {
   justify-self: end;
   position: relative;
   z-index: 1;
+  margin-top: 3.2rem;
 }
 
 .zkproof-card {
@@ -1766,7 +1767,7 @@ html, body {
     gap: 2.5rem;
   }
   .hero-inner { max-width: 100%; }
-  .hero-visual { max-width: 100%; width: 100%; justify-self: stretch; }
+  .hero-visual { max-width: 100%; width: 100%; justify-self: stretch; margin-top: 0; }
   .verifier-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .privacy-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .profile-grid { grid-template-columns: 1fr; gap: 1.5rem; }
