@@ -8,10 +8,10 @@
   /* Palette */
   --color-bg:          #070510;
   --color-bg-2:        #0d0b1a;
-  --color-surface:     rgba(255, 255, 255, 0.04);
-  --color-surface-2:   rgba(255, 255, 255, 0.07);
-  --color-border:      rgba(167, 139, 250, 0.12);
-  --color-border-2:    rgba(167, 139, 250, 0.2);
+  --color-surface:     rgba(16, 12, 34, 0.92);
+  --color-surface-2:   rgba(22, 17, 46, 0.95);
+  --color-border:      rgba(167, 139, 250, 0.22);
+  --color-border-2:    rgba(167, 139, 250, 0.35);
 
   /* Brand */
   --purple-400:        #a78bfa;
@@ -27,16 +27,16 @@
   --red-400:           #f87171;
 
   /* Text */
-  --text-primary:      #f1f0ff;
-  --text-secondary:    #c4b5fd;
-  --text-muted:        rgba(196, 181, 253, 0.5);
-  --text-code:         #7dd3fc;
+  --text-primary:      #ffffff;
+  --text-secondary:    #e0e7ff;
+  --text-muted:        #c7d2fe;
+  --text-code:         #38bdf8;
 
   /* Effects */
   --glow-purple:       0 0 20px rgba(124, 58, 237, 0.35);
   --glow-cyan:         0 0 20px rgba(6, 182, 212, 0.3);
   --glow-green:        0 0 20px rgba(74, 222, 128, 0.4);
-  --glass-blur:        blur(16px) saturate(180%);
+  --glass-blur:        blur(24px) saturate(180%);
   --transition:        all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -454,15 +454,16 @@ body {
 }
 
 .zkproof-card {
-  background: rgba(13, 11, 26, 0.85);
+  background: rgba(10, 8, 22, 0.92);
   border: 1px solid var(--color-border-2);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   box-shadow:
-    0 0 0 1px rgba(167, 139, 250, 0.05),
-    0 24px 48px rgba(0, 0, 0, 0.6),
-    0 0 80px rgba(124, 58, 237, 0.1);
+    0 0 0 1px rgba(167, 139, 250, 0.1),
+    0 24px 48px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(124, 58, 237, 0.15);
   animation: cardFloat 6s ease-in-out infinite;
 }
 @keyframes cardFloat {
@@ -581,21 +582,23 @@ body {
 
 /* ─── Glass Card ─────────────────────────────────────────── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(10, 8, 24, 0.92);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.05),
-    0 4px 32px rgba(0,0,0,0.4);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(124, 58, 237, 0.12);
   transition: var(--transition);
 }
 .glass-card:hover {
   border-color: var(--color-border-2);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.07),
-    0 8px 40px rgba(0,0,0,0.5),
-    0 0 40px rgba(124, 58, 237, 0.05);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 16px 48px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(124, 58, 237, 0.18);
 }
 
 /* ─── Steps Grid ─────────────────────────────────────────── */
@@ -608,9 +611,12 @@ body {
 .step-card {
   position: relative;
   padding: 2rem;
-  background: var(--color-surface);
+  background: rgba(12, 9, 26, 0.92);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   transition: var(--transition);
   overflow: hidden;
 }
@@ -817,10 +823,12 @@ body {
   align-items: center;
   gap: 0;
   padding: 0.875rem 1rem;
-  background: rgba(124, 58, 237, 0.06);
-  border: 1px solid rgba(124, 58, 237, 0.15);
+  background: rgba(14, 10, 30, 0.94);
+  border: 1px solid rgba(124, 58, 237, 0.3);
   border-radius: var(--radius);
   margin-bottom: 1.25rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .threshold-item {
   flex: 1;
@@ -960,18 +968,21 @@ body {
 
 .ledger-field {
   padding: 0.875rem 1rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: rgba(14, 10, 30, 0.94);
+  border: 1px solid rgba(167, 139, 250, 0.25);
   border-radius: var(--radius);
   transition: var(--transition);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.ledger-field:hover { border-color: var(--color-border-2); }
+.ledger-field:hover { border-color: rgba(167, 139, 250, 0.45); }
 
 .private-field {
-  background: rgba(251, 191, 36, 0.03);
-  border-color: rgba(251, 191, 36, 0.1);
+  background: rgba(26, 18, 10, 0.94);
+  border-color: rgba(251, 191, 36, 0.3);
 }
-.private-field:hover { border-color: rgba(251, 191, 36, 0.2); }
+.private-field:hover { border-color: rgba(251, 191, 36, 0.5); }
 
 .field-header {
   display: flex;
@@ -981,8 +992,10 @@ body {
 }
 .field-name {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #c7d2fe;
+  letter-spacing: 0.02em;
 }
 .field-visibility {
   font-size: 0.6rem;
@@ -993,23 +1006,24 @@ body {
 }
 .field-visibility.public {
   color: var(--cyan-400);
-  background: rgba(6, 182, 212, 0.1);
-  border: 1px solid rgba(6, 182, 212, 0.2);
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
 }
 .field-visibility.private {
   color: var(--amber-400);
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 .field-value {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
 }
 .field-value.mono {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  color: #38bdf8;
   word-break: break-all;
 }
 
@@ -1131,12 +1145,16 @@ body[data-route="profile"] #profile { padding-top: 8.5rem; min-height: calc(100v
   border-radius: var(--radius-lg);
 }
 .private-col {
-  background: rgba(251, 191, 36, 0.04);
-  border: 1px solid rgba(251, 191, 36, 0.12);
+  background: rgba(24, 17, 8, 0.94);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 .public-col {
-  background: rgba(6, 182, 212, 0.04);
-  border: 1px solid rgba(6, 182, 212, 0.12);
+  background: rgba(8, 20, 28, 0.94);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .privacy-col-header {
@@ -1580,8 +1598,10 @@ kbd {
 /* ZK Credential Passport Card */
 .passport-card {
   padding: 2rem;
-  background: linear-gradient(145deg, rgba(20, 15, 38, 0.7), rgba(7, 5, 16, 0.9));
+  background: linear-gradient(145deg, rgba(18, 13, 34, 0.95), rgba(8, 6, 18, 0.96));
   border: 1px solid var(--color-border-2);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
