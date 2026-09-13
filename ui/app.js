@@ -1,6 +1,7 @@
 /**
  * AegisID — ZkCred Interactive Demo Logic
  * Zero-knowledge credential client for Midnight Network with MongoDB Auth & Lace Wallet Integration.
+ * Trigger Vercel Production Build.
  */
 
 // ─── API Base Configuration ───────────────────────────────────────────────────
