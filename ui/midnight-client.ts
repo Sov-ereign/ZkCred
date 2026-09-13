@@ -155,16 +155,20 @@ async function buildProviders(api: ConnectedAPI, accountId: string) {
       return [zswapChainState.postBlockUpdate(new Date()), contractState, ledgerParameters] as typeof result;
     },
   };
+  const shieldedAddresses = await api.getShieldedAddresses();
+  const coinPublicKey = typeof shieldedAddresses === "object" ? (shieldedAddresses as any)?.shieldedCoinPublicKey : undefined;
+  const encryptionPublicKey = typeof shieldedAddresses === "object" ? (shieldedAddresses as any)?.shieldedEncryptionPublicKey : undefined;
+  if (!coinPublicKey || typeof coinPublicKey !== "string") {
+    throw new Error("Lace wallet did not return a valid shielded coin public key.");
+  }
+  if (!encryptionPublicKey || typeof encryptionPublicKey !== "string") {
+    throw new Error("Lace wallet did not return a valid shielded encryption public key.");
+  }
+
   const proofProvider = httpClientProofProvider(proverServerUri, zkConfigProvider);
   const walletProvider = {
-    getCoinPublicKey: async () => {
-      const shielded = await api.getShieldedAddresses();
-      return (shielded as any).shieldedCoinPublicKey;
-    },
-    getEncryptionPublicKey: async () => {
-      const shielded = await api.getShieldedAddresses();
-      return (shielded as any).shieldedEncryptionPublicKey;
-    },
+    getCoinPublicKey: () => coinPublicKey,
+    getEncryptionPublicKey: () => encryptionPublicKey,
     async balanceTx(tx: any) {
       const result = await api.balanceUnsealedTransaction(bytesToHex(tx.serialize()));
       return Transaction.deserialize("signature", "proof", "binding", hexToBytes(result.tx)) as Transaction<SignatureEnabled, Proof, Binding>;
