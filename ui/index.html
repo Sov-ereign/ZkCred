@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- No GIS script needed — using server-side OAuth 2.0 redirect flow -->
 
@@ -96,7 +97,7 @@
   </div>
 
   <!-- ─── Navbar ─────────────────────────────────────────────────────────── -->
-  <nav class="navbar" role="navigation" aria-label="Main navigation">
+  <nav class="navbar" id="top" role="navigation" aria-label="Main navigation">
     <div class="nav-inner">
       <a href="#/home" class="nav-logo" aria-label="AegisID Home">
         <div class="logo-icon" aria-hidden="true">
@@ -846,23 +847,74 @@
       </div>
     </div>
   </section>
-  <!-- ─── Footer ──────────────────────────────────────────────────────── -->
-  <footer class="footer" role="contentinfo">
-    <div class="footer-inner">
-      <div class="footer-brand">
-        <span class="logo-text">AegisID</span>
-        <span class="footer-desc">ZkCred &middot; Built on Midnight Network &middot; <a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" style="color: var(--purple-400); text-decoration: none;">@ZK_CRED</a></span>
+  <!-- ─── Statement Footer (Tailwind CSS) ─────────────────────────────── -->
+  <footer class="bg-neutral-100 text-neutral-950 mt-24 border-t border-neutral-300/80 overflow-hidden relative" role="contentinfo">
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 pt-14 sm:pt-20 pb-0 relative">
+      
+      <!-- Compact Top Row -->
+      <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-10 pb-12 sm:pb-16 border-b border-neutral-300/80">
+        
+        <!-- 3 Link Groups Laid Out Horizontally -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-14 md:gap-20">
+          
+          <!-- Group 1: Protocol -->
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Protocol</h3>
+            <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
+              <li><a href="https://midnight.network" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Midnight Network</a></li>
+              <li><a href="#how-it-works" class="text-neutral-900 hover:text-purple-600 transition-colors">ZK Verification</a></li>
+              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Compact Smart Contract</a></li>
+            </ul>
+          </div>
+
+          <!-- Group 2: Ecosystem -->
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Ecosystem</h3>
+            <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
+              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">GitHub Repository</a></li>
+              <li><a href="https://youtu.be/InI_dsrYqFY" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Demo Video</a></li>
+              <li><a href="https://zkcred-api.onrender.com/api/verifications" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">REST API</a></li>
+            </ul>
+          </div>
+
+          <!-- Group 3: Community -->
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Community</h3>
+            <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
+              <li><a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">@ZK_CRED</a></li>
+              <li><a href="https://forum.midnight.network" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Midnight Forum</a></li>
+              <li><a href="https://discord.gg/midnight" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Discord Community</a></li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Back to Top Link on the Right -->
+        <div class="flex items-start lg:justify-end pt-2 lg:pt-0">
+          <a href="#top" class="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-neutral-900 hover:text-purple-600 transition-colors group">
+            <span>Back to top</span>
+            <span class="text-sm group-hover:-translate-y-1 transition-transform inline-block">↑</span>
+          </a>
+        </div>
+
       </div>
-      <div class="footer-links" role="list">
-        <a href="https://midnight.network" target="_blank" rel="noopener" class="footer-link" role="listitem">Midnight Network</a>
-        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="footer-link" role="listitem">GitHub</a>
-        <a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" class="footer-link" role="listitem">@ZK_CRED</a>
-        <a href="https://youtu.be/InI_dsrYqFY" target="_blank" rel="noopener" class="footer-link" role="listitem">Demo Video</a>
+
+      <!-- Small Legal Line Above Wordmark -->
+      <div class="pt-8 sm:pt-10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] sm:text-xs font-medium tracking-wide text-neutral-500 uppercase gap-2">
+        <div>&copy; 2026 AEGISID &middot; ZKCRED PROTOCOL. BUILT ON MIDNIGHT NETWORK. ALL RIGHTS RESERVED.</div>
+        <div class="flex items-center gap-2 text-neutral-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+          <span>PRIVACY-PRESERVING FINANCIAL DISCLOSURE</span>
+        </div>
       </div>
-      <div class="footer-badge">
-        <span class="badge-dot" aria-hidden="true"></span>
-        Level 4 &middot; Gibbous Moon &#127764;
+
+      <!-- Enormous Clipped Brand Wordmark -->
+      <div class="overflow-hidden select-none pointer-events-none -mx-6 sm:-mx-10 pt-2">
+        <h2 class="text-[13vw] sm:text-[13.5vw] font-black tracking-tighter leading-none text-neutral-950 uppercase text-center whitespace-nowrap translate-y-[16%] -mb-[3.2vw] opacity-95">
+          AEGISID &middot; ZKCRED
+        </h2>
       </div>
+
     </div>
   </footer>
 
