@@ -271,8 +271,11 @@ body {
 }
 
 .hero-inner {
+  grid-column: 1;
+  grid-row: 1;
   width: 100%;
   max-width: 620px;
+  align-self: start;
 }
 
 .hero-badge {
@@ -436,13 +439,15 @@ body {
 
 /* ─── Hero Visual (Code Card) ────────────────────────────── */
 .hero-visual {
+  grid-column: 2;
+  grid-row: 1;
   width: 100%;
   max-width: 480px;
   justify-self: end;
-  align-self: start;
+  align-self: start !important;
   position: relative;
   z-index: 1;
-  margin-top: 0;
+  margin-top: 0 !important;
 }
 
 .zkproof-card {
@@ -1773,8 +1778,8 @@ html, body {
     padding-bottom: 3rem;
     gap: 2.5rem;
   }
-  .hero-inner { max-width: 100%; }
-  .hero-visual { max-width: 100%; width: 100%; justify-self: stretch; margin-top: 0; }
+  .hero-inner { grid-column: 1; grid-row: 1; max-width: 100%; }
+  .hero-visual { grid-column: 1; grid-row: 2; max-width: 100%; width: 100%; justify-self: stretch; align-self: auto !important; margin-top: 0 !important; }
   .verifier-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .privacy-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .profile-grid { grid-template-columns: 1fr; gap: 1.5rem; }
