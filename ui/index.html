@@ -96,92 +96,65 @@
     </svg>
   </div>
 
-  <!-- ─── Floating Pill Navigation (Tailwind CSS) ─────────────────────── -->
-  <header class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-max max-w-[92vw]">
-    <nav class="inline-flex items-center gap-3.5 px-4 py-2 bg-white/90 backdrop-blur-md border border-neutral-200/80 rounded-full shadow-xl shadow-neutral-950/10 text-neutral-800 text-sm font-medium">
-      <!-- Compact Logo Mark -->
-      <a href="#/home" class="flex items-center gap-2 font-bold text-neutral-950 hover:text-purple-600 transition-colors">
-        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" class="w-5 h-5">
-          <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#7c3aed" stroke-width="2.5" fill="none"/>
-          <path d="M10 14l3 3 5-5" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="font-black text-base tracking-tight text-neutral-900">AegisID</span>
+  <!-- ─── Unified Dark Glass Floating Pill Navigation ─────────────────── -->
+  <header class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-6xl px-4 pointer-events-none" id="top">
+    <nav class="pointer-events-auto flex items-center justify-between gap-4 px-5 py-2.5 bg-[#0a0714]/85 backdrop-blur-xl border border-purple-500/25 rounded-full shadow-[0_8px_32px_rgba(124,58,237,0.25)] text-white text-sm">
+      
+      <!-- Brand Logo -->
+      <a href="#/home" class="flex items-center gap-2.5 font-bold tracking-tight text-white hover:text-purple-300 transition-all group">
+        <div class="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/40 flex items-center justify-center group-hover:border-purple-400 group-hover:shadow-[0_0_12px_rgba(124,58,237,0.5)] transition-all">
+          <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+            <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#a78bfa" stroke-width="2" fill="none"/>
+            <path d="M10 14l3 3 5-5" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="font-extrabold text-base tracking-tight text-white">AegisID</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">ZkCred</span>
       </a>
 
       <!-- Hairline Vertical Divider -->
-      <div class="h-4 w-px bg-neutral-300/80" aria-hidden="true"></div>
+      <div class="hidden md:block h-4 w-px bg-purple-500/20"></div>
 
-      <!-- 3 or 4 Links (Hidden below md breakpoint) -->
-      <div class="hidden md:flex items-center gap-1">
-        <!-- Active Link with Filled Pill -->
-        <a href="#/home" class="px-3.5 py-1.5 rounded-full bg-neutral-900 text-white font-semibold text-xs transition-colors shadow-sm">Home</a>
-        <!-- Rounded Hover Background Links -->
-        <a href="#how-it-works" class="px-3.5 py-1.5 rounded-full hover:bg-neutral-100 text-neutral-700 hover:text-neutral-950 font-medium text-xs transition-colors">Architecture</a>
-        <a href="#/dashboard" class="px-3.5 py-1.5 rounded-full hover:bg-neutral-100 text-neutral-700 hover:text-neutral-950 font-medium text-xs transition-colors">Dashboard</a>
-        <a href="#faq" class="px-3.5 py-1.5 rounded-full hover:bg-neutral-100 text-neutral-700 hover:text-neutral-950 font-medium text-xs transition-colors">FAQ</a>
+      <!-- Navigation Links (Middle) -->
+      <div class="hidden md:flex items-center gap-1 font-medium text-xs">
+        <a href="#/home" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10">Home</a>
+        <a href="#how-it-works" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10">Architecture</a>
+        <a href="#/dashboard" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10">Dashboard</a>
+        <a href="#faq" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10">FAQ</a>
+        <a href="#/profile" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10" id="nav-profile-link">Profile</a>
       </div>
 
-      <!-- Small Dark CTA Button at the End -->
-      <a href="#/auth" class="px-4 py-1.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold shadow-md transition-all hover:scale-105 active:scale-95">
-        Sign In
-      </a>
-    </nav>
-  </header>
+      <!-- Hairline Vertical Divider -->
+      <div class="hidden md:block h-4 w-px bg-purple-500/20"></div>
 
-  <!-- ─── Navbar ─────────────────────────────────────────────────────────── -->
-  <nav class="navbar" id="top" role="navigation" aria-label="Main navigation">
-    <div class="nav-inner">
-      <a href="#/home" class="nav-logo" aria-label="AegisID Home">
-        <div class="logo-icon" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="none"/>
-            <path d="M10 14l3 3 5-5" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <defs>
-              <linearGradient id="shieldGrad" x1="4" y1="2" x2="24" y2="26" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#7c3aed"/>
-                <stop offset="1" stop-color="#06b6d4"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <span class="logo-text">AegisID</span>
-        <span class="logo-badge">ZkCred</span>
-      </a>
-      <div class="nav-links">
-        <a href="#/home" class="nav-link">Home</a>
-        <a href="#/dashboard" class="nav-link">Dashboard</a>
-        <a href="#/profile" class="nav-link" id="nav-profile-link">Profile</a>
-        
+      <!-- Action Items: Lace Wallet Button & Auth -->
+      <div class="flex items-center gap-3">
         <!-- Lace Wallet Connect Button -->
-        <button id="wallet-connect-btn" class="btn-wallet-connect" aria-label="Connect Lace Wallet">
+        <button id="wallet-connect-btn" class="btn-wallet-connect font-mono text-xs px-3.5 py-1.5 rounded-full border border-purple-500/40 bg-purple-950/40 text-purple-300 hover:bg-purple-900/50 hover:border-purple-400 transition-all shadow-[0_0_12px_rgba(124,58,237,0.2)] flex items-center gap-2" aria-label="Connect Lace Wallet">
           <span class="wallet-dot" id="wallet-dot"></span>
-          <span id="wallet-btn-text">Connect Lace Wallet</span>
+          <span id="wallet-btn-text">Connect Lace</span>
         </button>
 
         <!-- Auth Button / User Profile -->
-        <button id="nav-auth-btn" class="btn-auth">Sign In</button>
-        <div id="user-badge" class="user-badge" hidden>
-          <img id="user-avatar" src="" alt="User Avatar" class="user-avatar" referrerpolicy="no-referrer" />
-          <span id="user-name" class="user-name-text">User</span>
-          <button id="btn-logout" class="btn-logout" title="Sign Out">✕</button>
+        <button id="nav-auth-btn" class="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:scale-105 active:scale-95">Sign In</button>
+        <div id="user-badge" class="user-badge flex items-center gap-2 bg-purple-950/50 border border-purple-500/30 px-2.5 py-1 rounded-full" hidden>
+          <img id="user-avatar" src="" alt="User Avatar" class="user-avatar w-5 h-5 rounded-full" referrerpolicy="no-referrer" />
+          <span id="user-name" class="user-name-text text-xs font-semibold text-white">User</span>
+          <button id="btn-logout" class="btn-logout text-xs text-neutral-400 hover:text-white ml-1" title="Sign Out">✕</button>
         </div>
 
-        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="nav-link nav-github" aria-label="View on GitHub">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.4.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.3-1.23 3.3-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.3c0 .32.22.68.82.56C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
-          </svg>
-          GitHub
+        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="hidden sm:flex items-center gap-1.5 text-xs text-neutral-400 hover:text-purple-300 transition-colors pl-1" aria-label="View on GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.4.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.3-1.23 3.3-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.3c0 .32.22.68.82.56C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
         </a>
 
         <!-- Mobile Menu Toggle Button -->
-        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle mobile menu" aria-expanded="false">
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
+        <button id="mobile-menu-btn" class="mobile-menu-btn md:hidden p-1 text-purple-300 hover:text-white" aria-label="Toggle mobile menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
       </div>
-    </div>
-  </nav>
+
+    </nav>
+  </header>
 
   <!-- ─── Mobile Navigation Drawer ───────────────────────────────────── -->
   <div id="mobile-drawer" class="mobile-drawer" aria-hidden="true">
@@ -283,21 +256,25 @@
 
   <!-- ─── Tailwind Stats Block (Landing Page) ────────────────────────── -->
   <section class="max-w-7xl mx-auto px-6 sm:px-10 my-16" data-app-page="home">
-    <div class="bg-neutral-900 rounded-3xl p-8 sm:p-12 border border-neutral-800 shadow-2xl text-white">
+    <div class="bg-[#0e091f]/80 backdrop-blur-xl rounded-3xl p-8 sm:p-12 border border-purple-500/25 shadow-[0_16px_48px_rgba(0,0,0,0.6)] text-white relative overflow-hidden">
+      <!-- Glow ambient backdrop -->
+      <div class="absolute -top-24 -right-24 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
       <!-- Short Heading Above Metrics -->
-      <div class="max-w-xl mb-8">
-        <span class="text-xs font-bold uppercase tracking-widest text-purple-400">Protocol Statistics</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 text-white">Real-Time Proof Metrics</h2>
+      <div class="max-w-xl mb-8 relative z-10">
+        <span class="text-xs font-bold uppercase tracking-widest text-purple-400 font-mono">Protocol Statistics</span>
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-white">Real-Time Proof Metrics</h2>
       </div>
 
       <!-- Three Metrics in a Row -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-neutral-800/80">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-purple-500/20 relative z-10">
         
         <!-- Metric 1 -->
-        <div class="space-y-3">
+        <div class="space-y-3 p-5 rounded-2xl bg-purple-950/20 border border-purple-500/15 hover:border-purple-500/35 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-purple-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">4,821+</span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+            <span class="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-purple-300 via-purple-400 to-cyan-400 bg-clip-text text-transparent font-mono">4,821+</span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
               +14.2%
             </span>
@@ -309,10 +286,10 @@
         </div>
 
         <!-- Metric 2 -->
-        <div class="space-y-3">
+        <div class="space-y-3 p-5 rounded-2xl bg-purple-950/20 border border-purple-500/15 hover:border-purple-500/35 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-4xl sm:text-5xl font-black tracking-tight text-white">100%</span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+            <span class="text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">100%</span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
               Shielded
             </span>
@@ -324,10 +301,10 @@
         </div>
 
         <!-- Metric 3 -->
-        <div class="space-y-3">
+        <div class="space-y-3 p-5 rounded-2xl bg-purple-950/20 border border-purple-500/15 hover:border-purple-500/35 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">1.8s</span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20">
+            <span class="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent font-mono">1.8s</span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
               -0.4s
             </span>
@@ -407,11 +384,11 @@
     </div>
   </section>
 
-  <!-- ─── Searchable Help Centre FAQ (Tailwind CSS) ───────────────────── -->
+  <!-- ─── Searchable Help Centre FAQ (Dark Glass Aesthetic) ───────────── -->
   <section class="section py-20 px-6 sm:px-10 max-w-5xl mx-auto" id="faq" data-app-page="home">
     <!-- Centered Heading -->
     <div class="text-center max-w-2xl mx-auto mb-10">
-      <span class="text-xs font-bold uppercase tracking-widest text-purple-400">Help Centre</span>
+      <span class="text-xs font-bold uppercase tracking-widest text-purple-400 font-mono">Help Centre</span>
       <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mt-2">Frequently Asked Questions</h2>
       <p class="text-neutral-400 text-sm mt-3">Find instant answers about AegisID zero-knowledge verification, Lace Wallet, and Midnight smart contracts.</p>
     </div>
@@ -420,125 +397,125 @@
     <div class="space-y-6 max-w-3xl mx-auto mb-8">
       <!-- Prominent Search Input with Leading Magnifier Glyph -->
       <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-400">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-purple-400">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </div>
-        <input type="text" id="faq-search-input" placeholder="Search questions or keywords (e.g. credit score, Lace, proof)..." class="w-full pl-12 pr-4 py-3.5 bg-neutral-900/90 border border-neutral-800 rounded-2xl text-white placeholder-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-inner transition-all" />
+        <input type="text" id="faq-search-input" placeholder="Search questions or keywords (e.g. credit score, Lace, proof)..." class="w-full pl-12 pr-4 py-3.5 bg-[#0b0817]/90 border border-purple-500/30 rounded-2xl text-white placeholder-purple-300/40 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all" />
       </div>
 
       <!-- Row of Scrollable Topic Filter Pills (First is Active and Dark) -->
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="faq-topic-pills">
-        <button data-topic="all" class="faq-pill active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-neutral-900 text-white border border-neutral-700 transition-all">All Topics</button>
-        <button data-topic="privacy" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-700 transition-all">Privacy & ZK</button>
-        <button data-topic="wallet" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-700 transition-all">Lace Wallet</button>
-        <button data-topic="eligibility" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-700 transition-all">Eligibility</button>
-        <button data-topic="contract" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-neutral-950/60 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-700 transition-all">Smart Contract</button>
+        <button data-topic="all" class="faq-pill active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(124,58,237,0.4)] border border-purple-400/30 transition-all">All Topics</button>
+        <button data-topic="privacy" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Privacy & ZK</button>
+        <button data-topic="wallet" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Lace Wallet</button>
+        <button data-topic="eligibility" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Eligibility</button>
+        <button data-topic="contract" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Smart Contract</button>
       </div>
     </div>
 
     <!-- Results Count Line -->
-    <div class="flex items-center justify-between text-xs text-neutral-400 pb-4 mb-4 border-b border-neutral-800 max-w-3xl mx-auto">
+    <div class="flex items-center justify-between text-xs text-neutral-400 pb-4 mb-4 border-b border-purple-500/20 max-w-3xl mx-auto font-mono">
       <span id="faq-results-count">Showing 5 questions</span>
-      <span class="text-neutral-500">Updated for Midnight Preprod</span>
+      <span class="text-purple-400/70">MIDNIGHT PREPROD VERIFIED</span>
     </div>
 
     <!-- Question Rows Built from Native Details and Summary Elements -->
     <div class="space-y-4 max-w-3xl mx-auto" id="faq-list">
       
       <!-- Row 1 -->
-      <details class="faq-item group bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden transition-colors hover:border-neutral-700" data-topic="privacy">
+      <details class="faq-item group bg-[#0e091f]/60 backdrop-blur-md border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="privacy">
         <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
           <span class="faq-question">How does AegisID protect my credit score and annual income?</span>
           <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Privacy & ZK</span>
-            <svg class="w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">Privacy & ZK</span>
+            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
         </summary>
-        <div class="px-5 pb-5 pt-1 text-neutral-300 text-sm border-t border-neutral-800/80 space-y-4">
-          <p class="faq-answer">Your credit score and annual income are supplied exclusively as private witness inputs inside your browser. They are processed locally inside a PLONK ZK-SNARK circuit. Only the resulting boolean result (`isEligible: true/false`) is disclosed on-chain via Midnight's Compact language.</p>
-          <div class="flex items-center gap-3 pt-2 text-xs text-neutral-400 border-t border-neutral-800/40">
+        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
+          <p class="faq-answer leading-relaxed">Your credit score and annual income are supplied exclusively as private witness inputs inside your browser. They are processed locally inside a PLONK ZK-SNARK circuit. Only the resulting boolean result (<code class="bg-purple-950/60 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/30 font-mono text-xs">isEligible: true/false</code>) is disclosed on-chain via Midnight's Compact language.</p>
+          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
             <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👎 No</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
           </div>
         </div>
       </details>
 
       <!-- Row 2 -->
-      <details class="faq-item group bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden transition-colors hover:border-neutral-700" data-topic="wallet">
+      <details class="faq-item group bg-[#0e091f]/60 backdrop-blur-md border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="wallet">
         <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
           <span class="faq-question">Why does Lace Wallet require unlock before connecting to Midnight?</span>
           <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Lace Wallet</span>
-            <svg class="w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Lace Wallet</span>
+            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
         </summary>
-        <div class="px-5 pb-5 pt-1 text-neutral-300 text-sm border-t border-neutral-800/80 space-y-4">
-          <p class="faq-answer">Lace Wallet manages your Midnight shielded keys securely. Before signing ZK transactions or authorizing dapp connection, the wallet extension must be unlocked so it can derive keys and interact with the Midnight network RPC API.</p>
-          <div class="flex items-center gap-3 pt-2 text-xs text-neutral-400 border-t border-neutral-800/40">
+        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
+          <p class="faq-answer leading-relaxed">Lace Wallet manages your Midnight shielded keys securely. Before signing ZK transactions or authorizing dapp connection, the wallet extension must be unlocked so it can derive keys and interact with the Midnight network RPC API.</p>
+          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
             <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👎 No</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
           </div>
         </div>
       </details>
 
       <!-- Row 3 -->
-      <details class="faq-item group bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden transition-colors hover:border-neutral-700" data-topic="eligibility">
+      <details class="faq-item group bg-[#0e091f]/60 backdrop-blur-md border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="eligibility">
         <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
           <span class="faq-question">What are the default eligibility thresholds for verification?</span>
           <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Eligibility</span>
-            <svg class="w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Eligibility</span>
+            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
         </summary>
-        <div class="px-5 pb-5 pt-1 text-neutral-300 text-sm border-t border-neutral-800/80 space-y-4">
-          <p class="faq-answer">By default, the AegisID ZkCred circuit evaluates age ≥ 21, credit score ≥ 700, and annual income ≥ $50,000. These thresholds can also be dynamically configured by contract administrators.</p>
-          <div class="flex items-center gap-3 pt-2 text-xs text-neutral-400 border-t border-neutral-800/40">
+        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
+          <p class="faq-answer leading-relaxed">By default, the AegisID ZkCred circuit evaluates age ≥ 21, credit score ≥ 700, and annual income ≥ $50,000. These thresholds can also be dynamically configured on-chain by contract administrators.</p>
+          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
             <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👎 No</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
           </div>
         </div>
       </details>
 
       <!-- Row 4 -->
-      <details class="faq-item group bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden transition-colors hover:border-neutral-700" data-topic="contract">
+      <details class="faq-item group bg-[#0e091f]/60 backdrop-blur-md border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="contract">
         <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
           <span class="faq-question">Where is the ZkCred Compact smart contract deployed?</span>
           <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Smart Contract</span>
-            <svg class="w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">Smart Contract</span>
+            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
         </summary>
-        <div class="px-5 pb-5 pt-1 text-neutral-300 text-sm border-t border-neutral-800/80 space-y-4">
-          <p class="faq-answer">The contract is written in Midnight Compact and compiled to ZKIR. It is deployed on the Midnight Preprod testnet, accessible via the official indexer and proof server endpoints.</p>
-          <div class="flex items-center gap-3 pt-2 text-xs text-neutral-400 border-t border-neutral-800/40">
+        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
+          <p class="faq-answer leading-relaxed">The contract is written in Midnight Compact and compiled to ZKIR. It is deployed on the Midnight Preprod testnet, accessible via the official indexer and proof server endpoints.</p>
+          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
             <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👎 No</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
           </div>
         </div>
       </details>
 
       <!-- Row 5 -->
-      <details class="faq-item group bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden transition-colors hover:border-neutral-700" data-topic="privacy">
+      <details class="faq-item group bg-[#0e091f]/60 backdrop-blur-md border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="privacy">
         <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
           <span class="faq-question">Can an observer replay my generated zero-knowledge proof?</span>
           <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Privacy & ZK</span>
-            <svg class="w-4 h-4 text-neutral-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">Privacy & ZK</span>
+            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
         </summary>
-        <div class="px-5 pb-5 pt-1 text-neutral-300 text-sm border-t border-neutral-800/80 space-y-4">
-          <p class="faq-answer">No. AegisID incorporates a unique 32-byte domain-separated salt and replay nullifier into every verification call. Replaying an identical proof will be rejected by the Midnight consensus engine.</p>
-          <div class="flex items-center gap-3 pt-2 text-xs text-neutral-400 border-t border-neutral-800/40">
+        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
+          <p class="faq-answer leading-relaxed">No. AegisID incorporates a unique 32-byte domain-separated salt and replay nullifier into every verification call. Replaying an identical proof will be rejected by the Midnight consensus engine.</p>
+          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
             <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-neutral-800/50 hover:bg-neutral-800 transition-colors">👎 No</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
+            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
           </div>
         </div>
       </details>
@@ -547,7 +524,7 @@
 
     <!-- Empty State -->
     <div id="faq-empty-state" class="hidden text-center py-12 px-4 max-w-md mx-auto space-y-3">
-      <div class="w-12 h-12 rounded-full bg-neutral-800 text-neutral-400 flex items-center justify-center mx-auto text-xl">🔍</div>
+      <div class="w-12 h-12 rounded-full bg-purple-950/60 border border-purple-500/30 text-purple-300 flex items-center justify-center mx-auto text-xl shadow-lg">🔍</div>
       <h3 class="text-base font-bold text-white">No matching questions found</h3>
       <p class="text-xs text-neutral-400">Try adjusting your search query or switching topic filter pills.</p>
     </div>
@@ -1087,21 +1064,27 @@
     </div>
   </section>
 
-  <!-- ─── Split-Screen Sign-In Page (Tailwind CSS) ────────────────────── -->
-  <section class="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-neutral-950 text-white" id="auth-page" data-app-page="auth">
+  <!-- ─── Split-Screen Sign-In Page (Dark Glass Aesthetic) ────────────── -->
+  <section class="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#07060b] text-white relative pt-20 lg:pt-0" id="auth-page" data-app-page="auth">
+    <!-- Ambient glows -->
+    <div class="absolute top-1/4 left-10 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
     <!-- Left Half: Centered Login Card (~360px wide) -->
-    <div class="flex items-center justify-center p-6 sm:p-12">
-      <div class="w-full max-w-[360px] space-y-6">
+    <div class="flex items-center justify-center p-6 sm:p-12 relative z-10">
+      <div class="w-full max-w-[380px] space-y-6 bg-[#0e091f]/80 backdrop-blur-xl border border-purple-500/25 p-8 rounded-3xl shadow-[0_16px_48px_rgba(124,58,237,0.15)]">
         
         <!-- Logo -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center shadow-md">
+          <div class="w-10 h-10 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.3)]">
             <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
-              <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#7c3aed" stroke-width="2.5" fill="none"/>
+              <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#a78bfa" stroke-width="2.5" fill="none"/>
               <path d="M10 14l3 3 5-5" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <span class="text-xl font-bold tracking-tight text-white">AegisID</span>
+          <div>
+            <span class="text-xl font-black tracking-tight text-white block">AegisID</span>
+            <span class="text-[10px] font-mono text-purple-400 tracking-wider uppercase">ZkCred Auth</span>
+          </div>
         </div>
 
         <div>
@@ -1112,38 +1095,38 @@
         <!-- Form -->
         <form class="space-y-4" onsubmit="event.preventDefault();">
           <div>
-            <label class="block text-xs font-semibold text-neutral-300 mb-1.5" for="auth-page-email">Email address</label>
-            <input type="email" id="auth-page-email" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" />
+            <label class="block text-xs font-semibold text-purple-300 mb-1.5 font-mono" for="auth-page-email">EMAIL ADDRESS</label>
+            <input type="email" id="auth-page-email" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-[#070510] border border-purple-500/30 rounded-xl text-sm text-white placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 transition-all shadow-inner" />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-neutral-300 mb-1.5" for="auth-page-password">Password</label>
-            <input type="password" id="auth-page-password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" />
+            <label class="block text-xs font-semibold text-purple-300 mb-1.5 font-mono" for="auth-page-password">PASSWORD</label>
+            <input type="password" id="auth-page-password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-[#070510] border border-purple-500/30 rounded-xl text-sm text-white placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 transition-all shadow-inner" />
           </div>
 
           <!-- "Remember me" checkbox with "Forgot password?" link on the same row -->
           <div class="flex items-center justify-between text-xs">
             <label class="flex items-center gap-2 cursor-pointer text-neutral-400 hover:text-neutral-300">
-              <input type="checkbox" class="w-4 h-4 rounded bg-neutral-900 border-neutral-800 text-purple-600 focus:ring-purple-500 focus:ring-offset-neutral-950" />
+              <input type="checkbox" class="w-4 h-4 rounded bg-[#070510] border-purple-500/30 text-purple-600 focus:ring-purple-500 focus:ring-offset-neutral-950" />
               <span>Remember me</span>
             </label>
             <a href="#/home" class="font-medium text-purple-400 hover:text-purple-300 transition-colors">Forgot password?</a>
           </div>
 
           <!-- Full-width Primary Button -->
-          <button type="submit" class="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-purple-600/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
+          <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-sm rounded-xl shadow-[0_0_20px_rgba(124,58,237,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99]">
             Sign In
           </button>
         </form>
 
         <!-- Divider -->
         <div class="relative flex items-center justify-center">
-          <div class="border-t border-neutral-800 w-full"></div>
-          <span class="bg-neutral-950 px-3 text-[11px] font-medium text-neutral-500 uppercase tracking-wider absolute">or</span>
+          <div class="border-t border-purple-500/20 w-full"></div>
+          <span class="bg-[#0e091f] px-3 text-[11px] font-mono text-purple-400 uppercase tracking-wider absolute">or</span>
         </div>
 
         <!-- "Continue with Google" Outline Button -->
-        <button id="auth-page-google-btn" class="w-full py-2.5 px-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 font-semibold text-sm rounded-xl flex items-center justify-center gap-3 transition-all hover:border-neutral-700">
+        <button id="auth-page-google-btn" class="w-full py-2.5 px-4 bg-[#070510] hover:bg-purple-950/40 border border-purple-500/30 text-neutral-200 font-semibold text-sm rounded-xl flex items-center justify-center gap-3 transition-all hover:border-purple-400">
           <svg class="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
             <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
@@ -1153,7 +1136,7 @@
           <span>Continue with Google</span>
         </button>
 
-        <p class="text-center text-xs text-neutral-500 pt-2">
+        <p class="text-center text-xs text-neutral-500 pt-1">
           Don't have an account? <a href="#/home" class="text-purple-400 hover:underline">Explore AegisID</a>
         </p>
 
@@ -1161,83 +1144,88 @@
     </div>
 
     <!-- Right Half: Solid Brand-Colored Panel (Hidden below lg breakpoint) -->
-    <div class="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-purple-900 via-indigo-950 to-neutral-950 relative overflow-hidden border-l border-purple-900/40">
+    <div class="hidden lg:flex flex-col justify-between p-16 bg-gradient-to-br from-purple-950 via-[#0b0817] to-[#07060b] relative overflow-hidden border-l border-purple-500/20">
       <!-- Glow ambient background -->
-      <div class="absolute -top-24 -right-24 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -top-24 -right-24 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
       <div class="relative z-10">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30 font-mono shadow-[0_0_15px_rgba(124,58,237,0.2)]">
           ✨ AegisID ZkCred Protocol
         </div>
       </div>
 
-      <div class="relative z-10 max-w-lg space-y-6">
+      <div class="relative z-10 max-w-lg space-y-8">
         <h2 class="text-4xl sm:text-5xl font-black tracking-tight leading-tight text-white">
-          Financial Verification,<br/>Reimagined with Privacy.
+          Financial Verification,<br/>
+          <span class="bg-gradient-to-r from-purple-300 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Reimagined with Privacy.</span>
         </h2>
         
         <!-- Short Testimonial -->
-        <blockquote class="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 space-y-3">
-          <p class="text-sm italic text-neutral-200">
+        <blockquote class="p-6 bg-[#0e091f]/60 backdrop-blur-xl rounded-2xl border border-purple-500/25 space-y-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+          <p class="text-sm italic text-neutral-200 leading-relaxed">
             "AegisID allowed us to prove our income and credit score for financial eligibility without disclosing a single line of raw private data on-chain."
           </p>
-          <footer class="flex items-center gap-3 text-xs">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center font-bold text-white shadow-inner">
+          <footer class="flex items-center gap-3 text-xs pt-1 border-t border-purple-500/15">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center font-bold text-white shadow-md">
               SG
             </div>
             <div>
               <div class="font-bold text-white">Somenath Gorai</div>
-              <div class="text-neutral-400">Midnight Ecosystem Lead</div>
+              <div class="text-purple-300/70 font-mono text-[11px]">Midnight Ecosystem Lead</div>
             </div>
           </footer>
         </blockquote>
       </div>
 
-      <div class="relative z-10 text-xs text-purple-300/60 flex items-center justify-between">
-        <span>&copy; 2026 AegisID ZkCred</span>
-        <span>Built on Midnight Network</span>
+      <div class="relative z-10 text-xs text-purple-300/60 flex items-center justify-between font-mono">
+        <span>&copy; 2026 AEGISID ZKCRED</span>
+        <span>MIDNIGHT NETWORK PREPROD</span>
       </div>
     </div>
   </section>
 
-  <!-- ─── Statement Footer (Tailwind CSS) ─────────────────────────────── -->
-  <footer class="bg-neutral-100 text-neutral-950 mt-24 border-t border-neutral-300/80 overflow-hidden relative" role="contentinfo">
-    <div class="max-w-7xl mx-auto px-6 sm:px-10 pt-14 sm:pt-20 pb-0 relative">
+  <!-- ─── Statement Footer (Dark Glass Aesthetic) ────────────────────── -->
+  <footer class="bg-[#080612]/95 text-slate-200 mt-24 border-t border-purple-500/20 overflow-hidden relative backdrop-blur-xl" role="contentinfo">
+    <!-- Ambient Radial Glow Effects -->
+    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-20 right-10 w-[400px] h-[200px] bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 pt-16 sm:pt-20 pb-0 relative z-10">
       
       <!-- Compact Top Row -->
-      <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-10 pb-12 sm:pb-16 border-b border-neutral-300/80">
+      <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-10 pb-12 sm:pb-16 border-b border-purple-500/20">
         
         <!-- 3 Link Groups Laid Out Horizontally -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-14 md:gap-20">
           
           <!-- Group 1: Protocol -->
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Protocol</h3>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-purple-400/80 mb-4 font-mono">Protocol</h3>
             <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="https://midnight.network" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Midnight Network</a></li>
-              <li><a href="#how-it-works" class="text-neutral-900 hover:text-purple-600 transition-colors">ZK Verification</a></li>
-              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Compact Smart Contract</a></li>
+              <li><a href="https://midnight.network" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Midnight Network</a></li>
+              <li><a href="#how-it-works" class="text-neutral-300 hover:text-cyan-400 transition-colors">ZK Verification</a></li>
+              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Compact Smart Contract</a></li>
             </ul>
           </div>
 
           <!-- Group 2: Ecosystem -->
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Ecosystem</h3>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-purple-400/80 mb-4 font-mono">Ecosystem</h3>
             <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">GitHub Repository</a></li>
-              <li><a href="https://youtu.be/InI_dsrYqFY" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Demo Video</a></li>
-              <li><a href="https://zkcred-api.onrender.com/api/verifications" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">REST API</a></li>
+              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">GitHub Repository</a></li>
+              <li><a href="https://youtu.be/InI_dsrYqFY" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Demo Video</a></li>
+              <li><a href="https://zkcred-api.onrender.com/api/verifications" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">REST API</a></li>
             </ul>
           </div>
 
           <!-- Group 3: Community -->
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Community</h3>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-purple-400/80 mb-4 font-mono">Community</h3>
             <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">@ZK_CRED</a></li>
-              <li><a href="https://forum.midnight.network" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Midnight Forum</a></li>
-              <li><a href="https://discord.gg/midnight" target="_blank" rel="noopener" class="text-neutral-900 hover:text-purple-600 transition-colors">Discord Community</a></li>
+              <li><a href="https://x.com/ZK_CRED" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">@ZK_CRED</a></li>
+              <li><a href="https://forum.midnight.network" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Midnight Forum</a></li>
+              <li><a href="https://discord.gg/midnight" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Discord Community</a></li>
             </ul>
           </div>
 
@@ -1245,7 +1233,7 @@
 
         <!-- Back to Top Link on the Right -->
         <div class="flex items-start lg:justify-end pt-2 lg:pt-0">
-          <a href="#top" class="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-neutral-900 hover:text-purple-600 transition-colors group">
+          <a href="#top" class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 text-xs font-bold tracking-widest uppercase text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 hover:shadow-[0_0_15px_rgba(124,58,237,0.3)] transition-all group">
             <span>Back to top</span>
             <span class="text-sm group-hover:-translate-y-1 transition-transform inline-block">↑</span>
           </a>
@@ -1254,17 +1242,19 @@
       </div>
 
       <!-- Small Legal Line Above Wordmark -->
-      <div class="pt-8 sm:pt-10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] sm:text-xs font-medium tracking-wide text-neutral-500 uppercase gap-2">
+      <div class="pt-8 sm:pt-10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] sm:text-xs font-medium tracking-wide text-neutral-400 uppercase gap-2 font-mono">
         <div>&copy; 2026 AEGISID &middot; ZKCRED PROTOCOL. BUILT ON MIDNIGHT NETWORK. ALL RIGHTS RESERVED.</div>
         <div class="flex items-center gap-2 text-neutral-400">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-          <span>PRIVACY-PRESERVING FINANCIAL DISCLOSURE</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block shadow-[0_0_8px_#34d399]"></span>
+          <span class="text-emerald-400 font-semibold">PREPROD LIVE</span>
+          <span class="text-neutral-600">&middot;</span>
+          <span>SELECTIVE DISCLOSURE</span>
         </div>
       </div>
 
       <!-- Enormous Clipped Brand Wordmark -->
       <div class="overflow-hidden select-none pointer-events-none -mx-6 sm:-mx-10 pt-2">
-        <h2 class="text-[13vw] sm:text-[13.5vw] font-black tracking-tighter leading-none text-neutral-950 uppercase text-center whitespace-nowrap translate-y-[16%] -mb-[3.2vw] opacity-95">
+        <h2 class="text-[13vw] sm:text-[13.5vw] font-black tracking-tighter leading-none uppercase text-center whitespace-nowrap translate-y-[16%] -mb-[3.2vw] bg-gradient-to-b from-purple-300/20 via-purple-500/10 to-transparent bg-clip-text text-transparent">
           AEGISID &middot; ZKCRED
         </h2>
       </div>
