@@ -439,9 +439,10 @@ body {
   width: 100%;
   max-width: 480px;
   justify-self: end;
+  align-self: start;
   position: relative;
   z-index: 1;
-  margin-top: 3.2rem;
+  margin-top: 0;
 }
 
 .zkproof-card {
