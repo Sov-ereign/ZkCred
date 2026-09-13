@@ -53,16 +53,40 @@ const STATE = {
 };
 
 function currentRoute() {
-  const route = window.location.hash.replace(/^#\/?/, "").split("/")[0];
+  const hash = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const route = hash.split("/")[0];
   return ["home", "dashboard", "profile", "auth"].includes(route) ? route : "home";
 }
 
 function applyRoute() {
   const route = currentRoute();
   document.body.dataset.route = route;
-  if (route === "auth") openModal(document.getElementById("auth-modal"));
-  else closeModal(document.getElementById("auth-modal"));
-  window.scrollTo(0, 0);
+
+  if (route === "auth") {
+    openModal(document.getElementById("auth-modal"));
+    return;
+  }
+
+  closeModal(document.getElementById("auth-modal"));
+
+  if (route === "home") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else if (route === "dashboard") {
+    const dashboardSection = document.getElementById("dashboard");
+    if (dashboardSection) {
+      dashboardSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  } else if (route === "profile") {
+    if (!STATE.authToken) {
+      openModal(document.getElementById("auth-modal"));
+    } else {
+      const profileSection = document.getElementById("profile");
+      if (profileSection) {
+        profileSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      fetchProfileFromMongoDB();
+    }
+  }
 }
 
 function navigate(route) {
@@ -1204,12 +1228,21 @@ function setupCardGlow() {
 
 function initRouting() {
   window.addEventListener("hashchange", applyRoute);
-  applyRoute();
-  document.getElementById("nav-profile-link")?.addEventListener("click", (event) => {
-    event.preventDefault();
-    if (!STATE.authToken) return navigate("auth");
-    navigate("profile");
-    fetchProfileFromMongoDB();
+
+  // Apply route on load if non-home hash is present
+  if (window.location.hash && window.location.hash !== "#/home") {
+    setTimeout(applyRoute, 150);
+  }
+
+  document.querySelectorAll('a[href="#/profile"], #nav-profile-link').forEach((link) => {
+    link.addEventListener("click", (event) => {
+      if (!STATE.authToken) {
+        event.preventDefault();
+        openModal(document.getElementById("auth-modal"));
+      } else {
+        fetchProfileFromMongoDB();
+      }
+    });
   });
 }
 
