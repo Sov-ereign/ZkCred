@@ -4,6 +4,15 @@
 
 **Live demo:** [zk-cred.vercel.app](https://zk-cred.vercel.app) · **Product X:** [@ZK_CRED](https://x.com/ZK_CRED) · **Demo video (v2):** [watch on YouTube](https://youtu.be/Fff9AX6rdYM)
 
+## 🏆 Level 6 Verification & Submission Deliverables
+
+- 🌐 **Live Web Application**: [https://zk-cred.vercel.app](https://zk-cred.vercel.app)
+- 👥 **70 Verifiable Preprod User Wallets**: [`ADDRESSES.md`](./ADDRESSES.md) *(List of 70 Midnight Preprod user wallet addresses)*
+- 💬 **Documented Feedback Loop**: [`FEEDBACK.md`](./FEEDBACK.md) *(Synthesis of 70-user survey ratings, friction points, and code iterations)*
+- 📊 **Raw Survey Response Dataset**: [`feedback_responses.csv`](./feedback_responses.csv) *(Google Form export dataset — 70 responses)*
+- 🎥 **Demo Video Walkthrough**: [Watch on YouTube](https://youtu.be/Fff9AX6rdYM)
+- 💻 **Commit History**: 124+ meaningful commits on `main` branch (exceeds 30 minimum requirement)
+
 ZkCred is a Midnight Compact dApp for proving an age, credit-score, and income threshold without putting those values on-chain. A user signs through Midnight Lace; the browser constructs the Compact transaction, retrieves proving material, and submits it through the wallet.
 
 ## Privacy model
