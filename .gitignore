@@ -8,3 +8,7 @@ tests/*.d.ts
 tests/*.map
 .vercel
 .env*
+*.csv
+*.tsv
+scripts/
+

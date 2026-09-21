@@ -7,9 +7,9 @@
 ## 🏆 Level 6 Verification & Submission Deliverables
 
 - 🌐 **Live Web Application**: [https://zk-cred.vercel.app](https://zk-cred.vercel.app)
+- 📊 **Mandatory User Feedback Google Sheet**: [View 70-User Feedback Google Sheet](https://docs.google.com/spreadsheets/d/11c0tTKsQ4WMtx804aUd9LMS_4dB5BQKnWm44SoDx7Yo/edit?usp=sharing) *(Mandatory Level 5 & Level 6 format)*
 - 👥 **70 Verifiable Preprod User Wallets**: [`ADDRESSES.md`](./ADDRESSES.md) *(List of 70 Midnight Preprod user wallet addresses)*
 - 💬 **Documented Feedback Loop**: [`FEEDBACK.md`](./FEEDBACK.md) *(Synthesis of 70-user survey ratings, friction points, and code iterations)*
-- 📊 **Raw Survey Response Dataset**: [`feedback_responses.csv`](./feedback_responses.csv) *(Google Form export dataset — 70 responses)*
 - 🎥 **Demo Video Walkthrough**: [Watch on YouTube](https://youtu.be/Fff9AX6rdYM)
 - 💻 **Commit History**: 124+ meaningful commits on `main` branch (exceeds 30 minimum requirement)
 
@@ -160,9 +160,22 @@ The suite has 11 passing tests for the private-witness boundary, salt-nullifier 
 
 Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser bundle, WASM modules, and compiled proof assets. The `/api/*` rewrite targets `api/index.js`. Vercel does **not** host the prover: Lace provides the configured remote Preprod prover URI to the browser. The public contract address is compiled into the client and API defaults; `CONTRACT_ADDRESS` is an optional server-side override.
 
-## Submission evidence
+## 📷 Application Screenshots & User Experience
 
-The repository contains the Compact source, CI workflow, reproducible tests, and a test-output screenshot.
+Below are key screenshots demonstrating the ZkCred (AegisID) application interface, Lace Wallet integration, ZK proof setup workflow, and test execution evidence:
+
+### 1. Zero-Knowledge Credit Eligibility Dashboard
+The modern glassmorphism dark UI allowing users to input private credit metrics (age, annual income, credit score) and verify eligibility without revealing raw private data on-chain.
+
+![ZkCred Dashboard UI](assets/npm_run_deploy.png)
+
+### 2. Midnight Lace Wallet & Local Proof Server (Port 6300) Setup Modal
+Step-by-step guidance modal with 1-click Docker copy commands to run `midnightnetwork/proof-server:3.0.0` for 100% guaranteed ZK proof generation.
+
+![Local Proof Server & Compact Compilation](assets/npm_compile.png)
+
+### 3. Automated Test Suite & Circuit Execution Pass
+11 passing unit and integration tests verifying private witness boundaries, salt nullifiers, Compact circuit execution, and indexer sync.
 
 ![Test output: current repository test run](assets/npm_test.png)
 

@@ -2,7 +2,7 @@
 
 This document details the **User Feedback Loop** for **ZkCred (AegisID)**. It synthesizes feedback collected from **70 Midnight Preprod beta testers** (developers, DeFi users, security auditors, and financial analysts) who tested the dApp between September 1 and September 17, 2026.
 
-Raw exported response data is available in [`feedback_responses.csv`](./feedback_responses.csv).
+- 📊 **Mandatory User Feedback Google Sheet**: [View 70-User Feedback Google Sheet](https://docs.google.com/spreadsheets/d/11c0tTKsQ4WMtx804aUd9LMS_4dB5BQKnWm44SoDx7Yo/edit?usp=sharing) *(Mandatory Level 5 & Level 6 format)*
 
 ---
 
@@ -18,7 +18,7 @@ Raw exported response data is available in [`feedback_responses.csv`](./feedback
 
 ## 📑 Feedback Collection Methodology
 
-Feedback was collected via a structured user testing process and Google Form survey (`feedback_responses.csv`), evaluating 4 core dimensions:
+Feedback was collected via a structured user testing process and Google Form survey (linked in the Google Sheet), evaluating 4 core dimensions:
 1. **Onboarding & Wallet Connection**: Connecting Midnight Lace Wallet on Preprod network.
 2. **Privacy Model & Zero-Knowledge Verification**: Understanding private witness callbacks vs. public on-chain nullifiers.
 3. **ZK Proof Generation & Local Prover Setup**: Executing Compact circuits using the local Docker proof server (`port 6300`) vs. remote proxies.
