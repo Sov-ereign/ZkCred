@@ -2,11 +2,12 @@
 
 [![ZkCred CI/CD Pipeline](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Sov-ereign/ZkCred/actions/workflows/ci.yml)
 
-**Live demo:** [zk-cred.vercel.app](https://zk-cred.vercel.app) · **Product X:** [@ZK_CRED](https://x.com/ZK_CRED) · **Demo video (v2):** [watch on YouTube](https://youtu.be/Fff9AX6rdYM)
+**Live demo:** [zk-cred.vercel.app](https://zk-cred.vercel.app) · **Product X:** [@ZkCredapp](https://x.com/ZkCredapp) · **Demo video (v2):** [watch on YouTube](https://youtu.be/Fff9AX6rdYM)
 
 ## 🏆 Level 6 Verification & Submission Deliverables
 
 - 🌐 **Live Web Application**: [https://zk-cred.vercel.app](https://zk-cred.vercel.app)
+- 🐦 **Official Product X Handle**: [@ZkCredapp](https://x.com/ZkCredapp) *(Note: Our previous `@ZK_CRED` handle was temporarily flagged by automated X spam filters due to rapid hackathon link posting; `@ZkCredapp` is our active official handle)*
 - 📊 **Mandatory User Feedback Google Sheet**: [View 70-User Feedback Google Sheet](https://docs.google.com/spreadsheets/d/11c0tTKsQ4WMtx804aUd9LMS_4dB5BQKnWm44SoDx7Yo/edit?usp=sharing) *(Mandatory Level 5 & Level 6 format)*
 - 👥 **70 Verifiable Preprod User Wallets**: [`ADDRESSES.md`](./ADDRESSES.md) *(List of 70 Midnight Preprod user wallet addresses)*
 - 💬 **Documented Feedback Loop**: [`FEEDBACK.md`](./FEEDBACK.md) *(Synthesis of 70-user survey ratings, friction points, and code iterations)*
