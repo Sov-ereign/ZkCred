@@ -23,14 +23,39 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Validate generated Compact proof assets
+      - name: Validate generated Compact proof assets exist
         run: |
           test -f contract/src/zkcred.compact
           test -s src/managed/contract/index.js
           test -s src/managed/keys/initialize.prover
           test -s src/managed/keys/verifyEligibility.prover
+          test -s src/managed/keys/updateThresholds.prover
           test -s src/managed/zkir/initialize.bzkir
           test -s src/managed/zkir/verifyEligibility.bzkir
+          test -s src/managed/zkir/updateThresholds.bzkir
+
+      - name: Pin and verify Compact artifact checksums
+        run: |
+          # Regenerate SHA-256 hashes for committed artifacts.
+          # On first run (or after intentional contract changes), update these
+          # hashes by running: sha256sum src/managed/contract/index.js > src/managed/.artifact-checksums
+          # If the checksums file exists, verify against it; otherwise create it.
+          CHECKSUMS_FILE="src/managed/.artifact-checksums"
+          if [ -f "$CHECKSUMS_FILE" ]; then
+            echo "[CI] Verifying Compact artifact checksums..."
+            sha256sum --check --strict "$CHECKSUMS_FILE"
+          else
+            echo "[CI] No checksum file found — generating for future runs."
+            sha256sum \
+              src/managed/contract/index.js \
+              src/managed/keys/initialize.prover \
+              src/managed/keys/verifyEligibility.prover \
+              src/managed/keys/updateThresholds.prover \
+              src/managed/zkir/initialize.bzkir \
+              src/managed/zkir/verifyEligibility.bzkir \
+              src/managed/zkir/updateThresholds.bzkir > "$CHECKSUMS_FILE"
+            echo "[CI] Checksums written. Commit $CHECKSUMS_FILE to pin these artifacts."
+          fi
 
       - name: Run privacy and contract-asset tests
         run: npm test

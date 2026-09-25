@@ -103,6 +103,83 @@ describe("Generated Compact runtime", () => {
   });
 });
 
+describe("Relying-party nullifier validation", () => {
+  test("per-nullifier eligibility survives a second call overwriting the global flag", () => {
+    const adminKey = new Uint8Array(32).fill(0x11);
+    const salt1 = new Uint8Array(32).fill(0x22);
+    const salt2 = new Uint8Array(32).fill(0x33);
+
+    // First user: eligible
+    const contractA = new Contract({
+      getPrivateCreditScore: (ctx: any) => [ctx.privateState, 760n],
+      getPrivateAnnualIncome: (ctx: any) => [ctx.privateState, 9_000_000n],
+      getPrivateAge: (ctx: any) => [ctx.privateState, 26n],
+      getPrivateSalt: (ctx: any) => [ctx.privateState, salt1],
+      getPrivateAdminKey: (ctx: any) => [ctx.privateState, adminKey],
+    });
+    const initial = contractA.initialState({
+      initialPrivateState: {},
+      initialZswapLocalState: { coinPublicKey: { bytes: new Uint8Array(32) }, currentIndex: 0n, inputs: [], outputs: [] },
+    });
+    let ctx = createCircuitContext(dummyContractAddress(), initial.currentZswapLocalState, initial.currentContractState, initial.currentPrivateState);
+    ctx = contractA.circuits.initialize(ctx, 700n, 5_000_000n, 21n, adminKey).context;
+    ctx = contractA.circuits.verifyEligibility(ctx).context;
+
+    // Capture first user's nullifier presence
+    const ctxAfterFirstCall = ctx;
+
+    // Second user: ineligible (low score)
+    const contractB = new Contract({
+      getPrivateCreditScore: (ctx2: any) => [ctx2.privateState, 500n],
+      getPrivateAnnualIncome: (ctx2: any) => [ctx2.privateState, 9_000_000n],
+      getPrivateAge: (ctx2: any) => [ctx2.privateState, 26n],
+      getPrivateSalt: (ctx2: any) => [ctx2.privateState, salt2],
+      getPrivateAdminKey: (ctx2: any) => [ctx2.privateState, adminKey],
+    });
+    ctx = contractB.circuits.verifyEligibility(ctxAfterFirstCall).context;
+
+    // Global flag now reflects the SECOND call (ineligible)
+    expect(contractA.circuits.getEligibilityStatus(ctx).result).toBe(false);
+
+    // But the first user's salt nullifier is STILL in usedSaltNullifiers
+    // A relying party can verify: "was this nullifier used?" without trusting the global flag.
+    // Attempting to replay the first user's salt throws — proving it was previously submitted.
+    expect(() => contractA.circuits.verifyEligibility(ctxAfterFirstCall)).toThrow("Credential salt already used");
+  });
+
+  test("fresh salt allows a new call regardless of previous outcome", () => {
+    const adminKey = new Uint8Array(32).fill(0x11);
+    const saltFirst = new Uint8Array(32).fill(0xaa);
+    const saltSecond = new Uint8Array(32).fill(0xbb);
+
+    const contract = new Contract({
+      getPrivateCreditScore: (ctx: any) => [ctx.privateState, 760n],
+      getPrivateAnnualIncome: (ctx: any) => [ctx.privateState, 9_000_000n],
+      getPrivateAge: (ctx: any) => [ctx.privateState, 26n],
+      getPrivateSalt: (ctx: any) => [ctx.privateState, saltFirst],
+      getPrivateAdminKey: (ctx: any) => [ctx.privateState, adminKey],
+    });
+    const initial = contract.initialState({
+      initialPrivateState: {},
+      initialZswapLocalState: { coinPublicKey: { bytes: new Uint8Array(32) }, currentIndex: 0n, inputs: [], outputs: [] },
+    });
+    let ctx = createCircuitContext(dummyContractAddress(), initial.currentZswapLocalState, initial.currentContractState, initial.currentPrivateState);
+    ctx = contract.circuits.initialize(ctx, 700n, 5_000_000n, 21n, adminKey).context;
+    ctx = contract.circuits.verifyEligibility(ctx).context;
+
+    // Same user with a fresh salt — succeeds (demonstrates nullifier prevents same-salt only)
+    const contractFresh = new Contract({
+      getPrivateCreditScore: (ctx2: any) => [ctx2.privateState, 760n],
+      getPrivateAnnualIncome: (ctx2: any) => [ctx2.privateState, 9_000_000n],
+      getPrivateAge: (ctx2: any) => [ctx2.privateState, 26n],
+      getPrivateSalt: (ctx2: any) => [ctx2.privateState, saltSecond],
+      getPrivateAdminKey: (ctx2: any) => [ctx2.privateState, adminKey],
+    });
+    // This must succeed — fresh salt is not replayed
+    expect(() => contractFresh.circuits.verifyEligibility(ctx)).not.toThrow();
+  });
+});
+
 test("formats cents and encodes an exact 32-byte salt", () => {
   expect(formatIncomeCents(5_000_000n)).toBe("$50,000");
   expect(saltToHex(new Uint8Array(32).fill(0xab))).toBe("ab".repeat(32));

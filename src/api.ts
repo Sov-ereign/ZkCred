@@ -46,14 +46,11 @@ export function createWitnessProvider(privateData: ZkCredWitnessInput) {
 // =============================================================================
 
 export function generateSalt(): Uint8Array {
-  const salt = new Uint8Array(32);
-  if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
-    globalThis.crypto.getRandomValues(salt);
-  } else {
-    for (let i = 0; i < 32; i++) {
-      salt[i] = Math.floor(Math.random() * 256);
-    }
+  if (typeof globalThis.crypto === "undefined" || typeof globalThis.crypto.getRandomValues !== "function") {
+    throw new Error("Cryptographic randomness unavailable: globalThis.crypto.getRandomValues is required.");
   }
+  const salt = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(salt);
   return salt;
 }
 

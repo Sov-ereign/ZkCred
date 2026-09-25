@@ -2,8 +2,11 @@
 
 **Total Participants**: 70 verified Midnight Preprod wallet users  
 **Network**: Midnight Preprod Testnet (`preprod`)  
-**Contract**: `a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6`  
-**Deployment Tx**: `86df58c3248fc9d127aad96c835b3876a4c3a90cca0722df48d73b5feb598fcb`
+**Contract (V2)**: `a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6`  
+**Contract (V1, legacy)**: `56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a` *(deprecated, app auto-upgrades)*  
+**Deployment Tx (V2)**: `86df58c3248fc9d127aad96c835b3876a4c3a90cca0722df48d73b5feb598fcb`  
+**Verifiable at**: `https://indexer.preprod.midnight.network/api/v3/graphql` — query `transactions(offset: {identifier: "86df58c3..."})`  
+**Compiler**: Compact 0.31.0 | Language 0.23.0 | Runtime 0.16.0
 
 ---
 

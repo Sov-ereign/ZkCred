@@ -17,7 +17,9 @@
     "start": "node server/index.js",
     "ui": "vite --host 0.0.0.0",
     "ui:build": "vite build",
-    "dev": "vercel dev --listen 3000",
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "dev:api": "node server/index.js",
+    "dev:vercel": "vercel dev --listen 3000",
     "dev:local": "node server/local.js",
     "vercel:deploy": "vercel --prod"
   },

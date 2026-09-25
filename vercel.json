@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "devCommand": "npm run ui",
   "buildCommand": "npm run ui:build",
   "outputDirectory": "ui/dist",
   "rewrites": [

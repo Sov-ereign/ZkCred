@@ -58,6 +58,10 @@ export function createWitnessCallbacks(privateData: PrivateWitnessData): Witness
 /**
  * Strict raw indexer query. It deliberately throws on network, GraphQL, absent
  * contract, or malformed-state responses instead of inventing threshold data.
+ *
+ * Note: This function parses the Midnight GraphQL API's JSON-decoded response
+ * fields. For binary ledger state decoding (SCALE codec), use the generated
+ * CompiledOutput.ledger() binding in midnight-client.ts instead.
  */
 export async function fetchLedgerStateFromIndexer(
   contractAddress: string,

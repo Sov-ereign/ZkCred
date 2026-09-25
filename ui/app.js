@@ -18,12 +18,11 @@ const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e5
 const LEGACY_V1_CONTRACT_ADDRESS = "56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
-  const bytes = new Uint8Array(lenBytes);
-  if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
-    window.crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < lenBytes; i++) bytes[i] = Math.floor(Math.random() * 256);
+  if (typeof window === "undefined" || !window.crypto || typeof window.crypto.getRandomValues !== "function") {
+    throw new Error("Cryptographic randomness unavailable: window.crypto.getRandomValues is required.");
   }
+  const bytes = new Uint8Array(lenBytes);
+  window.crypto.getRandomValues(bytes);
   return prefix + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
@@ -855,9 +854,9 @@ function renderProfile(user = STATE.currentUser) {
   setCredentialBadge("badge-age", "status-age", Boolean(credentials.ageVerified));
 }
 
-function renderAdminControls() {
+async function renderAdminControls() {
   const panel = document.getElementById("admin-controls");
-  const hasAdminKey = Boolean(STATE.contractAddress && window.ZkCredMidnight?.hasAdminKey?.(STATE.contractAddress));
+  const hasAdminKey = Boolean(STATE.contractAddress && await window.ZkCredMidnight?.hasAdminKey?.(STATE.contractAddress));
   if (panel) panel.hidden = !hasAdminKey;
   if (!hasAdminKey) return;
   const score = document.getElementById("admin-min-score");

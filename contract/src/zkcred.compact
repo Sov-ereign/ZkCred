@@ -3,31 +3,57 @@ import CompactStandardLibrary;
 
 // =============================================================================
 // ZkCred (AegisID) — Multi-Attribute Age & Financial Eligibility Gate
-// Language: Compact v0.26 | Target: Midnight Network Preprod
+// Language: Compact v0.23 | Target: Midnight Network Preprod
 // Level 3 Track: Option 2 — Age / Eligibility Gate
 // =============================================================================
 //
 // PRIVACY MODEL:
-// ┌───────────────────────────┐      ┌───────────────────────────┐
-// │   PRIVATE WITNESS (LOCAL) │ ──── │  SELECTIVE DISCLOSURE     │
-// │   - age                   │      │  disclose(isEligible)     │
-// │   - creditScore           │      │         ↓                 │
-// │   - annualIncome          │      │  PUBLIC LEDGER STATE      │
-// │   - userSalt              │      │  - isEligible: true/false │
-// └───────────────────────────┘      └───────────────────────────┘
+// ┌───────────────────────────┐      ┌────────────────────────────────────┐
+// │   PRIVATE WITNESS (LOCAL) │ ──── │  SELECTIVE DISCLOSURE              │
+// │   - age                   │      │  disclose(saltNullifier)           │
+// │   - creditScore           │      │  disclose(eligible)                │
+// │   - annualIncome          │      │         ↓                          │
+// │   - userSalt              │      │  PUBLIC LEDGER STATE               │
+// └───────────────────────────┘      │  - usedSaltNullifiers (Set)        │
+//                                    │  - eligibleNullifiers (Set)        │
+//                                    │  - isEligible (last call, for UX)  │
+//                                    │  - admin (hash of admin key)       │
+//                                    └────────────────────────────────────┘
+//
+// ADMIN KEY SECURITY:
+//   The admin field stores persistentHash([adminKey]), NOT the raw key.
+//   This means the admin key can never be recovered from on-chain state.
+//   The updateThresholds circuit hashes the private witness and compares
+//   against the committed hash.
+//
+// NULLIFIER SEMANTICS:
+//   usedSaltNullifiers — records every salt that has been used (replay guard).
+//   eligibleNullifiers — records only the salts whose call resulted in eligible=true.
+//   A relying party MUST check eligibleNullifiers.member(nullifier), NOT the
+//   global isEligible flag. isEligible reflects the LAST call only and is
+//   provided solely for lightweight UI display.
+//   Salt nullifiers prevent replay of the same salt commitment; a fresh salt
+//   always permits a new call. They do NOT prove credential authenticity.
 // =============================================================================
 
 // --- Public Ledger State (on-chain visible) ---
 export ledger minCreditScore: Uint<32>;
 export ledger minAnnualIncome: Uint<64>;
 export ledger minAge: Uint<32>;
+// isEligible: reflects the most recent verifyEligibility call only.
+// RELYING PARTIES: use eligibleNullifiers.member(nullifier) instead.
 export ledger isEligible: Boolean;
 export ledger verificationCount: Uint<64>;
+// admin stores persistentHash<Vector<1, Bytes<32>>>([rawAdminKey]).
+// The raw admin key is NEVER written to the ledger.
 export ledger admin: Bytes<32>;
-// Domain-separated nullifiers are public one-way commitments of a private
-// salt. They prevent the same credential witness from being replayed without
-// revealing its salt, age, credit score, or income.
+// usedSaltNullifiers: every salt nullifier ever submitted (replay prevention).
+// Prevents the same salt from being re-used; a fresh salt permits a new call.
 export ledger usedSaltNullifiers: Set<Bytes<32>>;
+// eligibleNullifiers: nullifiers whose verifyEligibility call returned true.
+// Relying parties query this set to verify a specific user's eligibility
+// without depending on the mutable global isEligible flag.
+export ledger eligibleNullifiers: Set<Bytes<32>>;
 
 // --- Private Witness Declarations (local off-chain only) ---
 witness getPrivateCreditScore(): Uint<32>;
@@ -37,6 +63,8 @@ witness getPrivateSalt(): Bytes<32>;
 witness getPrivateAdminKey(): Bytes<32>;
 
 // --- Constructor / Initializer ---
+// adminAddress: the raw 32-byte admin key. Its hash is stored on-chain;
+// the raw value is never disclosed to the ledger.
 export circuit initialize(
   creditScoreThreshold: Uint<32>,
   annualIncomeThreshold: Uint<64>,
@@ -48,13 +76,14 @@ export circuit initialize(
   minAge = disclose(ageThreshold);
   isEligible = disclose(false);
   verificationCount = disclose(0 as Uint<64>);
-  admin = disclose(adminAddress);
+  // Store ONLY the hash of the admin key. The raw key never touches the ledger.
+  admin = disclose(persistentHash<Vector<1, Bytes<32>>>([adminAddress]));
 }
 
 // --- Option 2 Core ZK Eligibility Gate Circuit ---
 // Evaluates Age, Credit Score, and Income inside PLONK ZK Circuit.
-// Discloses ONLY the boolean outcome via disclose(). The salt remains a private
-// witness and is never copied to public ledger state.
+// Discloses ONLY the boolean outcome and the salt nullifier. Raw credential
+// values (age, score, income) are never disclosed.
 export circuit verifyEligibility(): [] {
   // Retrieve private values from off-chain witnesses
   const creditScore: Uint<32> = getPrivateCreditScore();
@@ -62,9 +91,10 @@ export circuit verifyEligibility(): [] {
   const age: Uint<32> = getPrivateAge();
   const salt: Bytes<32> = getPrivateSalt();
 
-  // A salt is private input; only its domain-separated nullifier is stored.
-  // This prevents replay of a proof with the same credential secret while
-  // avoiding cross-protocol linkability from an unscoped hash.
+  // Compute a domain-separated nullifier from the private salt.
+  // NULLIFIER SEMANTICS: prevents replay of THIS specific salt commitment.
+  // A fresh salt always permits a new call. This does NOT prove credential
+  // authenticity — only that this particular salt has not been used before.
   const saltNullifier: Bytes<32> = disclose(persistentHash<Vector<2, Bytes<32>>>([
     pad(32, "zkcred:eligibility:nullifier:v1"),
     salt
@@ -78,24 +108,36 @@ export circuit verifyEligibility(): [] {
 
   const eligible: Boolean = meetsScoreThreshold && meetsIncomeThreshold && meetsAgeThreshold;
 
-  // Disclose ONLY boolean eligibility
+  // Record this call's nullifier in usedSaltNullifiers (always — replay guard)
+  usedSaltNullifiers.insert(disclose(saltNullifier));
+
+  // Record in eligibleNullifiers ONLY when eligible.
+  // Relying parties: check eligibleNullifiers.member(yourNullifier).
+  if eligible {
+    eligibleNullifiers.insert(disclose(saltNullifier));
+  }
+
+  // Update global flag (last-writer-wins — for UI display only).
   isEligible = disclose(eligible);
 
   // Increment public verification counter with explicit Uint<64> cast
   const newCount: Uint<64> = (verificationCount + (1 as Uint<64>)) as Uint<64>;
   verificationCount = disclose(newCount);
-  usedSaltNullifiers.insert(disclose(saltNullifier));
 }
 
 // --- Admin Circuit: Update Thresholds ---
+// Requires the caller to supply the raw admin key as a private witness.
+// The circuit hashes it and compares against the on-chain commitment.
+// The raw admin key is never disclosed; only its hash is on the ledger.
 export circuit updateThresholds(
   newMinCreditScore: Uint<32>,
   newMinAnnualIncome: Uint<64>,
   newMinAge: Uint<32>
 ): [] {
-  // Authorize caller against admin ledger state
+  // Authorize caller: hash the private witness and compare to stored commitment.
   const callerKey: Bytes<32> = getPrivateAdminKey();
-  assert(callerKey == admin, "Unauthorized: caller is not authorized admin");
+  const callerHash: Bytes<32> = persistentHash<Vector<1, Bytes<32>>>([callerKey]);
+  assert(callerHash == admin, "Unauthorized: caller is not authorized admin");
 
   minCreditScore = disclose(newMinCreditScore);
   minAnnualIncome = disclose(newMinAnnualIncome);
@@ -103,7 +145,19 @@ export circuit updateThresholds(
   isEligible = disclose(false);
 }
 
-// --- Query Circuit ---
+// --- Relying-Party Query Circuits ---
+
+// getEligibilityStatus: returns the global flag (last call only, for UI).
+// RELYING PARTIES: use checkNullifierEligible instead.
 export circuit getEligibilityStatus(): Boolean {
   return disclose(isEligible);
+}
+
+// checkNullifierEligible: authoritative per-call eligibility check.
+// Pass the salt nullifier (persistentHash of domain-prefix + salt) to verify
+// whether a specific verifyEligibility call resulted in eligible = true.
+// This is the correct API for relying parties — it does not depend on the
+// mutable global isEligible flag.
+export circuit checkNullifierEligible(nullifier: Bytes<32>): Boolean {
+  return disclose(eligibleNullifiers.member(nullifier));
 }

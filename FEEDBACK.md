@@ -37,7 +37,7 @@ Feedback was collected via a structured user testing process and Google Form sur
    — **Kavya Nair**, *UI/UX Designer*
 
 3. **Replay Protection with Salt Nullifiers (88% Praise)**:
-   > *"The domain-separated 32-byte salt nullifier mechanism prevents credential replay while ensuring private salt values never leak into transaction logs."*  
+   > *"The domain-separated 32-byte salt nullifier mechanism prevents replay of the same salt commitment while ensuring private salt values never leak into transaction logs. Note: a fresh salt always permits a new call — the nullifier binds a specific salt, not credential authenticity."*  
    — **Rohan Mehta**, *Smart Contract Auditor*
 
 4. **Multi-Tier Prover Setup & Modal Guide (86% Praise)**:

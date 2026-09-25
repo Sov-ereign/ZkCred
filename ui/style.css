@@ -1,23 +1,30 @@
 /* ============================================================
-   AegisID — ZkCred Premium UI
-   Dark glassmorphism design system for Midnight Network dApp
+   AegisID — ZkCred UI
+   Privacy-first design for Midnight Network dApp
    ============================================================ */
 
 /* ─── Design Tokens ──────────────────────────────────────── */
 :root {
   /* Palette */
-  --color-bg:          #070510;
-  --color-bg-2:        #0d0b1a;
-  --color-surface:     rgba(16, 12, 34, 0.92);
-  --color-surface-2:   rgba(22, 17, 46, 0.95);
-  --color-border:      rgba(167, 139, 250, 0.22);
-  --color-border-2:    rgba(167, 139, 250, 0.35);
+  --color-bg:          #060510;
+  --color-bg-2:        #0a0818;
+  --color-bg-section:  #070612;
+  --color-bg-alt:      #04030c;
+  --color-surface:     rgba(14, 10, 30, 0.94);
+  --color-surface-2:   rgba(20, 15, 42, 0.97);
+  --color-border:      rgba(139, 92, 246, 0.18);
+  --color-border-2:    rgba(139, 92, 246, 0.32);
 
-  /* Brand */
+  /* Brand — use purple sparingly: CTAs + accents only */
+  --purple-300:        #c4b5fd;
   --purple-400:        #a78bfa;
   --purple-500:        #8b5cf6;
   --purple-600:        #7c3aed;
   --purple-700:        #6d28d9;
+  /* Neutral — for informational sections */
+  --slate-700:         #334155;
+  --slate-800:         #1e293b;
+  --slate-900:         #0f172a;
   --cyan-400:          #22d3ee;
   --cyan-500:          #06b6d4;
   --teal-300:          #5eead4;
@@ -26,18 +33,19 @@
   --amber-400:         #fbbf24;
   --red-400:           #f87171;
 
-  /* Text */
-  --text-primary:      #ffffff;
-  --text-secondary:    #e0e7ff;
-  --text-muted:        #c7d2fe;
+  /* Text — clear hierarchy */
+  --text-primary:      #f1f5f9;
+  --text-secondary:    #cbd5e1;
+  --text-muted:        #94a3b8;
+  --text-faint:        #64748b;
   --text-code:         #38bdf8;
 
   /* Effects */
-  --glow-purple:       0 0 20px rgba(124, 58, 237, 0.35);
-  --glow-cyan:         0 0 20px rgba(6, 182, 212, 0.3);
-  --glow-green:        0 0 20px rgba(74, 222, 128, 0.4);
-  --glass-blur:        blur(24px) saturate(180%);
-  --transition:        all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --glow-purple:       0 0 20px rgba(124, 58, 237, 0.3);
+  --glow-cyan:         0 0 20px rgba(6, 182, 212, 0.25);
+  --glow-green:        0 0 20px rgba(74, 222, 128, 0.35);
+  --glass-blur:        blur(20px) saturate(160%);
+  --transition:        all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Spacing & Layout */
@@ -49,6 +57,8 @@
   /* Font */
   --font-sans:         'Inter', system-ui, sans-serif;
   --font-mono:         'JetBrains Mono', 'Fira Code', monospace;
+  /* Display: tighter, heavier — only for hero headline */
+  --font-display:      'Inter', system-ui, sans-serif;
 }
 
 /* ─── Reset & Base ───────────────────────────────────────── */
@@ -308,12 +318,15 @@ body {
 }
 
 .hero-title {
-  font-size: clamp(2.5rem, 5vw, 3.75rem);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
-  margin-bottom: 1.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 5.5vw, 4.25rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+  margin-bottom: 1.5rem;
   color: var(--text-primary);
+  /* Prevent the generic "bold white text on dark bg" look */
+  text-shadow: 0 2px 40px rgba(139, 92, 246, 0.08);
 }
 
 .gradient-text {
@@ -605,79 +618,76 @@ body {
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .step-card {
   position: relative;
-  padding: 2rem;
-  background: rgba(12, 9, 26, 0.92);
-  border: 1px solid var(--color-border);
+  padding: 1.75rem 1.75rem 1.75rem 2rem;
+  /* Solid dark: NOT glass — creates visual hierarchy contrast with the hero */
+  background: rgba(8, 6, 18, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--purple-600);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   transition: var(--transition);
   overflow: hidden;
 }
-.step-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--purple-600), var(--cyan-500));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: var(--transition);
-}
-.step-card:hover::before { transform: scaleX(1); }
+/* Each step gets a distinct accent — breaks the "same purple everywhere" pattern */
+.step-card:nth-child(1) { border-left-color: #7c3aed; }
+.step-card:nth-child(2) { border-left-color: #0891b2; }
+.step-card:nth-child(3) { border-left-color: #059669; }
+.step-card:nth-child(4) { border-left-color: #7c3aed; opacity: 0.95; }
+
 .step-card:hover {
-  border-color: var(--color-border-2);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 30px rgba(124, 58, 237, 0.08);
+  border-color: rgba(255, 255, 255, 0.11);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .step-num {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--purple-600);
-  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-faint);
+  letter-spacing: 0.12em;
   margin-bottom: 1rem;
+  text-transform: uppercase;
 }
 .step-icon {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(124, 58, 237, 0.1);
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.15);
   border-radius: var(--radius);
   margin-bottom: 1rem;
   transition: var(--transition);
 }
 .step-card:hover .step-icon {
-  background: rgba(124, 58, 237, 0.18);
-  box-shadow: var(--glow-purple);
+  background: rgba(124, 58, 237, 0.14);
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.2);
 }
 .step-title {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
 .step-desc {
-  font-size: 0.875rem;
+  font-size: 0.855rem;
   color: var(--text-muted);
   line-height: 1.65;
 }
-.step-desc strong { color: var(--text-secondary); }
+.step-desc strong { color: var(--text-secondary); font-weight: 600; }
 .step-desc code {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--cyan-400);
-  background: rgba(6, 182, 212, 0.1);
+  background: rgba(6, 182, 212, 0.08);
   padding: 1px 5px;
   border-radius: 3px;
 }
@@ -2829,4 +2839,122 @@ body[data-route="profile"] [data-app-page]:not([data-app-page="profile"]) {
   font-size: 0.85rem;
   font-weight: 700;
   border-radius: 0.65rem;
+}
+
+/* ─── Section Background Differentiation ──────────────────── */
+/* Alternate between slightly different dark backgrounds to create
+   visual rhythm and break the "uniform gradient everywhere" pattern. */
+
+/* Hero: stays transparent — the 3D sculpture shows through */
+.hero { background: transparent; }
+
+/* How It Works: slightly cooler dark blue tint */
+#how-it-works.section {
+  background: rgba(4, 3, 14, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Verify section: pure near-black — creates stark contrast with the surrounding sections */
+#verify {
+  background: rgba(3, 2, 9, 0.75);
+  border-top: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+/* Privacy model section: very subtle warm tint */
+#privacy-model.section {
+  background: rgba(6, 4, 16, 0.65);
+}
+
+/* ─── Section Typography Hierarchy ────────────────────────── */
+/* Vary section headers so they're not all identical purple-tag + h2 */
+
+.section-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.65rem;
+  font-family: var(--font-mono);
+  /* Remove the purple color — informational labels should be neutral */
+}
+
+.section-title {
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  color: var(--text-primary);
+  /* Slightly less bright than hero to maintain hierarchy */
+  opacity: 0.95;
+}
+
+.section-sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.75;
+  max-width: 540px;
+  margin-top: 0.75rem;
+}
+
+/* ─── Card Hierarchy ───────────────────────────────────────── */
+/* glass-card is the PRIMARY card — keep full glass for the proof panel.
+   Secondary informational cards use a flatter, less blurry treatment. */
+
+.glass-card {
+  /* Keep as-is — this is the main proof interaction card, it earns the glass */
+}
+
+/* Flat secondary card: for informational content (privacy model, FAQ etc.) */
+.panel,
+.privacy-col {
+  background: rgba(9, 7, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  /* No backdrop-filter: saves GPU and differentiates from the hero card */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ─── Improved Section Breathing Room ─────────────────────── */
+.section {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* Stats section between hero and how-it-works: intentionally compact */
+#stat-proofs ~ * .section {
+  padding-top: 4rem;
+}
+
+/* ─── Gradient text: only on hero, not everywhere ─────────── */
+/* The gradient-text class should be used sparingly. Other headings
+   use plain white to avoid the "rainbow text on every heading" look. */
+.section-title .gradient-text,
+.panel h3 .gradient-text,
+.step-title .gradient-text {
+  /* Revert gradient text in secondary positions to plain white */
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: var(--text-primary);
+  filter: none;
+  animation: none;
+}
+
+/* ─── Proof Card: make it visually unique among all panels ─── */
+.zkproof-card {
+  /* Stronger border glow than generic glass cards */
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.3),
+    0 12px 48px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(124, 58, 237, 0.1);
+}
+
+/* ─── Responsive section title sizing ─────────────────────── */
+@media (max-width: 768px) {
+  .section-title { font-size: clamp(1.5rem, 5vw, 1.85rem); }
+  .hero-title { font-size: clamp(2.2rem, 7vw, 3rem); letter-spacing: -0.04em; }
+  .section { padding-top: 3.5rem; padding-bottom: 3.5rem; }
 }

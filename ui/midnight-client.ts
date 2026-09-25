@@ -69,18 +69,50 @@ function adminKeyStorageKey(contractAddress: string): string {
   return `zkcred_admin_key_${normalizeContractAddress(contractAddress)}`;
 }
 
-function saveAdminKey(contractAddress: string, adminKey: Uint8Array): void {
-  // The secret never leaves this browser. It is required only for the optional
-  // admin circuit and follows the same browser-storage risk model Lace warns
-  // about for local private state; users must export/back up browser data.
-  localStorage.setItem(adminKeyStorageKey(contractAddress), bytesToHex(adminKey));
+/**
+ * Derives a 256-bit AES-GCM key from the session storage password using
+ * PBKDF2. The password is itself random (32 bytes from CSPRNG) and lives
+ * only in sessionStorage, so this is defense-in-depth for the admin key.
+ */
+async function deriveAdminStorageKey(password: string): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: enc.encode("zkcred-admin-key-v1"), iterations: 100_000, hash: "SHA-256" },
+    base,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
 }
 
-function loadAdminKey(contractAddress: string): Uint8Array | null {
-  const encoded = localStorage.getItem(adminKeyStorageKey(contractAddress));
-  if (!encoded || !/^[0-9a-f]{64}$/i.test(encoded)) return null;
-  return hexToBytes(encoded);
+async function saveAdminKey(contractAddress: string, adminKey: Uint8Array): Promise<void> {
+  const password = storagePassword();
+  const aesKey = await deriveAdminStorageKey(password);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, adminKey);
+  // Store as: <12-byte iv hex><ciphertext hex>
+  const payload = bytesToHex(iv) + bytesToHex(new Uint8Array(ciphertext));
+  localStorage.setItem(adminKeyStorageKey(contractAddress), payload);
 }
+
+async function loadAdminKey(contractAddress: string): Promise<Uint8Array | null> {
+  const encoded = localStorage.getItem(adminKeyStorageKey(contractAddress));
+  // Minimum: 24 hex (12-byte IV) + 64 hex (32-byte key) + 32 hex (GCM tag) = 120 chars
+  if (!encoded || !/^[0-9a-f]{120,}$/i.test(encoded)) return null;
+  try {
+    const password = storagePassword();
+    const aesKey = await deriveAdminStorageKey(password);
+    const iv = hexToBytes(encoded.slice(0, 24));
+    const ciphertext = hexToBytes(encoded.slice(24));
+    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ciphertext);
+    return new Uint8Array(plaintext);
+  } catch {
+    // Wrong session (page reloaded) — key is unrecoverable this session.
+    return null;
+  }
+}
+
 
 function selectConnector(): InitialAPI {
   const injected = window as any;
@@ -234,12 +266,10 @@ async function submitEligibility(contractAddress: string, input: WitnessInput) {
     circuitId: "verifyEligibility" as any,
   } as any);
   return { transactionId: String((tx as any).txId ?? (tx as any).public?.txId ?? "") };
-}
-
-async function updateThresholds(contractAddress: string, thresholds: { minCreditScore: number; minAnnualIncome: number; minAge: number }) {
+}async function updateThresholds(contractAddress: string, thresholds: { minCreditScore: number; minAnnualIncome: number; minAge: number }) {
   if (!active) throw new Error("Connect Midnight Lace before updating thresholds.");
-  const adminKey = loadAdminKey(contractAddress);
-  if (!adminKey) throw new Error("This browser does not hold the administrator key for this contract.");
+  const adminKey = await loadAdminKey(contractAddress);
+  if (!adminKey) throw new Error("This browser does not hold the administrator key for this contract (or the session has changed).");
   if (![thresholds.minCreditScore, thresholds.minAnnualIncome, thresholds.minAge].every(Number.isSafeInteger)) {
     throw new Error("Threshold values must be safe integers.");
   }
@@ -281,6 +311,30 @@ async function getLedgerState(contractAddress: string) {
 }
 
 /**
+ * Checks whether a specific salt nullifier is in the on-chain eligibleNullifiers
+ * set. This is the authoritative relying-party query — it is not affected by
+ * any subsequent verifyEligibility call overwriting the global isEligible flag.
+ *
+ * Pass the hex nullifier returned by submitEligibility (or computed as
+ * persistentHash("zkcred:eligibility:nullifier:v1" || salt)).
+ */
+async function checkNullifierEligible(contractAddress: string, nullifierHex: string): Promise<boolean> {
+  if (!active) throw new Error("Connect Midnight Lace before querying nullifier eligibility.");
+  if (!contractAddress || !isContractAddress(contractAddress)) throw new Error("A deployed Midnight contract address is required.");
+  const contract = compiledContract({ creditScore: 0, annualIncome: 0, age: 0, userSalt: bytesToHex(new Uint8Array(32)) });
+  await findDeployedContract(active.providers, { compiledContract: contract, contractAddress: contractAddress as any });
+  const queried = await active.providers.publicDataProvider.queryZSwapAndContractState(contractAddress as any);
+  if (!queried) throw new Error("The configured contract was not found on the wallet's Midnight indexer.");
+  const [, publicState] = queried;
+  const normalizedState = CompactContractState.deserialize((publicState as any).serialize());
+  const ledger = CompiledOutput.ledger((normalizedState as any).data);
+  // Check membership in eligibleNullifiers: only nullifiers from eligible calls
+  // are present; ineligible calls only appear in usedSaltNullifiers.
+  const nullifierBytes = hexToBytes(nullifierHex);
+  return Boolean((ledger as any).eligibleNullifiers?.member?.(nullifierBytes));
+}
+
+/**
  * Deploys the locally compiled contract through the connected wallet. This is
  * deliberately interactive: Lace selects funds, signs, and submits the
  * transaction. The returned address is saved only in this browser until the
@@ -296,7 +350,7 @@ async function deploy(
   const adminKey = new Uint8Array(32);
   crypto.getRandomValues(adminKey);
   const contract = compiledContract();
-  // Compact 0.26 emits `initialize` as the constructor circuit. The current
+  // Compact 0.23 emits `initialize` as the constructor circuit. The current
   // midnight-js runtime creates the contract state first, then invokes that
   // circuit through the deployed call interface; passing args to
   // deployContract would incorrectly feed them to initialState().
@@ -313,11 +367,20 @@ async function deploy(
   );
   const address = normalizeContractAddress(String(deployed.deployTxData.public.contractAddress));
   localStorage.setItem("zkcred_contract_address", address);
-  saveAdminKey(address, adminKey);
+  await saveAdminKey(address, adminKey);
   return {
     contractAddress: address,
     transactionId: String((initialized as any).txId ?? (initialized as any).public?.txId ?? deployed.deployTxData.public.txId ?? ""),
   };
 }
 
-(window as any).ZkCredMidnight = { connect, deploy, getLedgerState, submitEligibility, updateThresholds, hasAdminKey: (address: string) => Boolean(loadAdminKey(address)), isConnected: () => Boolean(active) };
+(window as any).ZkCredMidnight = {
+  connect,
+  deploy,
+  getLedgerState,
+  submitEligibility,
+  updateThresholds,
+  checkNullifierEligible,
+  hasAdminKey: async (address: string) => Boolean(await loadAdminKey(address)),
+  isConnected: () => Boolean(active),
+};
