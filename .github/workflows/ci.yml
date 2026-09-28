@@ -36,26 +36,14 @@ jobs:
 
       - name: Pin and verify Compact artifact checksums
         run: |
-          # Regenerate SHA-256 hashes for committed artifacts.
-          # On first run (or after intentional contract changes), update these
-          # hashes by running: sha256sum src/managed/contract/index.js > src/managed/.artifact-checksums
-          # If the checksums file exists, verify against it; otherwise create it.
           CHECKSUMS_FILE="src/managed/.artifact-checksums"
-          if [ -f "$CHECKSUMS_FILE" ]; then
-            echo "[CI] Verifying Compact artifact checksums..."
-            sha256sum --check --strict "$CHECKSUMS_FILE"
-          else
-            echo "[CI] No checksum file found — generating for future runs."
-            sha256sum \
-              src/managed/contract/index.js \
-              src/managed/keys/initialize.prover \
-              src/managed/keys/verifyEligibility.prover \
-              src/managed/keys/updateThresholds.prover \
-              src/managed/zkir/initialize.bzkir \
-              src/managed/zkir/verifyEligibility.bzkir \
-              src/managed/zkir/updateThresholds.bzkir > "$CHECKSUMS_FILE"
-            echo "[CI] Checksums written. Commit $CHECKSUMS_FILE to pin these artifacts."
+          if [ ! -f "$CHECKSUMS_FILE" ]; then
+            echo "[CI] ERROR: $CHECKSUMS_FILE is missing. Pinned artifacts must be committed."
+            exit 1
           fi
+          echo "[CI] Verifying Compact artifact checksums against pinned hashes..."
+          sha256sum --check --strict "$CHECKSUMS_FILE"
+          echo "[CI] All Compact artifacts verified against pinned checksums."
 
       - name: Run privacy and contract-asset tests
         run: npm test

@@ -36,6 +36,8 @@ export interface LedgerState {
   isEligible: boolean;
   verificationCount: bigint;
   admin: Uint8Array;
+  issuerKeyHash: Uint8Array;
+  initialized: boolean;
 }
 
 /**
@@ -48,6 +50,8 @@ export interface WitnessFunctions {
   getPrivateAge: () => number;
   getPrivateSalt: () => Uint8Array;
   getPrivateAdminKey: () => Uint8Array;
+  getPrivateIssuerKey: () => Uint8Array;
+  getPrivateCredentialToken: () => Uint8Array;
 }
 
 /**

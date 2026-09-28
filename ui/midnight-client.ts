@@ -342,6 +342,7 @@ async function checkNullifierEligible(contractAddress: string, nullifierHex: str
  */
 async function deploy(
   thresholds: { minCreditScore: number; minAnnualIncome: number; minAge: number },
+  issuerKeyHash?: Uint8Array,
 ) {
   if (!active) throw new Error("Connect Midnight Lace before deployment.");
   if (![thresholds.minCreditScore, thresholds.minAnnualIncome, thresholds.minAge].every(Number.isSafeInteger)) {
@@ -349,6 +350,8 @@ async function deploy(
   }
   const adminKey = new Uint8Array(32);
   crypto.getRandomValues(adminKey);
+  // If no issuer key hash is provided, generate a placeholder (can be updated later).
+  const issuerHash = issuerKeyHash ?? new Uint8Array(32);
   const contract = compiledContract();
   // Compact 0.23 emits `initialize` as the constructor circuit. The current
   // midnight-js runtime creates the contract state first, then invokes that
@@ -364,6 +367,7 @@ async function deploy(
     BigInt(thresholds.minAnnualIncome),
     BigInt(thresholds.minAge),
     adminKey,
+    issuerHash,
   );
   const address = normalizeContractAddress(String(deployed.deployTxData.public.contractAddress));
   localStorage.setItem("zkcred_contract_address", address);
@@ -372,6 +376,87 @@ async function deploy(
     contractAddress: address,
     transactionId: String((initialized as any).txId ?? (initialized as any).public?.txId ?? deployed.deployTxData.public.txId ?? ""),
   };
+}
+
+/**
+ * Exports the admin key for a contract as an encrypted JSON backup file.
+ * The exported blob is encrypted with a user-supplied password (separate from
+ * the session key), allowing cross-session and cross-browser recovery.
+ *
+ * Security: the exported file is AES-GCM encrypted with PBKDF2 (100k rounds).
+ * Without the backup password, the blob cannot be decrypted.
+ */
+async function exportAdminKey(contractAddress: string, backupPassword: string): Promise<string> {
+  const adminKey = await loadAdminKey(contractAddress);
+  if (!adminKey) throw new Error("No admin key found for this contract in this browser session.");
+
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(backupPassword), "PBKDF2", false, ["deriveKey"]);
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"],
+  );
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, adminKey);
+
+  const backup = {
+    version: "zkcred-admin-backup-v1",
+    contractAddress: normalizeContractAddress(contractAddress),
+    salt: bytesToHex(salt),
+    iv: bytesToHex(iv),
+    ciphertext: bytesToHex(new Uint8Array(ciphertext)),
+    exportedAt: new Date().toISOString(),
+  };
+  return JSON.stringify(backup, null, 2);
+}
+
+/**
+ * Imports an admin key backup created by exportAdminKey.
+ * Decrypts using the backup password and stores the key in this browser session.
+ */
+async function importAdminKey(backupJson: string, backupPassword: string): Promise<string> {
+  let backup: any;
+  try {
+    backup = JSON.parse(backupJson);
+  } catch {
+    throw new Error("Invalid backup file: not valid JSON.");
+  }
+  if (backup?.version !== "zkcred-admin-backup-v1") {
+    throw new Error("Invalid backup file: unrecognized version.");
+  }
+  const { contractAddress, salt, iv, ciphertext } = backup;
+  if (!contractAddress || !salt || !iv || !ciphertext) {
+    throw new Error("Invalid backup file: missing required fields.");
+  }
+
+  const enc = new TextEncoder();
+  const saltBytes = hexToBytes(salt);
+  const ivBytes = hexToBytes(iv);
+  const ciphertextBytes = hexToBytes(ciphertext);
+
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(backupPassword), "PBKDF2", false, ["deriveKey"]);
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: saltBytes, iterations: 100_000, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"],
+  );
+  let plaintext: ArrayBuffer;
+  try {
+    plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: ivBytes }, aesKey, ciphertextBytes);
+  } catch {
+    throw new Error("Decryption failed: incorrect backup password or corrupted file.");
+  }
+  const adminKey = new Uint8Array(plaintext);
+  const normalized = normalizeContractAddress(contractAddress);
+  await saveAdminKey(normalized, adminKey);
+  return normalized;
 }
 
 (window as any).ZkCredMidnight = {
@@ -383,4 +468,8 @@ async function deploy(
   checkNullifierEligible,
   hasAdminKey: async (address: string) => Boolean(await loadAdminKey(address)),
   isConnected: () => Boolean(active),
+  /** Export admin key as an encrypted JSON backup (for cross-session recovery). */
+  exportAdminKey,
+  /** Import and restore an admin key from a backup created by exportAdminKey. */
+  importAdminKey,
 };

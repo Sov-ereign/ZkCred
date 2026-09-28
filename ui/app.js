@@ -385,11 +385,27 @@ async function generateProof() {
     const transactionHash = result?.transactionId;
     if (!transactionHash || typeof transactionHash !== "string") throw new Error("Lace did not return a finalized transaction ID.");
 
-    // Re-fetch on-chain state to confirm the finalized transaction's public result.
+    // Re-fetch on-chain state for ledger display values.
     setProofStatus("Querying Midnight Indexer for finalized public state...");
     const confirmedState = await fetchOnChainState();
     if (!confirmedState) throw new Error("Transaction submitted, but its finalized public contract state could not be verified.");
-    const eligible = Boolean(confirmedState.isEligible);
+
+    // AUTHORITATIVE ELIGIBILITY CHECK: use the nullifier set, NOT the global flag.
+    // isEligible is last-writer-wins — any subsequent verifyEligibility call by
+    // another user will overwrite it. eligibleNullifiers.member(nullifier) is
+    // bound to this specific call and cannot be overwritten by other users.
+    setProofStatus("Verifying eligibility via on-chain nullifier set...");
+    let eligible = false;
+    try {
+      eligible = Boolean(
+        await window.ZkCredMidnight?.checkNullifierEligible?.(STATE.contractAddress, STATE.lastNullifier)
+      );
+    } catch (nullifierErr) {
+      // Graceful degradation: if the nullifier API is unavailable (e.g., wallet
+      // not connected for read), fall back to the global flag with a warning.
+      console.warn("[ZkCred] checkNullifierEligible unavailable, using global flag:", nullifierErr?.message);
+      eligible = Boolean(confirmedState.isEligible);
+    }
 
     // The contract stores a domain-separated nullifier for this private salt.
     // Rotate after a confirmed call so a later proof cannot replay it.
@@ -425,7 +441,7 @@ async function generateProof() {
       console.warn("[Midnight] Transaction verification pending:", verificationError.message);
     }
 
-    setProofStatus(`✓ Lace submitted a finalized transaction (preview: ${previewEligible}).`);
+    setProofStatus(`✓ Lace submitted a finalized transaction (nullifier-verified: ${eligible}).`);
 
     generateBtn.disabled = false;
     proofBtnText.textContent = eligible ? "✓ Proof Generated — Eligible" : "✗ Proof Generated — Ineligible";
@@ -754,6 +770,13 @@ function launchGoogleOAuthPopup(onSuccess) {
   }
 
   function onMessage(event) {
+    // SECURITY: Only accept messages from the expected API origin.
+    // Without this check, any cross-origin page could inject a fake
+    // GOOGLE_AUTH_SUCCESS message and steal authentication.
+    const allowedOrigin = (() => {
+      try { return new URL(API_BASE).origin; } catch { return null; }
+    })();
+    if (!allowedOrigin || event.origin !== allowedOrigin) return;
     if (!event.data || typeof event.data.type !== "string") return;
     if (event.data.type === "GOOGLE_AUTH_SUCCESS") {
       window.removeEventListener("message", onMessage);
@@ -1544,6 +1567,240 @@ function initFaqSearch() {
   });
 }
 
+function initScrollVideo() {
+  const canvas = document.getElementById("scroll-video-canvas");
+  const video = document.getElementById("scroll-video-el");
+  if (!canvas || !video) return;
+
+  const ctx = canvas.getContext("2d");
+  let targetProgress = 0;
+  let smoothedProgress = 0;
+  let isVideoReady = false;
+  let isSeeking = false;
+  let queuedTime = null;
+  let lastDispatchedTime = -1;
+
+  // Frame Cache for liquid-smooth 60/120fps scrubbing
+  const TOTAL_CACHE_FRAMES = 64;
+  const frameCache = new Map();
+  let cachedCount = 0;
+  let isCaching = false;
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+    renderCurrentFrame();
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+
+  video.addEventListener("loadedmetadata", () => {
+    isVideoReady = true;
+    resize();
+    renderCurrentFrame();
+    startFramePrecache();
+  });
+
+  video.addEventListener("loadeddata", () => {
+    isVideoReady = true;
+    resize();
+    renderCurrentFrame();
+    startFramePrecache();
+  });
+
+  if (video.readyState >= 1) {
+    isVideoReady = true;
+    resize();
+    startFramePrecache();
+  }
+
+  function updateScroll() {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    if (scrollable <= 0) {
+      targetProgress = 0;
+    } else {
+      // Direct 0.0 to 1.0 scroll progression
+      targetProgress = Math.min(Math.max(window.scrollY / scrollable, 0), 1);
+    }
+  }
+
+  window.addEventListener("scroll", updateScroll, { passive: true });
+  window.addEventListener("wheel", updateScroll, { passive: true });
+  window.addEventListener("touchmove", updateScroll, { passive: true });
+  updateScroll();
+
+  function drawSourceToCanvas(source) {
+    if (!ctx || !source) return;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const sw = source.width || source.videoWidth || 1920;
+    const sh = source.height || source.videoHeight || 1080;
+    const canvasAspect = cw / ch;
+    const sourceAspect = sw / sh;
+
+    let sx = 0, sy = 0, sWidth = sw, sHeight = sh;
+    if (sourceAspect > canvasAspect) {
+      sWidth = sh * canvasAspect;
+      sx = (sw - sWidth) / 2;
+    } else {
+      sHeight = sw / canvasAspect;
+      sy = (sh - sHeight) / 2;
+    }
+
+    ctx.clearRect(0, 0, cw, ch);
+    try {
+      ctx.drawImage(source, sx, sy, sWidth, sHeight, 0, 0, cw, ch);
+    } catch {
+      // Ignore initial render ticks
+    }
+  }
+
+  function renderCurrentFrame() {
+    // 1. If cache has frames covering this spot, render instantaneously
+    if (cachedCount >= 16) {
+      const targetIndex = Math.min(Math.max(Math.round(smoothedProgress * (TOTAL_CACHE_FRAMES - 1)), 0), TOTAL_CACHE_FRAMES - 1);
+      const cached = frameCache.get(targetIndex);
+      if (cached) {
+        drawSourceToCanvas(cached);
+        return;
+      }
+    }
+
+    // 2. Otherwise render current decoded video frame
+    if (isVideoReady && video.readyState >= 2) {
+      drawSourceToCanvas(video);
+    }
+  }
+
+  function dispatchSeek(targetTime) {
+    if (Math.abs(targetTime - lastDispatchedTime) < 0.02) return;
+
+    if (video.seeking || isSeeking) {
+      queuedTime = targetTime;
+      return;
+    }
+
+    isSeeking = true;
+    lastDispatchedTime = targetTime;
+    video.currentTime = targetTime;
+  }
+
+  video.addEventListener("seeked", () => {
+    isSeeking = false;
+    renderCurrentFrame();
+    if (queuedTime !== null) {
+      const next = queuedTime;
+      queuedTime = null;
+      dispatchSeek(next);
+    }
+  });
+
+  // Background frame extractor for zero-latency scrub
+  async function startFramePrecache() {
+    if (isCaching || !video.duration || isNaN(video.duration)) return;
+    isCaching = true;
+
+    try {
+      const offVideo = document.createElement("video");
+      offVideo.src = video.src;
+      offVideo.crossOrigin = "anonymous";
+      offVideo.muted = true;
+      offVideo.playsInline = true;
+      offVideo.preload = "auto";
+
+      await new Promise((res) => {
+        if (offVideo.readyState >= 1) res();
+        else offVideo.addEventListener("loadedmetadata", res, { once: true });
+      });
+
+      const offCanvas = document.createElement("canvas");
+      const scale = Math.min(1, 960 / (offVideo.videoWidth || 1920));
+      offCanvas.width = Math.round((offVideo.videoWidth || 1920) * scale);
+      offCanvas.height = Math.round((offVideo.videoHeight || 1080) * scale);
+      const offCtx = offCanvas.getContext("2d");
+
+      const duration = offVideo.duration;
+
+      for (let i = 0; i < TOTAL_CACHE_FRAMES; i++) {
+        const time = (i / (TOTAL_CACHE_FRAMES - 1)) * (duration - 0.05);
+        offVideo.currentTime = time;
+        await new Promise((res) => offVideo.addEventListener("seeked", res, { once: true }));
+        offCtx.drawImage(offVideo, 0, 0, offCanvas.width, offCanvas.height);
+        
+        if (window.createImageBitmap) {
+          try {
+            const bmp = await createImageBitmap(offCanvas);
+            frameCache.set(i, bmp);
+            cachedCount++;
+          } catch {
+            break;
+          }
+        }
+        // Yield every 2 frames so the browser UI stays completely fluid
+        if (i % 2 === 0) await new Promise((r) => setTimeout(r, 12));
+      }
+    } catch {
+      // Fallback silently to smooth video seeking
+    }
+  }
+
+  let prevProgress = -1;
+
+  function loop() {
+    // Crisp responsive lerp factor (0.16 gives instant tactile response)
+    smoothedProgress += (targetProgress - smoothedProgress) * 0.16;
+
+    // Check if progress changed
+    if (Math.abs(smoothedProgress - prevProgress) > 0.0004) {
+      prevProgress = smoothedProgress;
+
+      if (isVideoReady && video.duration && !isNaN(video.duration)) {
+        const targetTime = smoothedProgress * (video.duration - 0.05);
+        dispatchSeek(targetTime);
+      }
+
+      renderCurrentFrame();
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+function initScrollReveals() {
+  const elements = document.querySelectorAll(".reveal-item");
+  if (!elements.length) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("revealed");
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  elements.forEach((el) => observer.observe(el));
+}
+
+function initLiveClock() {
+  function tick() {
+    const el = document.getElementById("live-telemetry-time");
+    if (!el) return;
+    const now = new Date();
+    const utcHours = String(now.getUTCHours()).padStart(2, "0");
+    const utcMinutes = String(now.getUTCMinutes()).padStart(2, "0");
+    const utcSeconds = String(now.getUTCSeconds()).padStart(2, "0");
+    el.textContent = `${utcHours}:${utcMinutes}:${utcSeconds} UTC · Midnight Preprod Active`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
 function initThreeSculpture() {
   const canvas = document.getElementById("three-sculpture-canvas");
   if (!canvas || typeof THREE === "undefined") return;
@@ -1673,6 +1930,9 @@ function initThreeSculpture() {
   setupCardGlow();
   initFaqSearch();
   initThreeSculpture();
+  initScrollVideo();
+  initScrollReveals();
+  initLiveClock();
 
   fetchVerificationsFromMongoDB();
   fetchProfileFromMongoDB();

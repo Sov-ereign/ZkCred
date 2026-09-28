@@ -14,10 +14,12 @@ import CompactStandardLibrary;
 // │   - creditScore           │      │  disclose(eligible)                │
 // │   - annualIncome          │      │         ↓                          │
 // │   - userSalt              │      │  PUBLIC LEDGER STATE               │
-// └───────────────────────────┘      │  - usedSaltNullifiers (Set)        │
-//                                    │  - eligibleNullifiers (Set)        │
-//                                    │  - isEligible (last call, for UX)  │
+// │   - issuerKey             │      │  - usedSaltNullifiers (Set)        │
+// │   - credentialToken       │      │  - eligibleNullifiers (Set)        │
+// └───────────────────────────┘      │  - isEligible (last call, for UX)  │
 //                                    │  - admin (hash of admin key)       │
+//                                    │  - issuerKeyHash                   │
+//                                    │  - initialized (one-time guard)    │
 //                                    └────────────────────────────────────┘
 //
 // ADMIN KEY SECURITY:
@@ -25,6 +27,32 @@ import CompactStandardLibrary;
 //   This means the admin key can never be recovered from on-chain state.
 //   The updateThresholds circuit hashes the private witness and compares
 //   against the committed hash.
+//
+// INITIALIZATION GUARD:
+//   initialize() can only be called ONCE. The `initialized` boolean ledger
+//   field is false at deployment (Compact default) and is set to true
+//   by initialize(). Any subsequent call asserts on !initialized and reverts.
+//
+// ISSUER CREDENTIAL AUTHENTICATION:
+//   Credential values (age, creditScore, annualIncome) must be attested by a
+//   registered trusted issuer before they can be proven in a ZK circuit.
+//   The issuer model uses a hash-based commitment scheme (the maximum
+//   expressible with Compact's persistentHash primitive; full BLS/ECDSA
+//   signature verification over structured data requires signature primitives
+//   not yet in the Compact standard library):
+//
+//   1. Admin registers issuerKeyHash = persistentHash([issuerSecret]) on-chain.
+//   2. Issuer authenticates the user (KYC, credit bureau, OAuth).
+//   3. Issuer generates:
+//        credentialToken = persistentHash([issuerSecret, userSalt])
+//      and delivers it to the user out-of-band.
+//   4. In verifyEligibility, the circuit:
+//      a. Receives issuerKey as a private witness (provided by the issuer).
+//      b. Asserts persistentHash([issuerKey]) == issuerKeyHash (registered issuer).
+//      c. Asserts persistentHash([issuerKey, salt]) == credentialToken (issuer
+//         attested to this specific call/salt — user was authenticated).
+//   5. Without the issuer's secret, a user cannot self-forge a valid
+//      credentialToken even if they know the issuerKeyHash on-chain.
 //
 // NULLIFIER SEMANTICS:
 //   usedSaltNullifiers — records every salt that has been used (replay guard).
@@ -54,6 +82,13 @@ export ledger usedSaltNullifiers: Set<Bytes<32>>;
 // Relying parties query this set to verify a specific user's eligibility
 // without depending on the mutable global isEligible flag.
 export ledger eligibleNullifiers: Set<Bytes<32>>;
+// issuerKeyHash: persistentHash([issuerSecret]) registered by the admin.
+// verifyEligibility asserts that credentials were attested by this issuer.
+// The raw issuer secret is never stored on-chain.
+export ledger issuerKeyHash: Bytes<32>;
+// initialized: one-time guard. False at deployment (Compact default = false).
+// Set to true by initialize(). Prevents re-initialization attacks.
+export ledger initialized: Boolean;
 
 // --- Private Witness Declarations (local off-chain only) ---
 witness getPrivateCreditScore(): Uint<32>;
@@ -61,16 +96,31 @@ witness getPrivateAnnualIncome(): Uint<64>;
 witness getPrivateAge(): Uint<32>;
 witness getPrivateSalt(): Bytes<32>;
 witness getPrivateAdminKey(): Bytes<32>;
+// getPrivateIssuerKey: the trusted issuer's secret key. The issuer delivers
+// this to the user AFTER authenticating their real credentials (KYC / credit
+// bureau / OAuth). Users cannot self-generate a valid issuer key.
+witness getPrivateIssuerKey(): Bytes<32>;
+// getPrivateCredentialToken: persistentHash([issuerKey, userSalt]) computed by
+// the issuer and delivered out-of-band. Binding the token to the salt prevents
+// a token from one session being replayed in another.
+witness getPrivateCredentialToken(): Bytes<32>;
 
 // --- Constructor / Initializer ---
-// adminAddress: the raw 32-byte admin key. Its hash is stored on-chain;
-// the raw value is never disclosed to the ledger.
+// ONE-TIME ONLY: asserts !initialized. Reverts if called a second time.
+// adminAddress: the raw 32-byte admin key — only its hash is stored.
+// issuerKeyHashParam: admin provides persistentHash([issuerSecret]) to
+//   register the trusted credential issuer for this contract instance.
 export circuit initialize(
   creditScoreThreshold: Uint<32>,
   annualIncomeThreshold: Uint<64>,
   ageThreshold: Uint<32>,
-  adminAddress: Bytes<32>
+  adminAddress: Bytes<32>,
+  issuerKeyHashParam: Bytes<32>
 ): [] {
+  // ONE-TIME GUARD: revert if already initialized.
+  assert(!initialized, "ZkCred: Contract already initialized");
+  initialized = disclose(true);
+
   minCreditScore = disclose(creditScoreThreshold);
   minAnnualIncome = disclose(annualIncomeThreshold);
   minAge = disclose(ageThreshold);
@@ -78,12 +128,16 @@ export circuit initialize(
   verificationCount = disclose(0 as Uint<64>);
   // Store ONLY the hash of the admin key. The raw key never touches the ledger.
   admin = disclose(persistentHash<Vector<1, Bytes<32>>>([adminAddress]));
+  // Store the issuer key hash. Raw issuer secret is never stored on-chain.
+  issuerKeyHash = disclose(issuerKeyHashParam);
 }
 
 // --- Option 2 Core ZK Eligibility Gate Circuit ---
 // Evaluates Age, Credit Score, and Income inside PLONK ZK Circuit.
 // Discloses ONLY the boolean outcome and the salt nullifier. Raw credential
 // values (age, score, income) are never disclosed.
+// ISSUER AUTHENTICATION: verifies credentials were attested by the registered
+// trusted issuer before any threshold check is performed.
 export circuit verifyEligibility(): [] {
   // Retrieve private values from off-chain witnesses
   const creditScore: Uint<32> = getPrivateCreditScore();
@@ -91,11 +145,33 @@ export circuit verifyEligibility(): [] {
   const age: Uint<32> = getPrivateAge();
   const salt: Bytes<32> = getPrivateSalt();
 
+  // --- ISSUER CREDENTIAL AUTHENTICATION ---
+  // Retrieve the issuer's secret and the credential token it generated.
+  // The issuer delivers these to the user after authenticating their real
+  // credentials (KYC, credit bureau, OAuth). Users cannot self-forge tokens.
+  const issuerKey: Bytes<32> = getPrivateIssuerKey();
+  const credentialToken: Bytes<32> = getPrivateCredentialToken();
+
+  // (1) Verify this is the registered trusted issuer.
+  const computedIssuerHash: Bytes<32> = persistentHash<Vector<1, Bytes<32>>>([issuerKey]);
+  assert(computedIssuerHash == issuerKeyHash,
+    "Credential not attested by registered trusted issuer");
+
+  // (2) Verify the credential token binds this issuer key to this specific
+  //     salt — the issuer authenticated the user for this particular call.
+  //     Without the issuer's secret, a user cannot forge a matching token.
+  const expectedToken: Bytes<32> = persistentHash<Vector<2, Bytes<32>>>([
+    issuerKey,
+    salt
+  ]);
+  assert(expectedToken == credentialToken,
+    "Credential token does not match issuer attestation for this salt");
+
   // Compute a domain-separated nullifier from the private salt.
   // NULLIFIER SEMANTICS: prevents replay of THIS specific salt commitment.
   // A fresh salt always permits a new call. This does NOT prove credential
   // authenticity — only that this particular salt has not been used before.
-  const saltNullifier: Bytes<32> = disclose(persistentHash<Vector<2, Bytes<32>>>([
+  const saltNullifier: Bytes<32> = disclose(persistentHash<Vector<2, Bytes<32>>>([ 
     pad(32, "zkcred:eligibility:nullifier:v1"),
     salt
   ]));

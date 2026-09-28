@@ -1,1483 +1,1033 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <title>AegisID — ZkCred | Privacy-First Financial Verification on Midnight</title>
-  <meta name="description" content="AegisID uses zero-knowledge proofs on the Midnight blockchain to verify your financial eligibility without exposing your credit score or income." />
-  <meta name="keywords" content="ZkCred, AegisID, Midnight Network, zero-knowledge proofs, privacy, credit verification, DeFi" />
+  <title>AegisID — ZkCred | Zero-Knowledge Financial Eligibility on Midnight</title>
+  <meta name="description" content="AegisID uses zero-knowledge proofs on Midnight Network to verify financial and age eligibility without exposing raw credit scores or income." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- No GIS script needed — using server-side OAuth 2.0 redirect flow -->
-
-  <!-- ─── Vercel Web Analytics & Speed Insights ──────────────────────── -->
   <script>
-    // Browser shim required by the scale-codec dependency used by the
-    // official Midnight SDK. It contains no secrets or environment values.
     window.process = window.process || { env: {}, browser: true };
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-    // Render backend URL — API requests go here
     window.__RENDER_API__ = "https://zkcred-api.onrender.com/api";
   </script>
-  <!-- Vercel injects analytics in the hosted build; omit the scripts locally. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- ─── DEV-ONLY: FPS Performance Meter ─────────────────────────── -->
-  <script>
-    (function () {
-      if (!location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) return;
-      let frames = 0, last = performance.now(), fps = 0, frameMs = 0;
-      const meter = document.createElement('div');
-      meter.id = 'dev-fps-meter';
-      meter.style.cssText = [
-        'position:fixed','bottom:16px','right:16px','z-index:99999',
-        'background:rgba(7,6,11,0.85)','backdrop-filter:blur(12px)',
-        'border:1px solid rgba(139,92,246,0.35)','border-radius:10px',
-        'padding:8px 14px','font-family:JetBrains Mono,monospace','font-size:12px',
-        'color:#e2e8f0','display:flex','flex-direction:column','gap:3px',
-        'box-shadow:0 4px 24px rgba(0,0,0,0.5)','min-width:110px',
-        'user-select:none','pointer-events:none'
-      ].join(';');
-      meter.innerHTML = `
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block" id="fps-dot"></span>
-          <span style="color:#a78bfa;font-size:10px;font-weight:600;letter-spacing:0.08em">DEV PERF</span>
-        </div>
-        <div><span style="color:#94a3b8;font-size:10px">FPS </span><span id="fps-val" style="color:#f8fafc;font-weight:700;font-size:13px">--</span></div>
-        <div><span style="color:#94a3b8;font-size:10px">Frame </span><span id="fps-ms" style="color:#f8fafc;font-size:11px">-- ms</span></div>
-      `;
-      document.addEventListener('DOMContentLoaded', () => document.body.appendChild(meter));
-      function tick(now) {
-        frames++;
-        frameMs = (now - last).toFixed(1);
-        if (now - last >= 1000) {
-          fps = frames;
-          frames = 0;
-          last = now;
-          const valEl = document.getElementById('fps-val');
-          const msEl  = document.getElementById('fps-ms');
-          const dot   = document.getElementById('fps-dot');
-          if (valEl) valEl.textContent = fps;
-          if (msEl)  msEl.textContent  = frameMs + ' ms';
-          if (dot)   dot.style.background = fps >= 55 ? '#22c55e' : fps >= 30 ? '#f59e0b' : '#ef4444';
-        }
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    })();
-  </script>
 </head>
-<body class="bg-[#07060b] text-white selection:bg-purple-500/30">
+<body class="bg-[#0a0a0a] text-white selection:bg-white/20 relative" data-route="home">
 
-  <!-- ─── Base Atmosphere SVG Background (Layer -2) ────────────────── -->
-  <div class="bg-canvas" aria-hidden="true">
-    <svg class="bg-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="bgGrad" cx="50%" cy="40%" r="70%">
-          <stop offset="0%" stop-color="#0c0919" />
-          <stop offset="100%" stop-color="#040308" />
-        </radialGradient>
-        <radialGradient id="glowPurple" cx="35%" cy="30%" r="50%">
-          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.22" />
-          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
-        </radialGradient>
-        <radialGradient id="glowCyan" cx="80%" cy="65%" r="45%">
-          <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.18" />
-          <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
-        </radialGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <rect width="1440" height="900" fill="url(#bgGrad)" />
-      <!-- Ambient purple & cyan nebula glows -->
-      <ellipse cx="350" cy="250" rx="500" ry="380" fill="url(#glowPurple)" />
-      <ellipse cx="1150" cy="650" rx="450" ry="320" fill="url(#glowCyan)" />
-      <!-- Subtle twinkling stars -->
-      <g class="stars" filter="url(#glow)">
-        <circle cx="120" cy="80" r="1.5" fill="#a78bfa" opacity="0.7" class="star s1"/>
-        <circle cx="350" cy="140" r="1" fill="#7dd3fc" opacity="0.5" class="star s2"/>
-        <circle cx="680" cy="60" r="1.5" fill="#c4b5fd" opacity="0.6" class="star s3"/>
-        <circle cx="900" cy="120" r="1" fill="#a78bfa" opacity="0.5" class="star s4"/>
-        <circle cx="1200" cy="90" r="1.5" fill="#67e8f9" opacity="0.7" class="star s5"/>
-        <circle cx="1380" cy="200" r="1" fill="#a78bfa" opacity="0.5" class="star s6"/>
-        <circle cx="200" cy="400" r="1" fill="#c4b5fd" opacity="0.4" class="star s1"/>
-        <circle cx="480" cy="350" r="1.5" fill="#7dd3fc" opacity="0.5" class="star s3"/>
-        <circle cx="750" cy="300" r="1" fill="#a78bfa" opacity="0.5" class="star s2"/>
-        <circle cx="1050" cy="250" r="1.5" fill="#67e8f9" opacity="0.4" class="star s4"/>
-        <circle cx="1300" cy="350" r="1" fill="#c4b5fd" opacity="0.6" class="star s5"/>
-        <circle cx="80" cy="620" r="1.5" fill="#a78bfa" opacity="0.5" class="star s6"/>
-        <circle cx="440" cy="700" r="1" fill="#7dd3fc" opacity="0.5" class="star s1"/>
-        <circle cx="820" cy="760" r="1.5" fill="#c4b5fd" opacity="0.4" class="star s3"/>
-        <circle cx="1150" cy="800" r="1" fill="#67e8f9" opacity="0.6" class="star s2"/>
-        <circle cx="1420" cy="750" r="1.5" fill="#a78bfa" opacity="0.5" class="star s4"/>
-      </g>
-    </svg>
+  <!-- ─── Full-Viewport Cinematic Scroll Video (Layer 0) ────────────────── -->
+  <div id="scroll-video-container" class="fixed inset-0 z-0 bg-[#0a0a0a] overflow-hidden pointer-events-none">
+    <video
+      id="scroll-video-el"
+      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260729_102822_0e6c87e8-c141-4744-bf32-ad30db296371.mp4"
+      muted
+      playsinline
+      preload="auto"
+      crossorigin="anonymous"
+      class="hidden"
+    ></video>
+    <canvas id="scroll-video-canvas" class="w-full h-full object-cover"></canvas>
+    <div class="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]/95 pointer-events-none"></div>
+    <div class="absolute inset-0 radial-vignette pointer-events-none"></div>
   </div>
 
-  <!-- ─── 3D WebGL Background Canvas (Layer -1) ────────────────────────── -->
-  <canvas id="three-sculpture-canvas" class="fixed inset-0 z-[-1] pointer-events-none opacity-80"></canvas>
-
-  <!-- ─── Unified Dark Glass Floating Pill Navigation ─────────────────── -->
-  <header class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-6xl px-4 pointer-events-none" id="top-nav">
-    <nav class="pointer-events-auto flex items-center justify-between gap-4 px-5 py-2.5 bg-[#0a0714]/85 backdrop-blur-xl border border-purple-500/25 rounded-full shadow-[0_8px_32px_rgba(124,58,237,0.25)] text-white text-sm">
+  <!-- ─── Fixed Minimalist Editorial Navbar ────────────────────────────── -->
+  <header class="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#0a0a0a]/75 backdrop-blur-md px-6 sm:px-12 py-3.5 transition-all" id="top-nav">
+    <nav class="max-w-7xl mx-auto flex items-center justify-between gap-4">
       
       <!-- Brand Logo -->
-      <a href="#/home" class="flex items-center gap-2.5 font-bold tracking-tight text-white hover:text-purple-300 transition-all group">
-        <div class="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/40 flex items-center justify-center group-hover:border-purple-400 group-hover:shadow-[0_0_12px_rgba(124,58,237,0.5)] transition-all">
-          <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
-            <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#a78bfa" stroke-width="2" fill="none"/>
-            <path d="M10 14l3 3 5-5" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <a href="#/home" class="flex items-center gap-3 group text-white">
+        <div class="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center group-hover:border-white transition-all">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="12 2 2 8.5 2 15.5 12 22 22 15.5 22 8.5" stroke="currentColor"/>
+            <path d="M12 7v10M7 9.5l10 5M7 14.5l10-5" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
           </svg>
         </div>
-        <span class="font-extrabold text-base tracking-tight text-white">AegisID</span>
-        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">ZkCred</span>
+        <div class="flex items-baseline gap-2">
+          <span class="text-base font-semibold tracking-tight text-white">AegisID</span>
+          <span class="font-mono text-[10px] uppercase tracking-widest text-white/50">ZkCred</span>
+        </div>
       </a>
 
-      <!-- Hairline Vertical Divider -->
-      <div class="hidden md:block h-4 w-px bg-purple-500/20"></div>
-
-      <!-- Navigation Links (Middle) -->
-      <div class="hidden md:flex items-center gap-1 font-medium text-xs">
-        <a href="#/home" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10">Home</a>
-        <a href="#/dashboard" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10">Dashboard</a>
-        <a href="#/profile" class="px-3.5 py-1.5 rounded-full transition-all text-neutral-300 hover:text-white hover:bg-purple-500/10" id="nav-profile-link">Profile</a>
+      <!-- Center Links (Desktop) -->
+      <div class="hidden md:flex items-center gap-8 text-xs font-medium tracking-wide">
+        <a href="#/home" class="text-white/70 hover:text-white transition-colors">Home</a>
+        <a href="#/dashboard" class="text-white/70 hover:text-white transition-colors">ZK Verifier</a>
+        <a href="#/profile" class="text-white/70 hover:text-white transition-colors" id="nav-profile-link">Profile</a>
       </div>
 
-      <!-- Hairline Vertical Divider -->
-      <div class="hidden md:block h-4 w-px bg-purple-500/20"></div>
-
-      <!-- Action Items: Lace Wallet Button & Auth -->
+      <!-- Action Items -->
       <div class="flex items-center gap-3">
-        <!-- Lace Wallet Connect Button -->
-        <button id="wallet-connect-btn" class="btn-wallet-connect font-mono text-xs px-3.5 py-1.5 rounded-full border border-purple-500/40 bg-purple-950/40 text-purple-300 hover:bg-purple-900/50 hover:border-purple-400 transition-all shadow-[0_0_12px_rgba(124,58,237,0.2)] flex items-center gap-2" aria-label="Connect Lace Wallet">
+        <!-- Lace Wallet Connect -->
+        <button id="wallet-connect-btn" class="btn-wallet-connect" aria-label="Connect Midnight Lace Wallet">
           <span class="wallet-dot" id="wallet-dot"></span>
           <span id="wallet-btn-text">Connect Lace</span>
         </button>
 
-        <!-- Auth Button / User Profile -->
-        <button id="nav-auth-btn" class="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:scale-105 active:scale-95">Sign In</button>
-        <div id="user-badge" class="user-badge flex items-center gap-2 bg-purple-950/50 border border-purple-500/30 px-2.5 py-1 rounded-full" hidden>
-          <img id="user-avatar" src="" alt="User Avatar" class="user-avatar w-5 h-5 rounded-full" referrerpolicy="no-referrer" />
-          <span id="user-name" class="user-name-text text-xs font-semibold text-white">User</span>
-          <button id="btn-logout" class="btn-logout text-xs text-neutral-400 hover:text-white ml-1" title="Sign Out">✕</button>
+        <!-- Auth Button -->
+        <button id="nav-auth-btn" class="btn-primary !px-4 !py-1.5 !text-xs">Sign In</button>
+        <div id="user-badge" class="flex items-center gap-2 bg-white/10 border border-white/15 px-3 py-1 rounded-full cursor-pointer hover:bg-white/15 transition-all" hidden>
+          <img id="user-avatar" src="" alt="Avatar" class="w-5 h-5 rounded-full object-cover" referrerpolicy="no-referrer" />
+          <span id="user-name" class="text-xs font-medium text-white">User</span>
+          <button id="btn-logout" class="text-xs text-white/40 hover:text-white ml-1" title="Sign Out">✕</button>
         </div>
 
-        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="hidden sm:flex items-center gap-1.5 text-xs text-neutral-400 hover:text-purple-300 transition-colors pl-1" aria-label="View on GitHub">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.4.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.3-1.23 3.3-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.3c0 .32.22.68.82.56C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="hidden sm:flex text-white/50 hover:text-white transition-colors p-1" aria-label="GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.4.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.3-1.23 3.3-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.3c0 .32.22.68.82.56C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
         </a>
 
-        <!-- Mobile Menu Toggle Button -->
-        <button id="mobile-menu-btn" class="mobile-menu-btn md:hidden p-1 text-purple-300 hover:text-white" aria-label="Toggle mobile menu">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <!-- Mobile Toggle -->
+        <button id="mobile-menu-btn" class="md:hidden p-1 text-white/70 hover:text-white" aria-label="Toggle menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
         </button>
       </div>
 
     </nav>
   </header>
 
-  <!-- ─── Mobile Navigation Drawer ───────────────────────────────────── -->
+  <!-- ─── Mobile Drawer ──────────────────────────────────────────────── -->
   <div id="mobile-drawer" class="mobile-drawer" aria-hidden="true">
-    <div class="mobile-drawer-inner">
-      <div class="mobile-drawer-header">
-        <span class="logo-text">AegisID Menu</span>
-        <button id="mobile-drawer-close" class="mobile-drawer-close" aria-label="Close menu">✕</button>
-      </div>
-      <div class="mobile-drawer-links">
-        <a href="#/home" class="mobile-drawer-link">Home</a>
-        <a href="#/dashboard" class="mobile-drawer-link">ZK Dashboard</a>
-        <a href="#/profile" class="mobile-drawer-link">Profile & Credentials</a>
-        
-        <div class="mobile-drawer-actions">
-          <button id="mobile-wallet-connect-btn" class="btn-wallet-connect btn-wallet-mobile">
-            <span class="wallet-dot"></span>
-            <span id="mobile-wallet-btn-text">Connect Lace Wallet</span>
-          </button>
-          <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="btn-ghost btn-mobile-github">
-            View on GitHub
-          </a>
-        </div>
+    <div class="flex items-center justify-between pb-6 border-b border-white/10">
+      <span class="font-semibold text-white tracking-tight">AegisID Menu</span>
+      <button id="mobile-drawer-close" class="text-white/60 hover:text-white text-lg" aria-label="Close">✕</button>
+    </div>
+    <div class="flex flex-col gap-5 pt-8 text-base font-medium">
+      <a href="#/home" class="mobile-drawer-link text-white/80 hover:text-white">Home</a>
+      <a href="#/dashboard" class="mobile-drawer-link text-white/80 hover:text-white">ZK Verifier</a>
+      <a href="#/profile" class="mobile-drawer-link text-white/80 hover:text-white">Profile & Credentials</a>
+      <div class="pt-6">
+        <button id="mobile-wallet-connect-btn" class="btn-wallet-connect w-full justify-center !py-2.5">
+          <span class="wallet-dot"></span>
+          <span id="mobile-wallet-btn-text">Connect Lace Wallet</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- ─── Hero Section ──────────────────────────────────────────────────── -->
-  <section class="hero" id="top" data-app-page="home" aria-labelledby="hero-heading">
-    <div class="hero-inner">
-      <div class="hero-badge" role="note">
-        <span class="badge-dot" aria-hidden="true"></span>
-        Built on Midnight Network · Preprod
-      </div>
-      <h1 id="hero-heading" class="hero-title">
-        Prove Your Worth.<br/>
-        <span class="gradient-text">Reveal Nothing.</span>
-      </h1>
-      <p class="hero-sub">
-        AegisID uses <strong>zero-knowledge proofs</strong> on the Midnight blockchain to verify
-        your financial eligibility — without exposing your credit score, income,
-        or any private data on-chain.
-      </p>
-      <div class="hero-actions">
-        <a href="#verify" class="btn-primary" id="hero-cta">
-          <span>Verify Now</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-        <a href="#how-it-works" class="btn-ghost">See How It Works</a>
-      </div>
+  <!-- ─── Main Content Container (relative z-10) ───────────────────────── -->
+  <main class="relative z-10">
 
-      <!-- Hero Stats -->
-      <div class="hero-stats" aria-label="Protocol statistics">
-        <div class="stat" id="stat-proofs">
-          <span class="stat-value" data-count="4821">0</span>
-          <span class="stat-label">ZK Proofs Generated</span>
-        </div>
-        <div class="stat-divider" aria-hidden="true"></div>
-        <div class="stat" id="stat-privacy">
-          <span class="stat-value">100%</span>
-          <span class="stat-label">Data Privacy</span>
-        </div>
-        <div class="stat-divider" aria-hidden="true"></div>
-        <div class="stat" id="stat-time">
-          <span class="stat-value">~2s</span>
-          <span class="stat-label">Proof Generation</span>
-        </div>
-      </div>
-    </div>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PAGE: HOME
+         ═══════════════════════════════════════════════════════════════════ -->
 
-    <!-- Floating ZK proof visualization -->
-    <div class="hero-visual" aria-hidden="true">
-      <div class="zkproof-card">
-        <div class="zkcard-header">
-          <div class="zkcard-dot green"></div>
-          <div class="zkcard-dot yellow"></div>
-          <div class="zkcard-dot red"></div>
-          <span class="zkcard-title">ZK Proof Output</span>
-        </div>
-        <div class="zkcard-body">
-          <div class="code-line"><span class="code-key">circuit</span> <span class="code-fn">verifyEligibility</span><span class="code-punc">() {</span></div>
-          <div class="code-line indent"><span class="code-key">const</span> <span class="code-var">score</span> = <span class="code-fn">getPrivateCreditScore</span><span class="code-punc">();</span></div>
-          <div class="code-line indent"><span class="code-key">const</span> <span class="code-var">income</span> = <span class="code-fn">getPrivateAnnualIncome</span><span class="code-punc">();</span></div>
-          <div class="code-line indent code-comment">// Private: never on-chain ↑</div>
-          <div class="code-line indent"><span class="code-var">isEligible</span> = <span class="code-key">disclose</span><span class="code-punc">(</span></div>
-          <div class="code-line indent2"><span class="code-var">score</span> >= <span class="code-var">minCreditScore</span></div>
-          <div class="code-line indent2">&& <span class="code-var">income</span> >= <span class="code-var">minAnnualIncome</span></div>
-          <div class="code-line indent"><span class="code-punc">);</span></div>
-          <div class="code-line"><span class="code-punc">}</span></div>
-          <div class="code-result">
-            <span class="result-label">Ledger State:</span>
-            <span class="result-value eligible" id="hero-result">isEligible: <strong>true</strong></span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── Tailwind Stats Block (Landing Page) ────────────────────────── -->
-  <section class="max-w-7xl mx-auto px-6 sm:px-10 my-16" data-app-page="home">
-    <div class="bg-[#0a0716]/92 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 border border-purple-500/30 shadow-[0_16px_48px_rgba(0,0,0,0.6)] text-white relative overflow-hidden">
-      <!-- Glow ambient backdrop -->
-      <div class="absolute -top-24 -right-24 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-      <!-- Short Heading Above Metrics -->
-      <div class="max-w-xl mb-8 relative z-10">
-        <span class="text-xs font-bold uppercase tracking-widest text-purple-400 font-mono">Protocol Statistics</span>
-        <h2 class="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-white">Real-Time Proof Metrics</h2>
-      </div>
-
-      <!-- Three Metrics in a Row -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-purple-500/20 relative z-10">
-        
-        <!-- Metric 1 -->
-        <div class="space-y-3 p-5 rounded-2xl bg-purple-950/20 border border-purple-500/15 hover:border-purple-500/35 transition-all">
-          <div class="flex items-center justify-between">
-            <span class="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-purple-300 via-purple-400 to-cyan-400 bg-clip-text text-transparent font-mono">4,821+</span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
-              +14.2%
-            </span>
-          </div>
-          <div>
-            <div class="text-sm font-bold text-white">ZK Proofs Generated</div>
-            <p class="text-xs text-neutral-400 mt-0.5">Verified on Midnight Preprod smart contract</p>
-          </div>
-        </div>
-
-        <!-- Metric 2 -->
-        <div class="space-y-3 p-5 rounded-2xl bg-purple-950/20 border border-purple-500/15 hover:border-purple-500/35 transition-all">
-          <div class="flex items-center justify-between">
-            <span class="text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">100%</span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
-              Shielded
-            </span>
-          </div>
-          <div>
-            <div class="text-sm font-bold text-white">Data Privacy Protection</div>
-            <p class="text-xs text-neutral-400 mt-0.5">Private witness values never leave client</p>
-          </div>
-        </div>
-
-        <!-- Metric 3 -->
-        <div class="space-y-3 p-5 rounded-2xl bg-purple-950/20 border border-purple-500/15 hover:border-purple-500/35 transition-all">
-          <div class="flex items-center justify-between">
-            <span class="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent font-mono">1.8s</span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              -0.4s
-            </span>
-          </div>
-          <div>
-            <div class="text-sm font-bold text-white">Average Proof Latency</div>
-            <p class="text-xs text-neutral-400 mt-0.5">PLONK ZK circuit evaluation latency</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── How It Works ─────────────────────────────────────────────────── -->
-  <section class="section" id="how-it-works" data-app-page="home" aria-labelledby="how-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-tag">Zero-Knowledge Architecture</span>
-        <h2 id="how-heading" class="section-title">How AegisID Works</h2>
-        <p class="section-sub">
-          Built on Midnight's Compact language — the privacy boundary is enforced by cryptography, not promises.
-        </p>
-      </div>
-
-      <div class="steps-grid">
-        <article class="step-card" aria-label="Step 1: Private Input">
-          <div class="step-num" aria-hidden="true">01</div>
-          <div class="step-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M14 4a6 6 0 0 1 6 6v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2v-2a6 6 0 0 1 6-6z" stroke="#a78bfa" stroke-width="1.5" fill="none"/>
-              <circle cx="14" cy="18" r="2" fill="#7c3aed"/>
-            </svg>
-          </div>
-          <h3 class="step-title">Private Input</h3>
-          <p class="step-desc">Enter your credit score and income locally. This data is provided as a <strong>private witness</strong> — it never leaves your device.</p>
-        </article>
-
-        <article class="step-card" aria-label="Step 2: ZK Proof Generation">
-          <div class="step-num" aria-hidden="true">02</div>
-          <div class="step-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <polygon points="14,3 25,9 25,21 14,27 3,21 3,9" stroke="#06b6d4" stroke-width="1.5" fill="none"/>
-              <path d="M10 14l3 3 6-6" stroke="#67e8f9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h3 class="step-title">ZK Proof Generation</h3>
-          <p class="step-desc">The Compact circuit evaluates your eligibility inside a <strong>zero-knowledge circuit</strong>. The proof server generates a cryptographic proof locally.</p>
-        </article>
-
-        <article class="step-card" aria-label="Step 3: Selective Disclosure">
-          <div class="step-num" aria-hidden="true">03</div>
-          <div class="step-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <circle cx="14" cy="14" r="10" stroke="#f59e0b" stroke-width="1.5" fill="none"/>
-              <path d="M9 14h10M14 9l5 5-5 5" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h3 class="step-title">Selective Disclosure</h3>
-          <p class="step-desc"><code>disclose(eligible)</code> is called deliberately. <strong>Only the boolean result</strong> crosses the privacy boundary to the public ledger.</p>
-        </article>
-
-        <article class="step-card" aria-label="Step 4: On-Chain Verification">
-          <div class="step-num" aria-hidden="true">04</div>
-          <div class="step-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <rect x="3" y="7" width="22" height="17" rx="2" stroke="#34d399" stroke-width="1.5" fill="none"/>
-              <path d="M3 12h22M9 7V5M19 7V5" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/>
-              <circle cx="14" cy="18" r="3" fill="none" stroke="#6ee7b7" stroke-width="1.5"/>
-              <path d="M12 18l1.5 1.5L16 16" stroke="#6ee7b7" stroke-width="1.2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h3 class="step-title">On-Chain Verification</h3>
-          <p class="step-desc">The proof is submitted to Midnight Preprod. The blockchain confirms your eligibility. Your raw financial data stays <strong>invisible forever</strong>.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── Searchable Help Centre FAQ (Dark Glass Aesthetic) ───────────── -->
-  <section class="section py-20 px-6 sm:px-10 max-w-5xl mx-auto" id="faq" data-app-page="home">
-    <!-- Centered Heading -->
-    <div class="text-center max-w-2xl mx-auto mb-10">
-      <span class="text-xs font-bold uppercase tracking-widest text-purple-400 font-mono">Help Centre</span>
-      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mt-2">Frequently Asked Questions</h2>
-      <p class="text-neutral-400 text-sm mt-3">Find instant answers about AegisID zero-knowledge verification, Lace Wallet, and Midnight smart contracts.</p>
-    </div>
-
-    <!-- Search Input & Pills -->
-    <div class="space-y-6 max-w-3xl mx-auto mb-8">
-      <!-- Prominent Search Input with Leading Magnifier Glyph -->
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-purple-400">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </div>
-        <input type="text" id="faq-search-input" placeholder="Search questions or keywords (e.g. credit score, Lace, proof)..." class="w-full pl-12 pr-4 py-3.5 bg-[#0b0817]/90 border border-purple-500/30 rounded-2xl text-white placeholder-purple-300/40 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all" />
-      </div>
-
-      <!-- Row of Scrollable Topic Filter Pills (First is Active and Dark) -->
-      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="faq-topic-pills">
-        <button data-topic="all" class="faq-pill active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(124,58,237,0.4)] border border-purple-400/30 transition-all">All Topics</button>
-        <button data-topic="privacy" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Privacy & ZK</button>
-        <button data-topic="wallet" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Lace Wallet</button>
-        <button data-topic="eligibility" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Eligibility</button>
-        <button data-topic="contract" class="faq-pill px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-950/30 text-purple-300 hover:text-white border border-purple-500/20 hover:border-purple-500/40 transition-all">Smart Contract</button>
-      </div>
-    </div>
-
-    <!-- Results Count Line -->
-    <div class="flex items-center justify-between text-xs text-neutral-400 pb-4 mb-4 border-b border-purple-500/20 max-w-3xl mx-auto font-mono">
-      <span id="faq-results-count">Showing 5 questions</span>
-      <span class="text-purple-400/70">MIDNIGHT PREPROD VERIFIED</span>
-    </div>
-
-    <!-- Question Rows Built from Native Details and Summary Elements -->
-    <div class="space-y-4 max-w-3xl mx-auto" id="faq-list">
+    <!-- Section One — Hero -->
+    <section class="min-h-screen px-6 sm:px-12 pt-28 pb-16 flex flex-col justify-between" id="top" data-app-page="home">
       
-      <!-- Row 1 -->
-      <details class="faq-item group bg-[#0a0716]/92 backdrop-blur-xl border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="privacy">
-        <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
-          <span class="faq-question">How does AegisID protect my credit score and annual income?</span>
-          <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">Privacy & ZK</span>
-            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </summary>
-        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
-          <p class="faq-answer leading-relaxed">Your credit score and annual income are supplied exclusively as private witness inputs inside your browser. They are processed locally inside a PLONK ZK-SNARK circuit. Only the resulting boolean result (<code class="bg-purple-950/60 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/30 font-mono text-xs">isEligible: true/false</code>) is disclosed on-chain via Midnight's Compact language.</p>
-          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
-            <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
-          </div>
+      <!-- Top Row -->
+      <div class="flex flex-col sm:flex-row justify-between items-start gap-6 pt-4">
+        <!-- Left: Service / Protocol Hallmarks -->
+        <div class="space-y-1.5 font-mono text-[11px] sm:text-xs uppercase tracking-[0.16em] text-white/80 drop-shadow-md">
+          <div class="flex items-center gap-2"><span class="text-white/40">/</span> ZERO-KNOWLEDGE PROOF ENGINE</div>
+          <div class="flex items-center gap-2"><span class="text-white/40">/</span> MULTI-ATTRIBUTE ELIGIBILITY</div>
+          <div class="flex items-center gap-2"><span class="text-white/40">/</span> SHIELDED ON MIDNIGHT</div>
         </div>
-      </details>
 
-      <!-- Row 2 -->
-      <details class="faq-item group bg-[#0a0716]/92 backdrop-blur-xl border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="wallet">
-        <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
-          <span class="faq-question">Why does Lace Wallet require unlock before connecting to Midnight?</span>
-          <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Lace Wallet</span>
-            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </summary>
-        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
-          <p class="faq-answer leading-relaxed">Lace Wallet manages your Midnight shielded keys securely. Before signing ZK transactions or authorizing dapp connection, the wallet extension must be unlocked so it can derive keys and interact with the Midnight network RPC API.</p>
-          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
-            <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
-          </div>
+        <!-- Right: Editorial Statement -->
+        <div class="max-w-xs sm:text-right text-base sm:text-lg leading-relaxed text-white/90 drop-shadow-md">
+          We design zero-knowledge protocols that prove financial and age eligibility with mathematical certainty — keeping credentials 100% off-chain.
         </div>
-      </details>
-
-      <!-- Row 3 -->
-      <details class="faq-item group bg-[#0a0716]/92 backdrop-blur-xl border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="eligibility">
-        <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
-          <span class="faq-question">What are the default eligibility thresholds for verification?</span>
-          <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Eligibility</span>
-            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </summary>
-        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
-          <p class="faq-answer leading-relaxed">By default, the AegisID ZkCred circuit evaluates age ≥ 21, credit score ≥ 700, and annual income ≥ $50,000. These thresholds can also be dynamically configured on-chain by contract administrators.</p>
-          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
-            <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
-          </div>
-        </div>
-      </details>
-
-      <!-- Row 4 -->
-      <details class="faq-item group bg-[#0a0716]/92 backdrop-blur-xl border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="contract">
-        <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
-          <span class="faq-question">Where is the ZkCred Compact smart contract deployed?</span>
-          <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">Smart Contract</span>
-            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </summary>
-        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
-          <p class="faq-answer leading-relaxed">The contract is written in Midnight Compact and compiled to ZKIR. It is deployed on the Midnight Preprod testnet, accessible via the official indexer and proof server endpoints.</p>
-          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
-            <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
-          </div>
-        </div>
-      </details>
-
-      <!-- Row 5 -->
-      <details class="faq-item group bg-[#0a0716]/92 backdrop-blur-xl border border-purple-500/20 rounded-2xl overflow-hidden transition-all hover:border-purple-500/40 shadow-lg" data-topic="privacy">
-        <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-semibold text-white text-sm sm:text-base">
-          <span class="faq-question">Can an observer replay my generated zero-knowledge proof?</span>
-          <div class="flex items-center gap-3">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">Privacy & ZK</span>
-            <svg class="w-4 h-4 text-purple-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </summary>
-        <div class="px-5 pb-5 pt-2 text-neutral-300 text-sm border-t border-purple-500/15 space-y-4">
-          <p class="faq-answer leading-relaxed">No. AegisID incorporates a unique 32-byte domain-separated salt and replay nullifier into every verification call. Replaying an identical proof will be rejected by the Midnight consensus engine.</p>
-          <div class="flex items-center gap-3 pt-3 text-xs text-neutral-400 border-t border-purple-500/10">
-            <span>Was this helpful?</span>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👍 Yes</button>
-            <button class="faq-thumb-btn hover:text-white px-2.5 py-1 rounded-md bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/20 transition-all">👎 No</button>
-          </div>
-        </div>
-      </details>
-
-    </div>
-
-    <!-- Empty State -->
-    <div id="faq-empty-state" class="hidden text-center py-12 px-4 max-w-md mx-auto space-y-3">
-      <div class="w-12 h-12 rounded-full bg-purple-950/60 border border-purple-500/30 text-purple-300 flex items-center justify-center mx-auto text-xl shadow-lg">🔍</div>
-      <h3 class="text-base font-bold text-white">No matching questions found</h3>
-      <p class="text-xs text-neutral-400">Try adjusting your search query or switching topic filter pills.</p>
-    </div>
-  </section>
-
-  <!-- ─── Main ZK Dashboard & Verifier Portal ───────────────────────────── -->
-  <section class="section pt-28" id="dashboard" data-app-page="dashboard" aria-labelledby="verify-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-tag">ZK Dashboard & Analytics Portal</span>
-        <h2 id="verify-heading" class="section-title">Zero-Knowledge Verification Portal</h2>
-        <p class="section-sub">
-          All values stay in your browser. Nothing is sent to a server. Only the verification result is "disclosed".
-        </p>
       </div>
 
-      <div class="verifier-grid">
-        <!-- Private Witness Input Panel -->
-        <div class="panel glass-card" id="witness-panel" aria-labelledby="witness-heading">
-          <div class="panel-header">
-            <div class="panel-icon" aria-hidden="true">🔒</div>
-            <div>
-              <h3 id="witness-heading" class="panel-title">Private Witness</h3>
-              <p class="panel-sub">Stays in your browser — never on-chain</p>
+      <!-- Bottom Row -->
+      <div class="flex flex-col md:flex-row justify-between items-end gap-10 mt-auto pt-16">
+        <!-- Left: Badge + H1 + Sub + CTAs -->
+        <div class="max-w-2xl">
+          <div class="glass-badge-left mb-6">
+            Built on Midnight Network · Preprod
+          </div>
+
+          <h1 class="hero-title-editorial mb-6">
+            Prove Your Worth.<br/>
+            <span class="text-white/55">Reveal Nothing.</span>
+          </h1>
+
+          <p class="editorial-subhead mb-8 max-w-xl">
+            AegisID executes local PLONK zero-knowledge proofs directly inside your browser. Verify you meet credit, income, or age thresholds without disclosing raw financial data to relying parties.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-4">
+            <a href="#/dashboard" class="btn-primary" id="hero-cta">
+              <span>Launch Verifier</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+            <a href="#architecture" class="btn-secondary">
+              <span>Protocol Architecture</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right: Frosted Circuit & Live Proof Chip -->
+        <div class="w-full md:w-auto flex flex-col items-start md:items-end gap-4">
+          <!-- Proof Output Chip -->
+          <div class="glass-panel rounded-2xl p-5 w-full md:w-96 backdrop-blur-xl">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/10 font-mono text-xs">
+              <span class="text-white/60">ZK PLONK CIRCUIT</span>
+              <span class="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                ACTIVE
+              </span>
+            </div>
+            <div class="font-mono text-[11px] leading-relaxed text-white/80 space-y-1">
+              <div><span class="text-white/40">01</span> <span class="text-white/60">circuit</span> <span class="text-white">verifyEligibility</span>() {</div>
+              <div class="pl-4"><span class="text-white/40">02</span> <span class="text-white/60">const</span> score = getPrivateScore();</div>
+              <div class="pl-4"><span class="text-white/40">03</span> <span class="text-white/60">const</span> income = getPrivateIncome();</div>
+              <div class="pl-4"><span class="text-white/40">04</span> isEligible = <span class="text-white font-semibold">disclose</span>(score &ge; 700);</div>
+              <div><span class="text-white/40">05</span> }</div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="font-mono text-xs text-white/50">Outcome</span>
+              <span id="hero-result" class="font-mono text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                isEligible: <strong>true</strong>
+              </span>
             </div>
           </div>
 
+          <!-- Protocol Metrics -->
+          <div class="flex items-center gap-6 font-mono text-xs text-white/70 px-2" aria-label="Protocol statistics">
+            <div id="stat-proofs">
+              <span class="text-white font-bold" data-count="4821">4,821+</span>
+              <span class="text-white/50 block text-[10px] uppercase tracking-wider">Proofs</span>
+            </div>
+            <div class="w-px h-6 bg-white/15" aria-hidden="true"></div>
+            <div id="stat-privacy">
+              <span class="text-white font-bold">100%</span>
+              <span class="text-white/50 block text-[10px] uppercase tracking-wider">Shielded</span>
+            </div>
+            <div class="w-px h-6 bg-white/15" aria-hidden="true"></div>
+            <div id="stat-time">
+              <span class="text-white font-bold">~1.8s</span>
+              <span class="text-white/50 block text-[10px] uppercase tracking-wider">Latency</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Mid Spacer for Scroll Video Scrubbing (Landing page only) -->
+    <div data-app-page="home" class="h-[75vh] sm:h-[85vh] pointer-events-none" aria-hidden="true"></div>
+
+    <!-- Section Two — Capability & Architecture -->
+    <section class="min-h-screen px-6 sm:px-12 py-24 flex flex-col justify-between" id="architecture" data-app-page="home">
+      
+      <!-- Top Row -->
+      <div class="flex flex-col sm:flex-row justify-between items-start gap-6">
+        <div class="glass-badge-left">
+          Cryptographic Guarantees
+        </div>
+        <div class="max-w-sm sm:text-right text-base sm:text-lg leading-relaxed text-white/90 drop-shadow-md">
+          Our circuits evaluate private data inside a local Plonk prover. The public ledger receives only the verifiable mathematical proof.
+        </div>
+      </div>
+
+      <!-- Bottom Area -->
+      <div class="flex flex-col md:flex-row items-end justify-between gap-16 mt-auto pt-16">
+        <!-- Left: Editorial Headline -->
+        <div class="max-w-xl">
+          <h2 class="hero-title-editorial !text-4xl sm:!text-5xl lg:!text-6xl mb-6">
+            Math Over Trust.<br/>
+            <span class="text-white/55">Guaranteed by Midnight.</span>
+          </h2>
+          <p class="editorial-subhead text-sm sm:text-base mb-8 max-w-md">
+            By utilizing Midnight's domain-separated Compact circuits, applicants never surrender custody of their identity, tax returns, or credit files to central databases.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <a href="#/dashboard" class="btn-primary">
+              <span>Open Verifier Terminal</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+            <a href="https://github.com/Sov-ereign/ZkCred/blob/main/contract/src/zkcred.compact" target="_blank" rel="noopener" class="btn-secondary">
+              <span>Read Compact Contract</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right: Frosted Capability Panel -->
+        <div class="w-full max-w-lg glass-panel rounded-2xl p-6 sm:p-8 backdrop-blur-xl">
+          
+          <div class="capability-row group">
+            <span class="font-mono text-xs text-white/40 tracking-widest pt-1">01</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-white">Private Witness Isolation</h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cap-chevron"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <p class="text-xs sm:text-sm text-white/60 mt-1.5 leading-relaxed">
+                Raw credentials (credit score, income, age, salt) are kept exclusively in local WASM memory and never touch the network.
+              </p>
+            </div>
+          </div>
+
+          <div class="capability-row group">
+            <span class="font-mono text-xs text-white/40 tracking-widest pt-1">02</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-white">Domain-Separated Salt Nullifiers</h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cap-chevron"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <p class="text-xs sm:text-sm text-white/60 mt-1.5 leading-relaxed">
+                Cryptographic nullifiers prevent reuse of the same salt commitment while ensuring private credentials cannot be linked across transactions.
+              </p>
+            </div>
+          </div>
+
+          <div class="capability-row group">
+            <span class="font-mono text-xs text-white/40 tracking-widest pt-1">03</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-white">Midnight Preprod Settlement</h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cap-chevron"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <p class="text-xs sm:text-sm text-white/60 mt-1.5 leading-relaxed">
+                Only the boolean eligibility flag and salt nullifier are committed to Midnight's ledger, queryable in real-time by relying parties.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacer before FAQ (Landing page only) -->
+    <div data-app-page="home" class="h-[45vh] sm:h-[60vh] pointer-events-none" aria-hidden="true"></div>
+
+    <!-- Section Three — Searchable FAQ -->
+    <section class="max-w-4xl mx-auto px-6 sm:px-10 py-24" id="faq" data-app-page="home">
+      <div class="text-center max-w-xl mx-auto mb-12">
+        <div class="glass-badge-left inline-block mb-3">Help Centre</div>
+        <h2 class="text-3xl sm:text-4xl font-light tracking-tight text-white">Frequently Asked Questions</h2>
+        <p class="text-sm text-white/60 mt-2">Everything you need to know about zero-knowledge proofs on Midnight Network.</p>
+      </div>
+
+      <!-- Search Input & Pills -->
+      <div class="space-y-4 mb-8">
+        <div class="relative">
+          <input
+            type="text"
+            id="faq-search-input"
+            placeholder="Search questions or keywords (e.g. credit score, Lace, proof)..."
+            class="w-full pl-5 pr-4 py-3.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/40 text-sm focus:outline-none focus:border-white/40 backdrop-blur-md transition-all"
+          />
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="faq-topic-pills">
+          <button data-topic="all" class="faq-pill active px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-black transition-all">All</button>
+          <button data-topic="privacy" class="faq-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 hover:bg-white/15 border border-white/10 transition-all">Privacy & ZK</button>
+          <button data-topic="wallet" class="faq-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 hover:bg-white/15 border border-white/10 transition-all">Lace Wallet</button>
+          <button data-topic="eligibility" class="faq-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 hover:bg-white/15 border border-white/10 transition-all">Eligibility</button>
+          <button data-topic="contract" class="faq-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 hover:bg-white/15 border border-white/10 transition-all">Smart Contract</button>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-white/40 font-mono pt-2 border-b border-white/10 pb-3">
+          <span id="faq-results-count">Showing 5 questions</span>
+          <span>MIDNIGHT PREPROD VERIFIED</span>
+        </div>
+      </div>
+
+      <!-- FAQ Items -->
+      <div class="space-y-3" id="faq-list">
+        
+        <details class="faq-item group glass-panel rounded-xl overflow-hidden" data-topic="privacy">
+          <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-medium text-white text-sm sm:text-base">
+            <span class="faq-question">How does AegisID protect my credit score and annual income?</span>
+            <svg class="w-4 h-4 text-white/50 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-5 pb-5 text-xs sm:text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">
+            AegisID evaluates your financial and age credentials inside a local PLONK zero-knowledge circuit running in your browser. The circuit verifies that your score and income meet predefined thresholds, but calls <code>disclose()</code> exclusively on the final boolean outcome. Raw credentials are never transmitted over the wire or stored on-chain.
+          </div>
+        </details>
+
+        <details class="faq-item group glass-panel rounded-xl overflow-hidden" data-topic="wallet">
+          <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-medium text-white text-sm sm:text-base">
+            <span class="faq-question">Why do I need the Midnight Lace Wallet?</span>
+            <svg class="w-4 h-4 text-white/50 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-5 pb-5 text-xs sm:text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">
+            Midnight uses shielded transactions. The Lace extension signs and submits transactions to the Midnight Preprod testnet, manages unshielded/shielded balances, and interfaces directly with the local proof server.
+          </div>
+        </details>
+
+        <details class="faq-item group glass-panel rounded-xl overflow-hidden" data-topic="eligibility">
+          <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-medium text-white text-sm sm:text-base">
+            <span class="faq-question">What are the default eligibility thresholds?</span>
+            <svg class="w-4 h-4 text-white/50 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-5 pb-5 text-xs sm:text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">
+            By default on Midnight Preprod, the contract requires: Minimum Age &ge; 21 years, Minimum Credit Score &ge; 700, and Minimum Annual Income &ge; $50,000 (5,000,000 cents). The contract administrator can adjust these thresholds via the <code>updateThresholds</code> circuit.
+          </div>
+        </details>
+
+        <details class="faq-item group glass-panel rounded-xl overflow-hidden" data-topic="contract">
+          <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-medium text-white text-sm sm:text-base">
+            <span class="faq-question">What is the salt nullifier and why is it used?</span>
+            <svg class="w-4 h-4 text-white/50 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-5 pb-5 text-xs sm:text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">
+            The salt nullifier is a domain-separated persistent hash of a 32-byte private salt. It prevents the replay of a specific salt commitment on-chain, avoiding double-verification attacks without revealing the applicant's private identity.
+          </div>
+        </details>
+
+        <details class="faq-item group glass-panel rounded-xl overflow-hidden" data-topic="privacy">
+          <summary class="flex items-center justify-between p-5 cursor-pointer list-none select-none font-medium text-white text-sm sm:text-base">
+            <span class="faq-question">Can relying parties verify my eligibility without trusting the global state?</span>
+            <svg class="w-4 h-4 text-white/50 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="px-5 pb-5 text-xs sm:text-sm text-white/70 leading-relaxed border-t border-white/10 pt-4">
+            Yes. AegisID records qualifying verifications in the <code>eligibleNullifiers</code> on-chain set. Relying parties invoke the <code>checkNullifierEligible(nullifier)</code> query circuit to independently confirm whether a specific verification succeeded, unaffected by subsequent caller activity.
+          </div>
+        </details>
+
+      </div>
+
+      <div id="faq-empty-state" class="hidden text-center py-12 text-white/50 text-sm">
+        No questions matching your search query. Try another keyword.
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PAGE: ZK VERIFIER DASHBOARD (Portal)
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="max-w-7xl mx-auto px-6 sm:px-10 pt-28 pb-20" id="dashboard" data-app-page="dashboard" aria-labelledby="verify-heading">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 mb-8 border-b border-white/10">
+        <div>
+          <div class="flex items-center gap-2.5 mb-2.5">
+            <div class="w-6 h-6 rounded-full bg-white text-black font-semibold text-xs flex items-center justify-center">1</div>
+            <span class="text-xs font-medium border border-white/15 rounded-full px-3 py-0.5 text-white/80 bg-white/5 font-mono">PLONK ZK-SNARK VERIFIER</span>
+          </div>
+          <h2 id="verify-heading" class="text-2xl sm:text-3xl lg:text-4xl font-normal tracking-tight text-white">Cryptographic Verification Portal</h2>
+          <p class="text-xs sm:text-sm text-white/60 mt-1.5 max-w-xl">
+            Private witness inputs remain sealed in local memory. Only the cryptographic proof and selective disclosure are submitted to Midnight Preprod.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 px-3.5 py-1.5 bg-white/5 border border-white/10 rounded-full font-mono text-xs text-white/70 self-start sm:self-auto">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="live-telemetry-time">Live UTC · Midnight Preprod Active</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Left: Private Witness Input Terminal -->
+        <div class="verifier-terminal-card" id="witness-panel" aria-labelledby="witness-heading">
+          <div class="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold text-[11px] flex items-center justify-center">1</div>
+              <div>
+                <h3 id="witness-heading" class="text-base font-semibold text-white">Private Witness Input</h3>
+                <p class="text-xs text-white/50 mt-0.5">Off-chain memory — never leaves your browser</p>
+              </div>
+            </div>
+            <span class="font-mono text-[10px] uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full">SHIELDED</span>
+          </div>
+
+          <!-- Age Slider -->
           <div class="input-group">
             <label for="age-slider" class="input-label">
-              Age (Years)
-              <span class="privacy-tag" aria-label="This field is private">PRIVATE · AGE GATE</span>
+              <span>Age (Years)</span>
+              <span class="privacy-tag">PRIVATE WITNESS</span>
             </label>
             <div class="slider-container">
-              <input
-                type="range"
-                id="age-slider"
-                min="18"
-                max="80"
-                value="24"
-                step="1"
-                class="zk-slider"
-                aria-valuemin="18"
-                aria-valuemax="80"
-                aria-valuenow="24"
-                aria-valuetext="Age: 24 years"
-              />
+              <input type="range" id="age-slider" min="18" max="80" value="24" step="1" class="zk-slider" />
             </div>
             <div class="slider-display">
-              <span class="slider-min">18 yrs</span>
+              <span>18 yrs</span>
               <div class="slider-value-box">
-                <span class="slider-value" id="age-display" aria-live="polite">24</span>
-                <span class="slider-unit">years</span>
+                <span id="age-display">24</span> years
               </div>
-              <span class="slider-max">80 yrs</span>
+              <span>80 yrs</span>
             </div>
           </div>
 
+          <!-- Credit Score Slider -->
           <div class="input-group">
             <label for="credit-score-slider" class="input-label">
-              Credit Score
-              <span class="privacy-tag" aria-label="This field is private">PRIVATE</span>
+              <span>Credit Score</span>
+              <span class="privacy-tag">PRIVATE WITNESS</span>
             </label>
             <div class="slider-container">
-              <input
-                type="range"
-                id="credit-score-slider"
-                min="300"
-                max="850"
-                value="720"
-                step="1"
-                class="zk-slider"
-                aria-valuemin="300"
-                aria-valuemax="850"
-                aria-valuenow="720"
-                aria-valuetext="Credit score: 720"
-              />
-              <div class="slider-track-fill" id="score-fill"></div>
+              <input type="range" id="credit-score-slider" min="300" max="850" value="720" step="1" class="zk-slider" />
             </div>
             <div class="slider-display">
-              <span class="slider-min">300</span>
+              <span>300</span>
               <div class="slider-value-box">
-                <span class="slider-value" id="credit-score-display" aria-live="polite">720</span>
-                <span class="slider-unit">score</span>
+                <span id="credit-score-display">720</span>
               </div>
-              <span class="slider-max">850</span>
+              <span>850</span>
             </div>
           </div>
 
+          <!-- Annual Income Slider -->
           <div class="input-group">
             <label for="income-slider" class="input-label">
-              Annual Income
-              <span class="privacy-tag" aria-label="This field is private">PRIVATE</span>
+              <span>Annual Income</span>
+              <span class="privacy-tag">PRIVATE WITNESS</span>
             </label>
             <div class="slider-container">
-              <input
-                type="range"
-                id="income-slider"
-                min="0"
-                max="20000000"
-                value="7500000"
-                step="50000"
-                class="zk-slider"
-                aria-valuemin="0"
-                aria-valuemax="20000000"
-                aria-valuenow="7500000"
-                aria-valuetext="Annual income: $75,000"
-              />
+              <input type="range" id="income-slider" min="0" max="20000000" value="7500000" step="50000" class="zk-slider" />
             </div>
             <div class="slider-display">
-              <span class="slider-min">$0</span>
+              <span>$0</span>
               <div class="slider-value-box">
-                <span class="slider-value" id="income-display" aria-live="polite">$75,000</span>
+                <span id="income-display">$75,000</span>
               </div>
-              <span class="slider-max">$200k</span>
+              <span>$200k</span>
             </div>
           </div>
 
-          <div class="threshold-display" role="complementary" aria-label="Current thresholds">
+          <!-- Threshold Criteria Summary -->
+          <div class="threshold-display">
             <div class="threshold-item">
               <span class="threshold-label">Min Age</span>
               <span class="threshold-value" id="threshold-age">21 yrs</span>
             </div>
-            <div class="threshold-divider" aria-hidden="true"></div>
+            <div class="threshold-divider"></div>
             <div class="threshold-item">
               <span class="threshold-label">Min Score</span>
               <span class="threshold-value" id="threshold-score">700</span>
             </div>
-            <div class="threshold-divider" aria-hidden="true"></div>
+            <div class="threshold-divider"></div>
             <div class="threshold-item">
               <span class="threshold-label">Min Income</span>
               <span class="threshold-value" id="threshold-income">$50,000</span>
             </div>
           </div>
 
-          <div class="eligibility-preview" id="eligibility-preview" aria-live="polite" role="status">
+          <!-- Real-Time Eligibility Preview -->
+          <div class="eligibility-preview" id="eligibility-preview">
             <div class="preview-checks">
               <div class="check-item" id="check-age">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span class="check-text">Age Gate <span id="check-age-val">24 ≥ 21 yrs</span></span>
+                <span class="check-icon">✓</span>
+                <span>Age Gate <strong id="check-age-val">24 &ge; 21 yrs</strong></span>
               </div>
               <div class="check-item" id="check-score">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span class="check-text">Credit Score <span id="check-score-val">720 ≥ 700</span></span>
+                <span class="check-icon">✓</span>
+                <span>Credit Score <strong id="check-score-val">720 &ge; 700</strong></span>
               </div>
               <div class="check-item" id="check-income">
-                <span class="check-icon" aria-hidden="true">✓</span>
-                <span class="check-text">Annual Income <span id="check-income-val">$75,000 ≥ $50,000</span></span>
+                <span class="check-icon">✓</span>
+                <span>Annual Income <strong id="check-income-val">$75,000 &ge; $50,000</strong></span>
               </div>
             </div>
           </div>
 
-          <button
-            class="btn-primary btn-full btn-generate"
-            id="generate-proof-btn"
-            aria-label="Generate zero-knowledge proof"
-            aria-describedby="proof-status"
-          >
-            <span class="btn-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <polygon points="9,2 16,6 16,12 9,16 2,12 2,6" stroke="currentColor" stroke-width="1.3" fill="none"/>
-                <path d="M6 9l2.5 2.5L13 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-              </svg>
+          <!-- Primary CTA Button with Axion-inspired Arrow Circle -->
+          <button class="btn-primary w-full !py-3 !text-xs sm:!text-sm group flex items-center justify-between pl-6 pr-3 shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all" id="generate-proof-btn" aria-label="Generate zero-knowledge proof">
+            <span id="proof-btn-text" class="font-semibold">Generate Zero-Knowledge Proof</span>
+            <span class="w-7 h-7 rounded-full bg-black flex items-center justify-center text-white btn-arrow-circle">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </span>
-            <span class="btn-text" id="proof-btn-text">Generate ZK Proof</span>
           </button>
         </div>
 
-        <!-- Public Ledger State Panel -->
-        <div class="panel glass-card" id="ledger-panel" aria-labelledby="ledger-heading">
-          <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <div class="panel-icon" aria-hidden="true">🔗</div>
+        <!-- Right: Public Ledger State & Midnight Indexer -->
+        <div class="verifier-terminal-card" id="ledger-panel" aria-labelledby="ledger-heading">
+          <div class="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 rounded-full bg-white text-black font-bold text-[11px] flex items-center justify-center">2</div>
               <div>
-                <h3 id="ledger-heading" class="panel-title">Public Ledger State</h3>
-                <p class="panel-sub">Visible on Midnight blockchain</p>
+                <h3 id="ledger-heading" class="text-base font-semibold text-white">Public Ledger State</h3>
+                <p class="text-xs text-white/50 mt-0.5">Committed to Midnight Preprod smart contract</p>
               </div>
             </div>
-            <div>
-              <button type="button" id="verify-ledger-btn" class="btn-explorer-link" aria-label="Verify live state on Midnight Preprod">
-                <span>Verify Live State</span>
-              </button>
-            </div>
+            <button type="button" id="verify-ledger-btn" class="btn-explorer-link group flex items-center gap-1.5">
+              <span>Verify Live State</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arrow-circle"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            </button>
           </div>
 
-          <!-- Proof generation animation -->
-          <div class="proof-animation" id="proof-animation" aria-hidden="true">
+          <!-- Proof Orbit Animation (During Proving) -->
+          <div class="proof-animation" id="proof-animation" aria-hidden="true" style="display: none;">
             <div class="proof-orbit">
               <div class="orbit-ring ring1"></div>
               <div class="orbit-ring ring2"></div>
               <div class="orbit-ring ring3"></div>
-              <div class="orbit-center">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                  <polygon points="16,3 28,9 28,23 16,29 4,23 4,9" stroke="#7c3aed" stroke-width="1.5" fill="none"/>
-                  <path d="M11 16l4 4 7-8" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-              </div>
+              <div class="orbit-center"></div>
             </div>
-            <p class="proof-status-text" id="proof-status" aria-live="assertive"></p>
+            <p class="proof-status-text" id="proof-status"></p>
           </div>
 
-          <!-- Ledger State Fields -->
+          <!-- Ledger Fields Readout -->
           <div class="ledger-fields" id="ledger-fields">
             <div class="ledger-field">
               <div class="field-header">
                 <span class="field-name">contract_address</span>
                 <span class="field-visibility public">PUBLIC</span>
               </div>
-              <div class="field-value mono" id="ledger-address">Not configured</div>
+              <div class="field-value mono text-xs" id="ledger-address">a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6</div>
             </div>
 
-            <div class="ledger-field">
-              <div class="field-header">
-                <span class="field-name">min_credit_score</span>
-                <span class="field-visibility public">PUBLIC</span>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="ledger-field">
+                <div class="field-header">
+                  <span class="field-name">min_credit_score</span>
+                  <span class="field-visibility public">PUBLIC</span>
+                </div>
+                <div class="field-value" id="ledger-min-score">700</div>
               </div>
-              <div class="field-value" id="ledger-min-score">700</div>
-            </div>
 
-            <div class="ledger-field">
-              <div class="field-header">
-                <span class="field-name">min_annual_income</span>
-                <span class="field-visibility public">PUBLIC</span>
-              </div>
-              <div class="field-value" id="ledger-min-income">$50,000 (5000000 cents)</div>
-            </div>
-
-            <div class="ledger-field">
-              <div class="field-header">
-                <span class="field-name">is_eligible</span>
-                <span class="field-visibility public">PUBLIC · disclose()</span>
-              </div>
-              <div class="field-value eligibility-value" id="ledger-eligible">
-                <span class="eligibility-badge waiting" id="eligibility-badge" role="status" aria-live="polite">awaiting proof</span>
+              <div class="ledger-field">
+                <div class="field-header">
+                  <span class="field-name">min_annual_income</span>
+                  <span class="field-visibility public">PUBLIC</span>
+                </div>
+                <div class="field-value" id="ledger-min-income">$50,000</div>
               </div>
             </div>
 
-            <div class="ledger-field">
-              <div class="field-header">
-                <span class="field-name">verification_count</span>
-                <span class="field-visibility public">PUBLIC</span>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="ledger-field">
+                <div class="field-header">
+                  <span class="field-name">is_eligible</span>
+                  <span class="field-visibility public">disclose()</span>
+                </div>
+                <div class="field-value" id="ledger-eligible">
+                  <span class="eligibility-badge waiting" id="eligibility-badge">awaiting proof</span>
+                </div>
               </div>
-              <div class="field-value" id="ledger-count">0</div>
+
+              <div class="ledger-field">
+                <div class="field-header">
+                  <span class="field-name">verification_count</span>
+                  <span class="field-visibility public">PUBLIC</span>
+                </div>
+                <div class="field-value" id="ledger-count">0</div>
+              </div>
             </div>
 
-            <div class="ledger-field private-field">
+            <div class="ledger-field opacity-60">
               <div class="field-header">
-                <span class="field-name">credit_score</span>
-                <span class="field-visibility private">PRIVATE WITNESS</span>
+                <span class="field-name">applicant_credit_score</span>
+                <span class="field-visibility private">SHIELDED WITNESS</span>
               </div>
-              <div class="field-value private-value">
-                <span class="private-placeholder">████████</span>
-                <span class="private-note">Never on-chain</span>
+              <div class="field-value font-mono text-xs text-white/50">
+                &bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull; <span class="text-white/40 italic font-sans">(Never revealed on-chain)</span>
               </div>
             </div>
 
-            <div class="ledger-field private-field">
+            <div class="ledger-field opacity-60">
               <div class="field-header">
-                <span class="field-name">annual_income</span>
-                <span class="field-visibility private">PRIVATE WITNESS</span>
+                <span class="field-name">applicant_annual_income</span>
+                <span class="field-visibility private">SHIELDED WITNESS</span>
               </div>
-              <div class="field-value private-value">
-                <span class="private-placeholder">████████████</span>
-                <span class="private-note">Never on-chain</span>
+              <div class="field-value font-mono text-xs text-white/50">
+                &bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull; <span class="text-white/40 italic font-sans">(Never revealed on-chain)</span>
               </div>
             </div>
           </div>
 
-          <!-- Transaction Hash & live Indexer Verification -->
+          <!-- Transaction Result (When Submitted) -->
           <div class="tx-result" id="tx-result" hidden>
             <div class="tx-header">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <circle cx="7" cy="7" r="6" stroke="#34d399" stroke-width="1.2"/>
-                <path d="M4.5 7l2 2L9.5 5" stroke="#34d399" stroke-width="1.2" stroke-linecap="round"/>
-              </svg>
-              Transaction submitted to Midnight Preprod
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Transaction Submitted to Midnight Preprod
             </div>
-            <div class="tx-hash mono" id="tx-hash-display" aria-label="Transaction hash"></div>
-            <div class="tx-verification" id="tx-verification" aria-live="polite">
-              <button type="button" id="verify-tx-btn" class="btn-explorer-link">Verify transaction on Preprod</button>
-              <span id="tx-verification-status">Not checked yet</span>
+            <div class="tx-hash" id="tx-hash-display"></div>
+            <div class="flex items-center justify-between text-xs pt-1">
+              <button type="button" id="verify-tx-btn" class="btn-explorer-link">Verify on Preprod Indexer</button>
+              <span id="tx-verification-status" class="font-mono text-white/60">Not checked yet</span>
             </div>
           </div>
+
         </div>
+
       </div>
-      <section class="admin-control-card glass-card" id="admin-controls" hidden aria-labelledby="admin-controls-heading">
-        <div>
-          <span class="section-tag">Contract operator</span>
-          <h3 id="admin-controls-heading">Update public eligibility thresholds</h3>
-          <p>Only the browser that deployed this contract holds its private administrator witness. This updates public thresholds; it never exposes applicant credentials.</p>
+
+      <!-- Admin Controls Card (If authorized) -->
+      <section class="verifier-terminal-card mt-8" id="admin-controls" hidden aria-labelledby="admin-controls-heading">
+        <div class="pb-4 mb-4 border-b border-white/10">
+          <div class="glass-badge-left !text-[10px] mb-2">Contract Operator</div>
+          <h3 id="admin-controls-heading" class="text-base font-semibold text-white">Update Public Eligibility Thresholds</h3>
+          <p class="text-xs text-white/50 mt-1">Authorized admin key derived from session storage. Updates public on-chain thresholds.</p>
         </div>
-        <form id="threshold-update-form" class="threshold-update-form">
-          <label>Minimum score<input id="admin-min-score" type="number" min="300" max="850" required></label>
-          <label>Minimum income (cents)<input id="admin-min-income" type="number" min="0" step="1" required></label>
-          <label>Minimum age<input id="admin-min-age" type="number" min="18" max="120" required></label>
-          <button type="submit" class="btn-primary">Submit threshold update</button>
+        <form id="threshold-update-form" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">Minimum Score</label>
+            <input id="admin-min-score" type="number" min="300" max="850" required class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">Minimum Income ($)</label>
+            <input id="admin-min-income" type="number" min="0" step="1" required class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">Minimum Age</label>
+            <input id="admin-min-age" type="number" min="18" max="120" required class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div class="sm:col-span-3">
+            <button type="submit" class="btn-primary !py-2.5 !text-xs">Submit Threshold Update</button>
+          </div>
         </form>
-        <p id="threshold-update-status" class="form-alert" hidden></p>
+        <p id="threshold-update-status" class="mt-3 text-xs font-mono" hidden></p>
       </section>
-    </div>
-  </section>
 
-  <!-- ─── Privacy Section ──────────────────────────────────────────────── -->
-  <section class="section section-dark" id="privacy" data-app-page="home" aria-labelledby="privacy-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-tag">Public State vs Private Witness</span>
-        <h2 id="privacy-heading" class="section-title">The Privacy Boundary</h2>
-      </div>
+    </section>
 
-      <!-- Vector Architectural Diagram -->
-      <div class="privacy-diagram-container" style="text-align: center; margin-bottom: 2.5rem; max-width: 100%; overflow-x: auto;">
-        <img src="assets/privacy-art.svg" alt="AegisID ZK Privacy Boundary Diagram" style="max-width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--color-border); box-shadow: 0 12px 36px rgba(0,0,0,0.5);" />
-      </div>
-
-      <div class="privacy-grid">
-        <div class="privacy-col private-col" aria-labelledby="private-heading">
-          <div class="privacy-col-header">
-            <span class="privacy-col-icon" aria-hidden="true">🔒</span>
-            <h3 id="private-heading">Private Witness</h3>
-            <span class="privacy-col-tag">Never On-Chain</span>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PAGE: PROFILE & ZK CREDENTIALS
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="max-w-6xl mx-auto px-6 sm:px-10 pt-28 pb-20" id="profile" data-app-page="profile" aria-labelledby="profile-heading">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 mb-8 border-b border-white/10">
+        <div>
+          <div class="flex items-center gap-2.5 mb-2.5">
+            <div class="w-6 h-6 rounded-full bg-white text-black font-semibold text-xs flex items-center justify-center">2</div>
+            <span class="text-xs font-medium border border-white/15 rounded-full px-3 py-0.5 text-white/80 bg-white/5 font-mono">DECENTRALIZED ATTESTATIONS</span>
           </div>
-          <ul class="privacy-list" role="list">
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>Credit Score</strong> — raw numeric value (e.g. 720)</li>
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>Annual Income</strong> — exact dollar amount in cents</li>
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>User Salt</strong> — 32-byte random commitment binding</li>
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>Identity</strong> — no KYC, no linkable ID</li>
-          </ul>
-          <div class="privacy-code">
-            <div class="code-comment">// Compact witness declaration</div>
-            <div><span class="code-key">witness</span> <span class="code-fn">getPrivateCreditScore</span>(): <span class="code-type">Uint&lt;32&gt;</span>;</div>
-            <div><span class="code-key">witness</span> <span class="code-fn">getPrivateAnnualIncome</span>(): <span class="code-type">Uint&lt;64&gt;</span>;</div>
-            <div><span class="code-key">witness</span> <span class="code-fn">getPrivateSalt</span>(): <span class="code-type">Bytes&lt;32&gt;</span>;</div>
-          </div>
-        </div>
-
-        <div class="privacy-boundary" aria-hidden="true">
-          <div class="boundary-line"></div>
-          <div class="boundary-label">
-            <span class="boundary-fn">disclose()</span>
-            <span class="boundary-arrow">→</span>
-          </div>
-          <div class="boundary-line"></div>
-        </div>
-
-        <div class="privacy-col public-col" aria-labelledby="public-heading">
-          <div class="privacy-col-header">
-            <span class="privacy-col-icon" aria-hidden="true">🌐</span>
-            <h3 id="public-heading">Public Ledger State</h3>
-            <span class="privacy-col-tag public">On-Chain</span>
-          </div>
-          <ul class="privacy-list" role="list">
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>isEligible</strong> — boolean only (true/false)</li>
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>minCreditScore</strong> — the threshold value</li>
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>minAnnualIncome</strong> — the threshold value</li>
-            <li class="privacy-item"><span aria-hidden="true">●</span> <strong>verificationCount</strong> — total proof count</li>
-          </ul>
-          <div class="privacy-code">
-            <div class="code-comment">// Compact ledger declaration</div>
-            <div><span class="code-key">export ledger</span> <span class="code-var">isEligible</span>: <span class="code-type">Boolean</span>;</div>
-            <div><span class="code-key">export ledger</span> <span class="code-var">minCreditScore</span>: <span class="code-type">Uint&lt;32&gt;</span>;</div>
-            <div><span class="code-key">export ledger</span> <span class="code-var">verificationCount</span>: <span class="code-type">Uint&lt;64&gt;</span>;</div>
-          </div>
+          <h2 id="profile-heading" class="text-2xl sm:text-3xl lg:text-4xl font-normal tracking-tight text-white">Your Privacy Profile</h2>
+          <p class="text-xs sm:text-sm text-white/60 mt-1.5 max-w-xl">
+            Manage your connected Midnight Lace wallet, review verified zero-knowledge credentials, and export cryptographic attestations.
+          </p>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ─── Profile & ZK Credentials Section ───────────────────────────── -->
-  <section class="section pt-28" id="profile" data-app-page="profile" aria-labelledby="profile-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-tag">User Identity & ZK Passport</span>
-        <h2 id="profile-heading" class="section-title">Your Privacy Profile</h2>
-        <p class="section-sub">Manage your connected Midnight Lace wallet, view verified zero-knowledge credentials, and export privacy attestations.</p>
-      </div>
-
-      <div class="profile-grid">
-        <!-- Identity & Wallet Overview Card -->
-        <div class="glass-card profile-card">
-          <div class="profile-user-header">
-            <div class="profile-avatar">
-              <img id="profile-page-avatar" src="" alt="Profile avatar" referrerpolicy="no-referrer" />
-              <span class="avatar-status-dot" id="profile-status-dot"></span>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        
+        <!-- Wallet & Session Overview -->
+        <div class="verifier-terminal-card">
+          <div class="flex items-center gap-4 pb-6 border-b border-white/10">
+            <div class="relative">
+              <img id="profile-page-avatar" src="" alt="Avatar" class="w-14 h-14 rounded-full object-cover border border-white/20" referrerpolicy="no-referrer" />
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-black" id="profile-status-dot"></span>
             </div>
-            <div class="profile-user-info">
-              <h3 class="profile-username" id="profile-wallet-title">Lace Wallet Connected</h3>
-              <div class="profile-wallet-address mono" id="profile-wallet-addr">Loading...</div>
+            <div>
+              <h3 class="text-lg font-semibold text-white" id="profile-wallet-title">Lace Wallet Connected</h3>
+              <div class="font-mono text-xs text-white/60 mt-0.5 break-all" id="profile-wallet-addr">Loading...</div>
             </div>
           </div>
 
-          <div class="profile-meta-list">
-            <div class="profile-meta-item">
-              <span class="meta-label">Network Status</span>
-              <span class="meta-value network-tag">
-                <span class="pulse-dot"></span>
-                Midnight Preprod (testnet-02)
-              </span>
+          <div class="space-y-3 pt-6 font-mono text-xs">
+            <div class="flex items-center justify-between py-1 border-b border-white/5">
+              <span class="text-white/50">NETWORK</span>
+              <span class="text-emerald-400">Midnight Preprod (testnet-02)</span>
             </div>
-            <div class="profile-meta-item">
-              <span class="meta-label">Privacy Shield</span>
-              <span class="meta-value green-text">100% Zero-Knowledge Witness</span>
+            <div class="flex items-center justify-between py-1 border-b border-white/5">
+              <span class="text-white/50">PRIVACY SHIELD</span>
+              <span class="text-white">100% Shielded Witness</span>
             </div>
-            <div class="profile-meta-item">
-              <span class="meta-label">Session Witness Salt</span>
-              <span class="meta-value mono code-var" id="profile-witness-salt">32-Byte Private Salt</span>
+            <div class="flex items-center justify-between py-1 border-b border-white/5">
+              <span class="text-white/50">SALT BINDING</span>
+              <span class="text-white/80" id="profile-witness-salt">32-Byte CSPRNG Salt</span>
             </div>
-            <div class="profile-meta-item">
-              <span class="meta-label">Total ZK Verifications</span>
-              <span class="meta-value badge-count" id="profile-proof-count">0 Proofs</span>
+            <div class="flex items-center justify-between py-1">
+              <span class="text-white/50">TOTAL VERIFICATIONS</span>
+              <span class="text-white font-bold" id="profile-proof-count">0 Proofs</span>
             </div>
           </div>
         </div>
 
         <!-- ZK Credential Passport Card -->
-        <div class="glass-card passport-card">
-          <div class="passport-header">
-            <div class="passport-brand">
-              <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-                <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#a78bfa" stroke-width="2"/>
-              </svg>
-              <span>MIDNIGHT ZK PASSPORT</span>
+        <div class="verifier-terminal-card flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-4 border-b border-white/10">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs uppercase tracking-wider text-white">MIDNIGHT ZK PASSPORT</span>
+              </div>
+              <span class="font-mono text-[10px] uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">SEALED WITNESS</span>
             </div>
-            <span class="passport-seal">SEALED WITNESS</span>
+
+            <div class="py-6 space-y-3.5">
+              <div class="p-3.5 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-between">
+                <div>
+                  <div class="font-mono text-[9px] text-white/40 uppercase tracking-widest">Attribute 01 &bull; Sealed</div>
+                  <div class="text-xs text-white/90 font-medium mt-0.5">Age Gate Threshold</div>
+                </div>
+                <span class="font-mono text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full" id="pass-age-val">&ge; 21 Years Verified</span>
+              </div>
+              <div class="p-3.5 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-between">
+                <div>
+                  <div class="font-mono text-[9px] text-white/40 uppercase tracking-widest">Attribute 02 &bull; Sealed</div>
+                  <div class="text-xs text-white/90 font-medium mt-0.5">Credit Gate Threshold</div>
+                </div>
+                <span class="font-mono text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full" id="pass-credit-val">&ge; 700 Score Verified</span>
+              </div>
+              <div class="p-3.5 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-between">
+                <div>
+                  <div class="font-mono text-[9px] text-white/40 uppercase tracking-widest">Attribute 03 &bull; Sealed</div>
+                  <div class="text-xs text-white/90 font-medium mt-0.5">Income Gate Threshold</div>
+                </div>
+                <span class="font-mono text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full" id="pass-income-val">&ge; $50,000 Verified</span>
+              </div>
+            </div>
           </div>
 
-          <div class="passport-body">
-            <div class="passport-title">Option 2 Financial & Age Compliance</div>
-            <div class="passport-chip">
-              <div class="chip-graphic"></div>
-              <span class="chip-text">Compact PLONK ZK-SNARK</span>
-            </div>
-
-            <div class="passport-attributes">
-              <div class="pass-attr">
-                <span class="attr-title">Age Gate</span>
-                <span class="attr-val pass" id="pass-age-val">≥ 21 Years Verified</span>
-              </div>
-              <div class="pass-attr">
-                <span class="attr-title">Credit Gate</span>
-                <span class="attr-val pass" id="pass-credit-val">≥ 700 Score Verified</span>
-              </div>
-              <div class="pass-attr">
-                <span class="attr-title">Income Gate</span>
-                <span class="attr-val pass" id="pass-income-val">≥ $50,000 Verified</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="passport-footer">
-            <button id="export-attestation-btn" class="btn-primary btn-passport">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>Export ZK Attestation</span>
+          <div class="pt-4 border-t border-white/10 flex items-center justify-between">
+            <button id="export-attestation-btn" class="btn-primary !py-2.5 !text-xs group flex items-center gap-3">
+              <span class="font-semibold">Export ZK Attestation</span>
+              <span class="w-6 h-6 rounded-full bg-black flex items-center justify-center text-white btn-arrow-circle">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </span>
             </button>
-            <span id="export-toast" class="export-toast" hidden>✓ Copied JSON Attestation!</span>
+            <span id="export-toast" class="text-xs text-emerald-400 font-mono" hidden>✓ Copied JSON!</span>
           </div>
         </div>
+
       </div>
 
-      <div class="glass-card profile-editor-card">
-        <div class="audit-header">
-          <div><h3>Account details</h3><p class="panel-sub">The same profile shape is used for manual and Google accounts. Google supplies only consented name, email, verified-email status, locale, and avatar data.</p></div>
-          <span id="profile-provider-chip" class="audit-badge">Manual account</span>
+      <!-- Account Profile Editor Form -->
+      <div class="verifier-terminal-card mb-8">
+        <div class="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Account Details</h3>
+            <p class="text-xs text-white/50 mt-0.5">Manage your user profile and notification preferences</p>
+          </div>
+          <span id="profile-provider-chip" class="font-mono text-[10px] text-white/60 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">Manual account</span>
         </div>
-        <form id="profile-editor-form" class="profile-editor-grid">
-          <label>First name <input id="profile-first-name" class="form-input" maxlength="60" autocomplete="given-name" /></label>
-          <label>Last name <input id="profile-last-name" class="form-input" maxlength="60" autocomplete="family-name" /></label>
-          <label>Display name <input id="profile-display-name" class="form-input" maxlength="100" autocomplete="nickname" /></label>
-          <label>Locale <input id="profile-locale" class="form-input" maxlength="20" autocomplete="language" placeholder="en" /></label>
-          <div class="profile-editor-meta"><span>Email</span><strong id="profile-email-value">Sign in to view</strong></div>
-          <div class="profile-editor-meta"><span>Email status</span><strong id="profile-email-verified">—</strong></div>
-          <button class="btn-primary" type="submit">Save profile</button>
-          <p id="profile-editor-status" class="form-alert" hidden></p>
+        <form id="profile-editor-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">First Name</label>
+            <input id="profile-first-name" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">Last Name</label>
+            <input id="profile-last-name" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">Display Name</label>
+            <input id="profile-display-name" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 mb-1">Locale</label>
+            <input id="profile-locale" placeholder="en" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" />
+          </div>
+          <div class="sm:col-span-2 flex items-center justify-between text-xs py-2 text-white/60 font-mono">
+            <span>Email: <strong id="profile-email-value" class="text-white">Sign in to view</strong></span>
+            <span>Status: <strong id="profile-email-verified" class="text-emerald-400">—</strong></span>
+          </div>
+          <div class="sm:col-span-2">
+            <button class="btn-primary !py-2.5 !text-xs" type="submit">Save Profile</button>
+            <p id="profile-editor-status" class="mt-2 text-xs font-mono" hidden></p>
+          </div>
         </form>
       </div>
 
-      <!-- Proof Audit Log Table -->
-      <div class="glass-card audit-log-card">
-        <div class="audit-header">
-          <h3>On-Chain Verification Audit Log</h3>
-          <span class="audit-badge">Live Preprod Indexer</span>
+      <!-- Verification Audit Log Table -->
+      <div class="verifier-terminal-card">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+          <h3 class="text-base font-semibold text-white">On-Chain Verification Audit Log</h3>
+          <span class="font-mono text-xs text-white/50">Live Preprod Indexer</span>
         </div>
-        <div class="table-responsive">
-          <table class="audit-table">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
             <thead>
-              <tr>
-                <th>Circuit Called</th>
-                <th>Outcome (Public)</th>
-                <th>Private Witness Protection</th>
-                <th>Transaction Hash</th>
-                <th>Time</th>
+              <tr class="border-b border-white/10 text-white/40 pb-2">
+                <th class="py-2.5">Circuit</th>
+                <th class="py-2.5">Outcome</th>
+                <th class="py-2.5">Witness Protection</th>
+                <th class="py-2.5">Tx Hash</th>
+                <th class="py-2.5">Timestamp</th>
               </tr>
             </thead>
-            <tbody id="audit-table-body">
+            <tbody id="audit-table-body" class="divide-y divide-white/5 text-white/80">
               <tr id="empty-audit-row">
-                <td colspan="5" style="text-align: center; color: var(--gray-400); padding: 1.5rem;">No proof verifications recorded yet. Click "Generate ZK Proof" to initiate.</td>
+                <td colspan="5" class="py-8 text-center text-white/40">No proofs generated yet. Click "Generate ZK Proof" on the verifier to initiate.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ─── How It Works Section ────────────────────────────────────── -->
-  <section class="section" id="architecture" data-app-page="home" aria-labelledby="how-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-tag">Zero-Knowledge Architecture</span>
-        <h2 id="how-heading" class="section-title">How It Works</h2>
-        <p class="section-subtitle">Your sensitive data never leaves your browser. Only a cryptographic proof of eligibility is submitted on-chain.</p>
-      </div>
-      <div class="setup-grid">
-        <div class="setup-step">
-          <div class="setup-step-num" aria-hidden="true">1</div>
-          <div class="setup-step-body">
-            <h3>Private Witness (Local Only)</h3>
-            <p style="color: var(--gray-300); line-height: 1.7; margin-top: 0.5rem;">Your age, credit score, and income are entered locally in your browser. They are passed as <strong>private witness inputs</strong> to the Compact ZK circuit &mdash; they are never serialized, never sent to any server, and never appear in any transaction payload.</p>
-          </div>
-        </div>
-        <div class="setup-step">
-          <div class="setup-step-num" aria-hidden="true">2</div>
-          <div class="setup-step-body">
-            <h3>PLONK ZK Circuit Evaluation</h3>
-            <p style="color: var(--gray-300); line-height: 1.7; margin-top: 0.5rem;">The Compact smart contract circuit evaluates <code style="background: rgba(124,58,237,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace;">age &ge; 21 &amp;&amp; creditScore &ge; 700 &amp;&amp; income &ge; $50k</code> inside a PLONK zk-SNARK constraint system. The proof is generated without revealing any of the private values.</p>
-          </div>
-        </div>
-        <div class="setup-step">
-          <div class="setup-step-num" aria-hidden="true">3</div>
-          <div class="setup-step-body">
-            <h3>Selective Disclosure On-Chain</h3>
-            <p style="color: var(--gray-300); line-height: 1.7; margin-top: 0.5rem;">Only <code style="background: rgba(6,182,212,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace;">isEligible: true/false</code> is disclosed to the Midnight public ledger via <code style="background: rgba(6,182,212,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace;">disclose()</code>. Any observer can verify the result &mdash; but cannot learn your actual age, score, or income.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ─── Split-Screen Sign-In Page (Dark Glass Aesthetic) ────────────── -->
-  <section class="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#07060b] text-white relative pt-20 lg:pt-0" id="auth-page" data-app-page="auth">
-    <!-- Ambient glows -->
-    <div class="absolute top-1/4 left-10 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-    <!-- Left Half: Centered Login Card (~360px wide) -->
-    <div class="flex items-center justify-center p-6 sm:p-12 relative z-10">
-      <div class="w-full max-w-[380px] space-y-6 bg-[#0a0716]/94 backdrop-blur-2xl border border-purple-500/25 p-8 rounded-3xl shadow-[0_16px_48px_rgba(124,58,237,0.15)]">
-        
-        <!-- Logo -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.3)]">
-            <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
-              <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#a78bfa" stroke-width="2.5" fill="none"/>
-              <path d="M10 14l3 3 5-5" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <span class="text-xl font-black tracking-tight text-white block">AegisID</span>
-            <span class="text-[10px] font-mono text-purple-400 tracking-wider uppercase">ZkCred Auth</span>
-          </div>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PAGE: AUTHENTICATION
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="min-h-screen flex items-center justify-center px-6 pt-24 pb-16" id="auth-page" data-app-page="auth">
+      <div class="w-full max-w-md verifier-terminal-card">
+        <div class="text-center pb-6 border-b border-white/10 mb-6">
+          <div class="glass-badge-left inline-block mb-3">Security Access</div>
+          <h2 class="text-2xl font-light text-white">Account Access</h2>
+          <p class="text-xs text-white/50 mt-1">Sign in to sync your ZK proof audit logs across devices.</p>
         </div>
 
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Welcome back</h1>
-          <p class="text-xs text-neutral-400 mt-1">Sign in to access your Zero-Knowledge verified credentials.</p>
-        </div>
-
-        <!-- Form -->
-        <form class="space-y-4" onsubmit="event.preventDefault();">
-          <div>
-            <label class="block text-xs font-semibold text-purple-300 mb-1.5 font-mono" for="auth-page-email">EMAIL ADDRESS</label>
-            <input type="email" id="auth-page-email" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-[#070510] border border-purple-500/30 rounded-xl text-sm text-white placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 transition-all shadow-inner" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-purple-300 mb-1.5 font-mono" for="auth-page-password">PASSWORD</label>
-            <input type="password" id="auth-page-password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-[#070510] border border-purple-500/30 rounded-xl text-sm text-white placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 transition-all shadow-inner" />
-          </div>
-
-          <!-- "Remember me" checkbox with "Forgot password?" link on the same row -->
-          <div class="flex items-center justify-between text-xs">
-            <label class="flex items-center gap-2 cursor-pointer text-neutral-400 hover:text-neutral-300">
-              <input type="checkbox" class="w-4 h-4 rounded bg-[#070510] border-purple-500/30 text-purple-600 focus:ring-purple-500 focus:ring-offset-neutral-950" />
-              <span>Remember me</span>
-            </label>
-            <a href="#/home" class="font-medium text-purple-400 hover:text-purple-300 transition-colors">Forgot password?</a>
-          </div>
-
-          <!-- Full-width Primary Button -->
-          <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-sm rounded-xl shadow-[0_0_20px_rgba(124,58,237,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99]">
-            Sign In
-          </button>
-        </form>
-
-        <!-- Divider -->
-        <div class="relative flex items-center justify-center">
-          <div class="border-t border-purple-500/20 w-full"></div>
-          <span class="bg-[#0e091f] px-3 text-[11px] font-mono text-purple-400 uppercase tracking-wider absolute">or</span>
-        </div>
-
-        <!-- "Continue with Google" Outline Button -->
-        <button id="auth-page-google-btn" class="w-full py-2.5 px-4 bg-[#070510] hover:bg-purple-950/40 border border-purple-500/30 text-neutral-200 font-semibold text-sm rounded-xl flex items-center justify-center gap-3 transition-all hover:border-purple-400">
+        <button id="auth-page-google-btn" class="w-full py-3 px-4 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl text-white text-sm font-medium flex items-center justify-center gap-3 transition-all mb-4">
           <svg class="w-4 h-4" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
-            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.4 0 15.3s.7 5.6 1.9 8l3.7-2.9z"/>
-            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
-          </svg>
-          <span>Continue with Google</span>
-        </button>
-
-        <p class="text-center text-xs text-neutral-500 pt-1">
-          Don't have an account? <a href="#/home" class="text-purple-400 hover:underline">Explore AegisID</a>
-        </p>
-
-      </div>
-    </div>
-
-    <!-- Right Half: Solid Brand-Colored Panel (Hidden below lg breakpoint) -->
-    <div class="hidden lg:flex flex-col justify-between p-16 bg-gradient-to-br from-purple-950 via-[#0b0817] to-[#07060b] relative overflow-hidden border-l border-purple-500/20">
-      <!-- Glow ambient background -->
-      <div class="absolute -top-24 -right-24 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-24 -left-24 w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div class="relative z-10">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30 font-mono shadow-[0_0_15px_rgba(124,58,237,0.2)]">
-          ✨ AegisID ZkCred Protocol
-        </div>
-      </div>
-
-      <div class="relative z-10 max-w-lg space-y-8">
-        <h2 class="text-4xl sm:text-5xl font-black tracking-tight leading-tight text-white">
-          Financial Verification,<br/>
-          <span class="bg-gradient-to-r from-purple-300 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Reimagined with Privacy.</span>
-        </h2>
-        
-        <!-- Short Testimonial -->
-        <blockquote class="p-6 bg-[#0a0716]/92 backdrop-blur-2xl rounded-2xl border border-purple-500/25 space-y-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
-          <p class="text-sm italic text-neutral-200 leading-relaxed">
-            "AegisID allowed us to prove our income and credit score for financial eligibility without disclosing a single line of raw private data on-chain."
-          </p>
-          <footer class="flex items-center gap-3 text-xs pt-1 border-t border-purple-500/15">
-            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center font-bold text-white shadow-md">
-              SG
-            </div>
-            <div>
-              <div class="font-bold text-white">Somenath Gorai</div>
-              <div class="text-purple-300/70 font-mono text-[11px]">Midnight Ecosystem Lead</div>
-            </div>
-          </footer>
-        </blockquote>
-      </div>
-
-      <div class="relative z-10 text-xs text-purple-300/60 flex items-center justify-between font-mono">
-        <span>&copy; 2026 AEGISID ZKCRED</span>
-        <span>MIDNIGHT NETWORK PREPROD</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── Statement Footer (Dark Glass Aesthetic) ────────────────────── -->
-  <footer class="bg-[#080612]/95 text-slate-200 mt-24 border-t border-purple-500/20 overflow-hidden relative backdrop-blur-xl" role="contentinfo">
-    <!-- Ambient Radial Glow Effects -->
-    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-20 right-10 w-[400px] h-[200px] bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-    <div class="max-w-7xl mx-auto px-6 sm:px-10 pt-16 sm:pt-20 pb-10 sm:pb-14 relative z-10">
-      
-      <!-- Compact Top Row -->
-      <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-10 pb-12 sm:pb-16 border-b border-purple-500/20">
-        
-        <!-- 3 Link Groups Laid Out Horizontally -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-14 md:gap-20">
-          
-          <!-- Group 1: Protocol -->
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-purple-400/80 mb-4 font-mono">Protocol</h3>
-            <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="https://midnight.network" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Midnight Network</a></li>
-              <li><a href="#how-it-works" class="text-neutral-300 hover:text-cyan-400 transition-colors">ZK Verification</a></li>
-              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Compact Smart Contract</a></li>
-            </ul>
-          </div>
-
-          <!-- Group 2: Ecosystem -->
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-purple-400/80 mb-4 font-mono">Ecosystem</h3>
-            <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">GitHub Repository</a></li>
-              <li><a href="https://youtu.be/InI_dsrYqFY" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Demo Video</a></li>
-              <li><a href="https://zkcred-api.onrender.com/api/verifications" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">REST API</a></li>
-            </ul>
-          </div>
-
-          <!-- Group 3: Community -->
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-purple-400/80 mb-4 font-mono">Community</h3>
-            <ul class="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="https://x.com/ZkCredapp" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">@ZkCredapp</a></li>
-              <li><a href="https://forum.midnight.network" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Midnight Forum</a></li>
-              <li><a href="https://discord.gg/midnight" target="_blank" rel="noopener" class="text-neutral-300 hover:text-cyan-400 transition-colors">Discord Community</a></li>
-            </ul>
-          </div>
-
-        </div>
-
-        <!-- Back to Top Link on the Right -->
-        <div class="flex items-start lg:justify-end pt-2 lg:pt-0">
-          <a href="#top" class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 text-xs font-bold tracking-widest uppercase text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 hover:shadow-[0_0_15px_rgba(124,58,237,0.3)] transition-all group">
-            <span>Back to top</span>
-            <span class="text-sm group-hover:-translate-y-1 transition-transform inline-block">↑</span>
-          </a>
-        </div>
-
-      </div>
-
-      <!-- Small Legal Line Above Wordmark -->
-      <div class="pt-8 sm:pt-10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] sm:text-xs font-medium tracking-wide text-neutral-400 uppercase gap-2 font-mono">
-        <div>&copy; 2026 AEGISID &middot; ZKCRED PROTOCOL. BUILT ON MIDNIGHT NETWORK. ALL RIGHTS RESERVED.</div>
-        <div class="flex items-center gap-2 text-neutral-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block shadow-[0_0_8px_#34d399]"></span>
-          <span class="text-emerald-400 font-semibold">PREPROD LIVE</span>
-          <span class="text-neutral-600">&middot;</span>
-          <span>SELECTIVE DISCLOSURE</span>
-        </div>
-      </div>
-
-      <!-- Enormous Fully Visible Brand Wordmark -->
-      <div class="overflow-hidden select-none pointer-events-none -mx-6 sm:-mx-10 pt-4 pb-2">
-        <h2 class="text-[12vw] sm:text-[12.5vw] font-black tracking-tighter leading-none uppercase text-center whitespace-nowrap bg-gradient-to-b from-purple-300/40 via-purple-400/20 to-purple-900/10 bg-clip-text text-transparent">
-          AEGISID &middot; ZKCRED
-        </h2>
-      </div>
-
-    </div>
-  </footer>
-
-  <!-- ─── Lace Extension Download Required Modal ───────────────────────── -->
-  <div id="lace-download-modal" class="modal-overlay" aria-hidden="true" hidden>
-    <div class="modal-card">
-      <button class="modal-close" id="lace-modal-close" aria-label="Close modal">✕</button>
-      <div class="modal-icon warning-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      </div>
-      <h3 class="modal-title">Lace Wallet Required</h3>
-      <p class="modal-desc">
-        Midnight Network smart contracts and ZK proof verifications require the <strong>Lace Wallet Extension</strong>.
-        Install or unlock Lace, then select a Midnight wallet before trying again.
-      </p>
-      <ul class="wallet-troubleshooting" aria-label="Lace connection troubleshooting">
-        <li>Open the Lace extension and unlock it.</li>
-        <li>Create or select a Midnight Network wallet.</li>
-        <li>Refresh this page after installing or updating Lace.</li>
-      </ul>
-      <div class="modal-actions">
-        <a href="https://www.lace.io/" target="_blank" rel="noopener noreferrer" class="btn-primary modal-download-btn">
-          <span>Download Lace Extension ↗</span>
-        </a>
-        <button id="btn-retry-lace" class="btn-ghost">Try Again</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── Authentication & User Profile Modal ──────────────────────────── -->
-  <div id="auth-modal" class="modal-overlay" aria-hidden="true" hidden>
-    <div class="modal-card auth-modal-card">
-      <button class="modal-close" id="auth-modal-close" aria-label="Close auth modal">✕</button>
-      <h3 class="modal-title">Account Access</h3>
-      <p class="modal-desc">Sign in or register to sync your ZK proof audit logs.</p>
-
-      <!-- Unified Manual Auth Form (Sign In / Register) -->
-      <form id="manual-auth-form" class="auth-unified-form" onsubmit="return false;">
-        <div class="auth-mode-toggle">
-          <span id="auth-mode-text">Don't have an account?</span>
-          <button id="btn-toggle-auth-mode" type="button" class="btn-link">Switch to Register</button>
-        </div>
-
-        <div class="form-group" id="group-name" hidden>
-          <label for="input-auth-name">Full Name</label>
-          <input type="text" id="input-auth-name" class="form-input" placeholder="Satoshi Nakamoto" />
-        </div>
-
-        <div class="form-group">
-          <label for="input-auth-email">Email Address</label>
-          <input type="email" id="input-auth-email" class="form-input" placeholder="user@zkcred.io" required />
-        </div>
-
-        <div class="form-group">
-          <label for="input-auth-password">Password</label>
-          <input type="password" id="input-auth-password" class="form-input" placeholder="••••••••" required />
-        </div>
-
-        <div id="auth-alert" class="auth-alert" hidden></div>
-
-        <button id="btn-submit-manual-auth" type="submit" class="btn-primary btn-auth-submit">
-          <span id="manual-auth-btn-text">Sign In</span>
-        </button>
-      </form>
-
-      <!-- Horizontal Divider -->
-      <div class="auth-divider">
-        <span>or continue with</span>
-      </div>
-
-      <!-- Google OAuth Sign In Button at Bottom -->
-      <div class="google-auth-box">
-        <div id="google-auth-alert" class="auth-alert" hidden></div>
-
-        <button id="google-oauth-popup-btn" class="btn-google-auth" type="button">
-          <svg class="google-logo" width="20" height="20" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
-          <span id="google-oauth-btn-text">Sign in with Google</span>
+          Continue with Google
         </button>
+
+        <div class="text-center">
+          <a href="#/home" class="text-xs text-white/50 hover:text-white transition-colors">&larr; Return to Home</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────────────────── -->
+  <footer class="relative z-10 border-t border-white/10 bg-[#0a0a0a]/90 backdrop-blur-md py-12 px-6 sm:px-12 text-xs text-white/50">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <span class="font-semibold text-white">AegisID</span>
+        <span class="text-white/30">|</span>
+        <span>Zero-Knowledge Proofs on Midnight Network Preprod</span>
+      </div>
+      <div class="flex items-center gap-6 font-mono text-[11px]">
+        <a href="https://github.com/Sov-ereign/ZkCred" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub Repository</a>
+        <a href="https://indexer.preprod.midnight.network/api/v3/graphql" target="_blank" rel="noopener" class="hover:text-white transition-colors">Midnight Indexer</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Modals ──────────────────────────────────────────────────────── -->
+
+  <!-- Lace Download Required Modal -->
+  <div id="lace-download-modal" class="modal-overlay" aria-hidden="true" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="lace-modal-close" aria-label="Close">✕</button>
+      <div class="glass-badge-left !text-[10px] mb-3">Extension Required</div>
+      <h3 class="text-xl font-semibold text-white mb-2">Midnight Lace Wallet Required</h3>
+      <p class="text-xs sm:text-sm text-white/70 leading-relaxed mb-6">
+        Midnight Network smart contracts and zero-knowledge proof generation require the <strong>Midnight Lace Wallet</strong> browser extension. Install or unlock Lace, then select a Midnight Preprod account to proceed.
+      </p>
+      <div class="flex items-center gap-3">
+        <a href="https://www.lace.io/" target="_blank" rel="noopener noreferrer" class="btn-primary !py-2.5 !text-xs">
+          Download Lace Extension ↗
+        </a>
+        <button id="btn-retry-lace" class="btn-secondary !py-2.5 !text-xs">Retry Connection</button>
       </div>
     </div>
   </div>
 
-  <!-- ─── ZK Proof Environment Setup Guide Modal ──────────────────────────── -->
+  <!-- Unified Auth Modal -->
+  <div id="auth-modal" class="modal-overlay" aria-hidden="true" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="auth-modal-close" aria-label="Close">✕</button>
+      <div class="glass-badge-left !text-[10px] mb-2">Access Portal</div>
+      <h3 class="text-xl font-semibold text-white mb-1">Account Access</h3>
+      <p class="text-xs text-white/60 mb-6">Sign in or register to sync your ZK proof audit records.</p>
+
+      <form id="manual-auth-form" class="space-y-4" onsubmit="return false;">
+        <div class="flex items-center justify-between text-xs pb-1">
+          <span id="auth-mode-text" class="text-white/60">Don't have an account?</span>
+          <button id="btn-toggle-auth-mode" type="button" class="text-white underline hover:text-white/80">Switch to Register</button>
+        </div>
+
+        <div id="group-name" hidden>
+          <label class="block text-xs font-mono text-white/60 mb-1">Full Name</label>
+          <input type="text" id="input-auth-name" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" placeholder="Satoshi Nakamoto" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 mb-1">Email Address</label>
+          <input type="email" id="input-auth-email" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" placeholder="user@zkcred.io" required />
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 mb-1">Password</label>
+          <input type="password" id="input-auth-password" class="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white" placeholder="••••••••" required />
+        </div>
+
+        <div id="auth-alert" class="text-xs text-rose-400 font-mono py-1" hidden></div>
+
+        <button id="btn-submit-manual-auth" type="submit" class="btn-primary w-full !py-2.5 !text-xs">
+          <span id="manual-auth-btn-text">Sign In</span>
+        </button>
+      </form>
+
+      <div class="relative my-6 text-center text-xs text-white/40">
+        <span class="bg-[#0f0f0f] px-3 relative z-10">or continue with</span>
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
+      </div>
+
+      <div id="google-auth-alert" class="text-xs text-rose-400 font-mono mb-2" hidden></div>
+      <button id="google-oauth-popup-btn" class="w-full py-2.5 px-4 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl text-white text-xs font-medium flex items-center justify-center gap-2.5 transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span id="google-oauth-btn-text">Sign in with Google</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Local Proof Server Setup Modal -->
   <div id="proof-setup-modal" class="modal-overlay" aria-hidden="true" hidden>
-    <div class="modal-card proof-setup-modal-card">
-      <button class="modal-close" id="proof-setup-modal-close" aria-label="Close setup modal">✕</button>
+    <div class="modal-card !max-w-xl">
+      <button class="modal-close" id="proof-setup-modal-close" aria-label="Close">✕</button>
+      <div class="glass-badge-left !text-[10px] mb-3">ZK Prover Environment</div>
+      <h3 class="text-xl font-semibold text-white mb-1">Local Proof Server Guide</h3>
+      <p class="text-xs sm:text-sm text-white/60 mb-6">Required for generating zero-knowledge proofs on Midnight Preprod.</p>
 
-      <div class="proof-setup-header">
-        <div class="proof-setup-badge">
-          <span class="badge-pulse"></span>
-          <span>⚡ ZK Proof Environment Setup</span>
-        </div>
-        <h2 class="proof-setup-title">Local Proof Server Guide</h2>
-        <p class="proof-setup-subtitle">
-          Required for generating & submitting Zero-Knowledge Proofs on Midnight Preprod.
-        </p>
-      </div>
-
-      <!-- Setup Notice Box -->
-      <div class="setup-notice-box">
-        <div class="notice-header">
-          <svg class="w-5 h-5 text-amber-400 shrink-0 inline-block mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <span class="notice-title">Using ZkCred on Vercel (<a href="https://zk-cred.vercel.app" target="_blank" rel="noopener" class="notice-link">https://zk-cred.vercel.app</a>)</span>
-        </div>
-        <p class="notice-body">
-          You <strong>can</strong> use Vercel and connect your Midnight Lace Wallet seamlessly! However, when using the default remote proof server, the ZK architecture <strong>may or may not work</strong> depending on network traffic and payload limits. To <strong>guarantee</strong> 100% reliable Zero-Knowledge proof generation, run the local proof server container on <code>port 6300</code> and point Lace Wallet to <code>http://localhost:6300</code>.
-        </p>
-      </div>
-
-      <!-- Capabilities Comparison Callout -->
-      <div class="capabilities-grid">
-        <div class="cap-card cap-limited">
-          <div class="cap-header">
-            <span class="cap-icon">⚠️</span>
-            <span class="cap-title">With Default Remote Server</span>
+      <div class="space-y-4 text-xs">
+        <div class="p-4 bg-white/5 border border-white/10 rounded-xl space-y-2">
+          <div class="font-semibold text-white">1. Run Docker Proof Server Container</div>
+          <div class="flex items-center justify-between gap-2 p-2.5 bg-black/60 border border-white/15 rounded-lg font-mono text-[11px]">
+            <code class="text-white/90 overflow-x-auto">docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0</code>
+            <button class="btn-copy-code btn-ghost !px-2.5 !py-1 !text-[10px]" data-code="docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0">Copy</button>
           </div>
-          <div class="cap-desc">Lace Wallet connects successfully, but ZK proof generation <strong>may or may not work</strong> due to remote payload limits.</div>
         </div>
-        <div class="cap-card cap-full">
-          <div class="cap-header">
-            <span class="cap-icon">⚡</span>
-            <span class="cap-title">With Localhost:6300 (Guaranteed)</span>
-          </div>
-          <div class="cap-desc">Guarantees 100% reliable <strong>Zero-Knowledge Proof</strong> generation & on-chain submission directly on Vercel or local dev!</div>
+
+        <div class="p-4 bg-white/5 border border-white/10 rounded-xl space-y-2">
+          <div class="font-semibold text-white">2. Point Midnight Lace to Port 6300</div>
+          <p class="text-white/70 leading-relaxed">
+            In Midnight Lace Wallet extension: Open <strong>Settings</strong> &rarr; <strong>Network</strong> &rarr; set <strong>Proof Server URL</strong> to <code>http://localhost:6300</code>.
+          </p>
         </div>
       </div>
 
-      <!-- Step by Step Setup Instructions -->
-      <div class="setup-steps-container">
-        <h4 class="steps-heading">Quick Setup to enable ZK Proofs on Vercel or Localhost:</h4>
-
-        <div class="setup-step-item">
-          <div class="step-num">1</div>
-          <div class="step-content">
-            <div class="step-title">Run Midnight Proof Server Container</div>
-            <div class="code-block-wrapper">
-              <code>docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0</code>
-              <button class="btn-copy-code" data-code="docker run -p 6300:6300 midnightnetwork/proof-server:3.0.0">Copy</button>
-            </div>
-            <div class="step-text" style="margin-top: 0.35rem;">
-              *(Ensure Docker Desktop is running on your machine)*
-            </div>
-          </div>
-        </div>
-
-        <div class="setup-step-item">
-          <div class="step-num">2</div>
-          <div class="step-content">
-            <div class="step-title">Set Proof Server URL in Midnight Lace Wallet</div>
-            <div class="step-text">
-              In your Midnight Lace Wallet extension: Open <strong>Settings</strong> ➔ <strong>Network</strong> ➔ change <strong>Proof Server URL</strong> to <code>http://localhost:6300</code> (instead of <code>https://proof-server.preprod.midnight.network</code>).
-            </div>
-          </div>
-        </div>
-
-        <div class="setup-step-item">
-          <div class="step-num">3</div>
-          <div class="step-content">
-            <div class="step-title">Generate ZK Proofs on Vercel or Local Dev!</div>
-            <div class="step-text">
-              Once Lace Wallet is set to <code>http://localhost:6300</code>, you can generate & submit ZK proofs directly on <strong>https://zk-cred.vercel.app</strong>! Alternatively, developers can clone the repo (<code>git clone https://github.com/Sov-ereign/ZkCred.git</code>) and run <code>npm run dev</code>.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Modal Footer Controls -->
-      <div class="proof-setup-footer">
-        <label class="dont-show-option">
-          <input type="checkbox" id="chk-dont-show-proof-modal" />
+      <div class="pt-6 mt-6 border-t border-white/10 flex items-center justify-between">
+        <label class="flex items-center gap-2 text-xs text-white/50 cursor-pointer">
+          <input type="checkbox" id="chk-dont-show-proof-modal" class="rounded accent-white" />
           <span>Don't show this again</span>
         </label>
-
-        <button id="btn-close-proof-setup-modal" class="btn-primary btn-setup-close">
-          Got It, Continue
-        </button>
+        <button id="btn-close-proof-setup-modal" class="btn-primary !py-2 !text-xs">Got it, Continue</button>
       </div>
     </div>
   </div>
 
+  <!-- Rich User Profile Modal -->
+  <div id="user-profile-modal" class="modal-overlay" aria-hidden="true" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="profile-modal-close" aria-label="Close">✕</button>
+      <div class="flex items-center gap-4 pb-6 border-b border-white/10 mb-6">
+        <img id="modal-profile-avatar" src="" alt="Avatar" class="w-12 h-12 rounded-full object-cover border border-white/20" />
+        <div>
+          <h3 class="text-base font-semibold text-white" id="modal-profile-name">User Profile</h3>
+          <p class="text-xs text-white/50" id="modal-profile-email">user@zkcred.io</p>
+        </div>
+      </div>
 
-    <script type="module" src="/midnight-client.ts"></script>
-    <script type="module" src="/app.js"></script>
+      <div class="space-y-3 font-mono text-xs mb-6">
+        <div class="flex items-center justify-between py-1">
+          <span class="text-white/50">Wallet</span>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400" id="modal-wallet-status-dot"></span>
+            <span id="modal-wallet-addr-text" class="text-white truncate max-w-[180px]">Not connected</span>
+            <button id="modal-connect-wallet-btn" class="btn-ghost !px-2 !py-0.5 !text-[10px]">Connect</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-1 border-t border-white/5">
+          <span class="text-white/50">Proofs Generated</span>
+          <span id="modal-proof-count-stat" class="text-white font-bold">0</span>
+        </div>
+      </div>
+
+      <div class="border-t border-white/10 pt-4 flex justify-between items-center">
+        <button id="btn-modal-logout" class="btn-ghost !text-rose-400 !border-rose-500/30 hover:!bg-rose-500/10 !py-1.5 !text-xs">Sign Out</button>
+      </div>
+      <table class="hidden"><tbody id="modal-activity-body"></tbody></table>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="/midnight-client.ts"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
