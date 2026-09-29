@@ -33,7 +33,7 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-a
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://zk-cred.vercel.app";
 
 // Midnight Network config
-const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6";
+const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7";
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || DEPLOYED_PREPROD_CONTRACT_ADDRESS;
 const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
 // Proof server runs locally via Docker: docker compose up -d (see docker-compose.yml)

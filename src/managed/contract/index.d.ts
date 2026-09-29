@@ -6,8 +6,6 @@ export type Witnesses<PS> = {
   getPrivateAge(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, bigint];
   getPrivateSalt(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
   getPrivateAdminKey(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
-  getPrivateIssuerKey(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
-  getPrivateCredentialToken(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
 }
 
 export type ImpureCircuits<PS> = {
@@ -15,8 +13,7 @@ export type ImpureCircuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminKeyHash_0: Uint8Array,
-             issuerKeyHashParam_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+             adminKeyHash_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
                    newMinCreditScore_0: bigint,
@@ -32,8 +29,7 @@ export type ProvableCircuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminKeyHash_0: Uint8Array,
-             issuerKeyHashParam_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+             adminKeyHash_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
                    newMinCreditScore_0: bigint,
@@ -52,8 +48,7 @@ export type Circuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminKeyHash_0: Uint8Array,
-             issuerKeyHashParam_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+             adminKeyHash_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
                    newMinCreditScore_0: bigint,
@@ -83,7 +78,6 @@ export type Ledger = {
     member(elem_0: Uint8Array): boolean;
     [Symbol.iterator](): Iterator<Uint8Array>
   };
-  readonly issuerKeyHash: Uint8Array;
   readonly initialized: boolean;
 }
 

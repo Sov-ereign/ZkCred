@@ -76,71 +76,57 @@ export class Contract {
     if (typeof(witnesses_0.getPrivateAdminKey) !== 'function') {
       throw new __compactRuntime.CompactError('first (witnesses) argument to Contract constructor does not contain a function-valued field named getPrivateAdminKey');
     }
-    if (typeof(witnesses_0.getPrivateIssuerKey) !== 'function') {
-      throw new __compactRuntime.CompactError('first (witnesses) argument to Contract constructor does not contain a function-valued field named getPrivateIssuerKey');
-    }
-    if (typeof(witnesses_0.getPrivateCredentialToken) !== 'function') {
-      throw new __compactRuntime.CompactError('first (witnesses) argument to Contract constructor does not contain a function-valued field named getPrivateCredentialToken');
-    }
     this.witnesses = witnesses_0;
     this.circuits = {
       initialize: (...args_1) => {
-        if (args_1.length !== 6) {
-          throw new __compactRuntime.CompactError(`initialize: expected 6 arguments (as invoked from Typescript), received ${args_1.length}`);
+        if (args_1.length !== 5) {
+          throw new __compactRuntime.CompactError(`initialize: expected 5 arguments (as invoked from Typescript), received ${args_1.length}`);
         }
         const contextOrig_0 = args_1[0];
         const creditScoreThreshold_0 = args_1[1];
         const annualIncomeThreshold_0 = args_1[2];
         const ageThreshold_0 = args_1[3];
         const adminKeyHash_0 = args_1[4];
-        const issuerKeyHashParam_0 = args_1[5];
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('initialize',
                                      'argument 1 (as invoked from Typescript)',
-                                     'zkcred.compact line 100 char 1',
+                                     'zkcred.compact line 86 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(typeof(creditScoreThreshold_0) === 'bigint' && creditScoreThreshold_0 >= 0n && creditScoreThreshold_0 <= 4294967295n)) {
           __compactRuntime.typeError('initialize',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'zkcred.compact line 100 char 1',
+                                     'zkcred.compact line 86 char 1',
                                      'Uint<0..4294967296>',
                                      creditScoreThreshold_0)
         }
         if (!(typeof(annualIncomeThreshold_0) === 'bigint' && annualIncomeThreshold_0 >= 0n && annualIncomeThreshold_0 <= 18446744073709551615n)) {
           __compactRuntime.typeError('initialize',
                                      'argument 2 (argument 3 as invoked from Typescript)',
-                                     'zkcred.compact line 100 char 1',
+                                     'zkcred.compact line 86 char 1',
                                      'Uint<0..18446744073709551616>',
                                      annualIncomeThreshold_0)
         }
         if (!(typeof(ageThreshold_0) === 'bigint' && ageThreshold_0 >= 0n && ageThreshold_0 <= 4294967295n)) {
           __compactRuntime.typeError('initialize',
                                      'argument 3 (argument 4 as invoked from Typescript)',
-                                     'zkcred.compact line 100 char 1',
+                                     'zkcred.compact line 86 char 1',
                                      'Uint<0..4294967296>',
                                      ageThreshold_0)
         }
         if (!(adminKeyHash_0.buffer instanceof ArrayBuffer && adminKeyHash_0.BYTES_PER_ELEMENT === 1 && adminKeyHash_0.length === 32)) {
           __compactRuntime.typeError('initialize',
                                      'argument 4 (argument 5 as invoked from Typescript)',
-                                     'zkcred.compact line 100 char 1',
+                                     'zkcred.compact line 86 char 1',
                                      'Bytes<32>',
                                      adminKeyHash_0)
-        }
-        if (!(issuerKeyHashParam_0.buffer instanceof ArrayBuffer && issuerKeyHashParam_0.BYTES_PER_ELEMENT === 1 && issuerKeyHashParam_0.length === 32)) {
-          __compactRuntime.typeError('initialize',
-                                     'argument 5 (argument 6 as invoked from Typescript)',
-                                     'zkcred.compact line 100 char 1',
-                                     'Bytes<32>',
-                                     issuerKeyHashParam_0)
         }
         const context = { ...contextOrig_0, gasCost: __compactRuntime.emptyRunningCost() };
         const partialProofData = {
           input: {
-            value: _descriptor_3.toValue(creditScoreThreshold_0).concat(_descriptor_2.toValue(annualIncomeThreshold_0).concat(_descriptor_3.toValue(ageThreshold_0).concat(_descriptor_1.toValue(adminKeyHash_0).concat(_descriptor_1.toValue(issuerKeyHashParam_0))))),
-            alignment: _descriptor_3.alignment().concat(_descriptor_2.alignment().concat(_descriptor_3.alignment().concat(_descriptor_1.alignment().concat(_descriptor_1.alignment()))))
+            value: _descriptor_3.toValue(creditScoreThreshold_0).concat(_descriptor_2.toValue(annualIncomeThreshold_0).concat(_descriptor_3.toValue(ageThreshold_0).concat(_descriptor_1.toValue(adminKeyHash_0)))),
+            alignment: _descriptor_3.alignment().concat(_descriptor_2.alignment().concat(_descriptor_3.alignment().concat(_descriptor_1.alignment())))
           },
           output: undefined,
           publicTranscript: [],
@@ -151,8 +137,7 @@ export class Contract {
                                             creditScoreThreshold_0,
                                             annualIncomeThreshold_0,
                                             ageThreshold_0,
-                                            adminKeyHash_0,
-                                            issuerKeyHashParam_0);
+                                            adminKeyHash_0);
         partialProofData.output = { value: [], alignment: [] };
         return { result: result_0, context: context, proofData: partialProofData, gasCost: context.gasCost };
       },
@@ -164,7 +149,7 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('verifyEligibility',
                                      'argument 1 (as invoked from Typescript)',
-                                     'zkcred.compact line 129 char 1',
+                                     'zkcred.compact line 110 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
@@ -190,28 +175,28 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('updateThresholds',
                                      'argument 1 (as invoked from Typescript)',
-                                     'zkcred.compact line 192 char 1',
+                                     'zkcred.compact line 159 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(typeof(newMinCreditScore_0) === 'bigint' && newMinCreditScore_0 >= 0n && newMinCreditScore_0 <= 4294967295n)) {
           __compactRuntime.typeError('updateThresholds',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'zkcred.compact line 192 char 1',
+                                     'zkcred.compact line 159 char 1',
                                      'Uint<0..4294967296>',
                                      newMinCreditScore_0)
         }
         if (!(typeof(newMinAnnualIncome_0) === 'bigint' && newMinAnnualIncome_0 >= 0n && newMinAnnualIncome_0 <= 18446744073709551615n)) {
           __compactRuntime.typeError('updateThresholds',
                                      'argument 2 (argument 3 as invoked from Typescript)',
-                                     'zkcred.compact line 192 char 1',
+                                     'zkcred.compact line 159 char 1',
                                      'Uint<0..18446744073709551616>',
                                      newMinAnnualIncome_0)
         }
         if (!(typeof(newMinAge_0) === 'bigint' && newMinAge_0 >= 0n && newMinAge_0 <= 4294967295n)) {
           __compactRuntime.typeError('updateThresholds',
                                      'argument 3 (argument 4 as invoked from Typescript)',
-                                     'zkcred.compact line 192 char 1',
+                                     'zkcred.compact line 159 char 1',
                                      'Uint<0..4294967296>',
                                      newMinAge_0)
         }
@@ -241,7 +226,7 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('getEligibilityStatus',
                                      'argument 1 (as invoked from Typescript)',
-                                     'zkcred.compact line 212 char 1',
+                                     'zkcred.compact line 179 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
@@ -265,14 +250,14 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('checkNullifierEligible',
                                      'argument 1 (as invoked from Typescript)',
-                                     'zkcred.compact line 221 char 1',
+                                     'zkcred.compact line 188 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
         if (!(nullifier_0.buffer instanceof ArrayBuffer && nullifier_0.BYTES_PER_ELEMENT === 1 && nullifier_0.length === 32)) {
           __compactRuntime.typeError('checkNullifierEligible',
                                      'argument 1 (argument 2 as invoked from Typescript)',
-                                     'zkcred.compact line 221 char 1',
+                                     'zkcred.compact line 188 char 1',
                                      'Bytes<32>',
                                      nullifier_0)
         }
@@ -327,7 +312,6 @@ export class Contract {
     }
     const state_0 = new __compactRuntime.ContractState();
     let stateValue_0 = __compactRuntime.StateValue.newArray();
-    stateValue_0 = stateValue_0.arrayPush(__compactRuntime.StateValue.newNull());
     stateValue_0 = stateValue_0.arrayPush(__compactRuntime.StateValue.newNull());
     stateValue_0 = stateValue_0.arrayPush(__compactRuntime.StateValue.newNull());
     stateValue_0 = stateValue_0.arrayPush(__compactRuntime.StateValue.newNull());
@@ -439,16 +423,6 @@ export class Contract {
                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(8n),
                                                                                               alignment: _descriptor_9.alignment() }).encode() } },
                                        { push: { storage: true,
-                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_1.toValue(new Uint8Array(32)),
-                                                                                              alignment: _descriptor_1.alignment() }).encode() } },
-                                       { ins: { cached: false, n: 1 } }]);
-    __compactRuntime.queryLedgerState(context,
-                                      partialProofData,
-                                      [
-                                       { push: { storage: false,
-                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(9n),
-                                                                                              alignment: _descriptor_9.alignment() }).encode() } },
-                                       { push: { storage: true,
                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_0.toValue(false),
                                                                                               alignment: _descriptor_0.alignment() }).encode() } },
                                        { ins: { cached: false, n: 1 } }]);
@@ -474,7 +448,7 @@ export class Contract {
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 4294967295n)) {
       __compactRuntime.typeError('getPrivateCreditScore',
                                  'return value',
-                                 'zkcred.compact line 82 char 1',
+                                 'zkcred.compact line 76 char 1',
                                  'Uint<0..4294967296>',
                                  result_0)
     }
@@ -491,7 +465,7 @@ export class Contract {
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 18446744073709551615n)) {
       __compactRuntime.typeError('getPrivateAnnualIncome',
                                  'return value',
-                                 'zkcred.compact line 83 char 1',
+                                 'zkcred.compact line 77 char 1',
                                  'Uint<0..18446744073709551616>',
                                  result_0)
     }
@@ -508,7 +482,7 @@ export class Contract {
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 4294967295n)) {
       __compactRuntime.typeError('getPrivateAge',
                                  'return value',
-                                 'zkcred.compact line 84 char 1',
+                                 'zkcred.compact line 78 char 1',
                                  'Uint<0..4294967296>',
                                  result_0)
     }
@@ -525,7 +499,7 @@ export class Contract {
     if (!(result_0.buffer instanceof ArrayBuffer && result_0.BYTES_PER_ELEMENT === 1 && result_0.length === 32)) {
       __compactRuntime.typeError('getPrivateSalt',
                                  'return value',
-                                 'zkcred.compact line 85 char 1',
+                                 'zkcred.compact line 79 char 1',
                                  'Bytes<32>',
                                  result_0)
     }
@@ -542,41 +516,7 @@ export class Contract {
     if (!(result_0.buffer instanceof ArrayBuffer && result_0.BYTES_PER_ELEMENT === 1 && result_0.length === 32)) {
       __compactRuntime.typeError('getPrivateAdminKey',
                                  'return value',
-                                 'zkcred.compact line 86 char 1',
-                                 'Bytes<32>',
-                                 result_0)
-    }
-    partialProofData.privateTranscriptOutputs.push({
-      value: _descriptor_1.toValue(result_0),
-      alignment: _descriptor_1.alignment()
-    });
-    return result_0;
-  }
-  _getPrivateIssuerKey_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
-    const [nextPrivateState_0, result_0] = this.witnesses.getPrivateIssuerKey(witnessContext_0);
-    context.currentPrivateState = nextPrivateState_0;
-    if (!(result_0.buffer instanceof ArrayBuffer && result_0.BYTES_PER_ELEMENT === 1 && result_0.length === 32)) {
-      __compactRuntime.typeError('getPrivateIssuerKey',
-                                 'return value',
-                                 'zkcred.compact line 89 char 1',
-                                 'Bytes<32>',
-                                 result_0)
-    }
-    partialProofData.privateTranscriptOutputs.push({
-      value: _descriptor_1.toValue(result_0),
-      alignment: _descriptor_1.alignment()
-    });
-    return result_0;
-  }
-  _getPrivateCredentialToken_0(context, partialProofData) {
-    const witnessContext_0 = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);
-    const [nextPrivateState_0, result_0] = this.witnesses.getPrivateCredentialToken(witnessContext_0);
-    context.currentPrivateState = nextPrivateState_0;
-    if (!(result_0.buffer instanceof ArrayBuffer && result_0.BYTES_PER_ELEMENT === 1 && result_0.length === 32)) {
-      __compactRuntime.typeError('getPrivateCredentialToken',
-                                 'return value',
-                                 'zkcred.compact line 92 char 1',
+                                 'zkcred.compact line 80 char 1',
                                  'Bytes<32>',
                                  result_0)
     }
@@ -591,8 +531,7 @@ export class Contract {
                 creditScoreThreshold_0,
                 annualIncomeThreshold_0,
                 ageThreshold_0,
-                adminKeyHash_0,
-                issuerKeyHashParam_0)
+                adminKeyHash_0)
   {
     __compactRuntime.assert(!_descriptor_0.fromValue(__compactRuntime.queryLedgerState(context,
                                                                                        partialProofData,
@@ -602,7 +541,7 @@ export class Contract {
                                                                                                  pushPath: false,
                                                                                                  path: [
                                                                                                         { tag: 'value',
-                                                                                                          value: { value: _descriptor_9.toValue(9n),
+                                                                                                          value: { value: _descriptor_9.toValue(8n),
                                                                                                                    alignment: _descriptor_9.alignment() } }] } },
                                                                                         { popeq: { cached: false,
                                                                                                    result: undefined } }]).value),
@@ -611,7 +550,7 @@ export class Contract {
                                       partialProofData,
                                       [
                                        { push: { storage: false,
-                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(9n),
+                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(8n),
                                                                                               alignment: _descriptor_9.alignment() }).encode() } },
                                        { push: { storage: true,
                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_0.toValue(true),
@@ -678,16 +617,6 @@ export class Contract {
                                                  value: __compactRuntime.StateValue.newCell({ value: _descriptor_1.toValue(adminKeyHash_0),
                                                                                               alignment: _descriptor_1.alignment() }).encode() } },
                                        { ins: { cached: false, n: 1 } }]);
-    __compactRuntime.queryLedgerState(context,
-                                      partialProofData,
-                                      [
-                                       { push: { storage: false,
-                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_9.toValue(8n),
-                                                                                              alignment: _descriptor_9.alignment() }).encode() } },
-                                       { push: { storage: true,
-                                                 value: __compactRuntime.StateValue.newCell({ value: _descriptor_1.toValue(issuerKeyHashParam_0),
-                                                                                              alignment: _descriptor_1.alignment() }).encode() } },
-                                       { ins: { cached: false, n: 1 } }]);
     return [];
   }
   _verifyEligibility_0(context, partialProofData) {
@@ -697,27 +626,6 @@ export class Contract {
                                                           partialProofData);
     const age_0 = this._getPrivateAge_0(context, partialProofData);
     const salt_0 = this._getPrivateSalt_0(context, partialProofData);
-    const issuerKey_0 = this._getPrivateIssuerKey_0(context, partialProofData);
-    const credentialToken_0 = this._getPrivateCredentialToken_0(context,
-                                                                partialProofData);
-    const computedIssuerHash_0 = this._persistentHash_1([issuerKey_0]);
-    __compactRuntime.assert(this._equal_0(computedIssuerHash_0,
-                                          _descriptor_1.fromValue(__compactRuntime.queryLedgerState(context,
-                                                                                                    partialProofData,
-                                                                                                    [
-                                                                                                     { dup: { n: 0 } },
-                                                                                                     { idx: { cached: false,
-                                                                                                              pushPath: false,
-                                                                                                              path: [
-                                                                                                                     { tag: 'value',
-                                                                                                                       value: { value: _descriptor_9.toValue(8n),
-                                                                                                                                alignment: _descriptor_9.alignment() } }] } },
-                                                                                                     { popeq: { cached: false,
-                                                                                                                result: undefined } }]).value)),
-                            'Credential not attested by registered trusted issuer');
-    const expectedToken_0 = this._persistentHash_0([issuerKey_0, salt_0]);
-    __compactRuntime.assert(this._equal_1(expectedToken_0, credentialToken_0),
-                            'Credential token does not match issuer attestation for this salt');
     const saltNullifier_0 = this._persistentHash_0([new Uint8Array([122, 107, 99, 114, 101, 100, 58, 101, 108, 105, 103, 105, 98, 105, 108, 105, 116, 121, 58, 110, 117, 108, 108, 105, 102, 105, 101, 114, 58, 118, 49, 0]),
                                                     salt_0]);
     __compactRuntime.assert(!_descriptor_0.fromValue(__compactRuntime.queryLedgerState(context,
@@ -828,7 +736,7 @@ export class Contract {
                                        { ins: { cached: false, n: 1 } }]);
     const newCount_0 = ((t1) => {
                          if (t1 > 18446744073709551615n) {
-                           throw new __compactRuntime.CompactError('zkcred.compact line 184 char 30: cast from Field or Uint value to smaller Uint value failed: ' + t1 + ' is greater than 18446744073709551615');
+                           throw new __compactRuntime.CompactError('zkcred.compact line 151 char 30: cast from Field or Uint value to smaller Uint value failed: ' + t1 + ' is greater than 18446744073709551615');
                          }
                          return t1;
                        })(_descriptor_2.fromValue(__compactRuntime.queryLedgerState(context,
@@ -865,7 +773,7 @@ export class Contract {
   {
     const callerKey_0 = this._getPrivateAdminKey_0(context, partialProofData);
     const callerHash_0 = this._persistentHash_1([callerKey_0]);
-    __compactRuntime.assert(this._equal_2(callerHash_0,
+    __compactRuntime.assert(this._equal_0(callerHash_0,
                                           _descriptor_1.fromValue(__compactRuntime.queryLedgerState(context,
                                                                                                     partialProofData,
                                                                                                     [
@@ -954,14 +862,6 @@ export class Contract {
                                                                                  result: undefined } }]).value);
   }
   _equal_0(x0, y0) {
-    if (!x0.every((x, i) => y0[i] === x)) { return false; }
-    return true;
-  }
-  _equal_1(x0, y0) {
-    if (!x0.every((x, i) => y0[i] === x)) { return false; }
-    return true;
-  }
-  _equal_2(x0, y0) {
     if (!x0.every((x, i) => y0[i] === x)) { return false; }
     return true;
   }
@@ -1113,7 +1013,7 @@ export function ledger(stateOrChargedState) {
         if (!(elem_0.buffer instanceof ArrayBuffer && elem_0.BYTES_PER_ELEMENT === 1 && elem_0.length === 32)) {
           __compactRuntime.typeError('member',
                                      'argument 1',
-                                     'zkcred.compact line 68 char 1',
+                                     'zkcred.compact line 66 char 1',
                                      'Bytes<32>',
                                      elem_0)
         }
@@ -1191,7 +1091,7 @@ export function ledger(stateOrChargedState) {
         if (!(elem_0.buffer instanceof ArrayBuffer && elem_0.BYTES_PER_ELEMENT === 1 && elem_0.length === 32)) {
           __compactRuntime.typeError('member',
                                      'argument 1',
-                                     'zkcred.compact line 72 char 1',
+                                     'zkcred.compact line 70 char 1',
                                      'Bytes<32>',
                                      elem_0)
         }
@@ -1220,20 +1120,6 @@ export function ledger(stateOrChargedState) {
         return self_0.asMap().keys().map((elem) => _descriptor_1.fromValue(elem.value))[Symbol.iterator]();
       }
     },
-    get issuerKeyHash() {
-      return _descriptor_1.fromValue(__compactRuntime.queryLedgerState(context,
-                                                                       partialProofData,
-                                                                       [
-                                                                        { dup: { n: 0 } },
-                                                                        { idx: { cached: false,
-                                                                                 pushPath: false,
-                                                                                 path: [
-                                                                                        { tag: 'value',
-                                                                                          value: { value: _descriptor_9.toValue(8n),
-                                                                                                   alignment: _descriptor_9.alignment() } }] } },
-                                                                        { popeq: { cached: false,
-                                                                                   result: undefined } }]).value);
-    },
     get initialized() {
       return _descriptor_0.fromValue(__compactRuntime.queryLedgerState(context,
                                                                        partialProofData,
@@ -1243,7 +1129,7 @@ export function ledger(stateOrChargedState) {
                                                                                  pushPath: false,
                                                                                  path: [
                                                                                         { tag: 'value',
-                                                                                          value: { value: _descriptor_9.toValue(9n),
+                                                                                          value: { value: _descriptor_9.toValue(8n),
                                                                                                    alignment: _descriptor_9.alignment() } }] } },
                                                                         { popeq: { cached: false,
                                                                                    result: undefined } }]).value);
@@ -1258,9 +1144,7 @@ const _dummyContract = new Contract({
   getPrivateAnnualIncome: (...args) => undefined,
   getPrivateAge: (...args) => undefined,
   getPrivateSalt: (...args) => undefined,
-  getPrivateAdminKey: (...args) => undefined,
-  getPrivateIssuerKey: (...args) => undefined,
-  getPrivateCredentialToken: (...args) => undefined
+  getPrivateAdminKey: (...args) => undefined
 });
 export const pureCircuits = {};
 export const contractReferenceLocations =

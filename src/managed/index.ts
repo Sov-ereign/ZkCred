@@ -47,15 +47,12 @@ const _hashContract = new Contract({
   getPrivateAge: (..._: any[]) => undefined as any,
   getPrivateSalt: (..._: any[]) => undefined as any,
   getPrivateAdminKey: (..._: any[]) => undefined as any,
-  getPrivateIssuerKey: (..._: any[]) => undefined as any,
-  getPrivateCredentialToken: (..._: any[]) => undefined as any,
 });
 
 /**
  * Computes `persistentHash<Vector<2, Bytes<32>>>([a, b])`.
  *
  * Used by the circuit to compute:
- *   - `credentialToken = persistentHash([issuerKey, salt])`
  *   - `saltNullifier   = persistentHash([domainTag, salt])`
  *
  * Off-chain callers MUST use this function instead of SHA-256 to produce
@@ -69,7 +66,6 @@ export function persistentHashVec2(a: Uint8Array, b: Uint8Array): Uint8Array {
  * Computes `persistentHash<Vector<1, Bytes<32>>>([a])`.
  *
  * Used by the circuit to compute:
- *   - `issuerKeyHash = persistentHash([issuerKey])`
  *   - `adminKeyHash  = persistentHash([adminKey])`
  *
  * Off-chain callers MUST use this function instead of SHA-256.
@@ -88,7 +84,6 @@ export interface LedgerState {
   isEligible: boolean;
   verificationCount: bigint;
   admin: Uint8Array;
-  issuerKeyHash: Uint8Array;
   initialized: boolean;
 }
 
@@ -102,8 +97,6 @@ export interface WitnessFunctions {
   getPrivateAge: () => number;
   getPrivateSalt: () => Uint8Array;
   getPrivateAdminKey: () => Uint8Array;
-  getPrivateIssuerKey: () => Uint8Array;
-  getPrivateCredentialToken: () => Uint8Array;
 }
 
 /**

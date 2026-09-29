@@ -22,9 +22,9 @@ The live V2 contract has private witnesses for `age`, `creditScore`, `annualInco
 
 For V2, an observer can learn the contract thresholds, the final `isEligible` Boolean, the public verification counter, salt nullifiers, and transaction identifiers. An observer cannot learn the raw age, credit score, annual income, salt, or the circuit's private transcript.
 
-The V2 source is [zkcred.compact](contract/src/zkcred.compact), with generated artifacts under `src/managed/`; it is the currently deployed contract and remains unchanged. The V3 source and separately generated artifacts are [zkcred-v3.compact](contract/src/zkcred-v3.compact) and `src/managed-v3/`.
+The V2 source is [zkcred.compact](contract/src/zkcred.compact), with generated artifacts under `src/managed/`. The updated threshold-only V2 contract is deployed at `cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7`; its indexed ledger state confirms initialization and the configured thresholds. The previous V2 address (`a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6`) had different verifier keys and is retired from the app defaults. The V3 source and separately generated artifacts are [zkcred-v3.compact](contract/src/zkcred-v3.compact) and `src/managed-v3/`.
 
-**V2 credential limitation:** V2 checks a prototype issuer hash/token, not a signature over age, credit score, and income. Its proof only establishes that user-supplied values meet thresholds. The live V2 app therefore does not award credential-authenticity badges.
+**V2 issuer integration intentionally disabled:** The old V2 prototype's issuer hash/token checks were removed from the compiled contract and browser flow. They were not signatures and could not authenticate age, credit score, or income; keeping them active also caused the current app's zero-placeholder issuer values to make proof generation unusable. Issuer verification is left out of V2 until the pinned Compact compiler and supported verifier path can produce reproducible, compatible artifacts. V2 proves only that the values supplied privately by the user meet public thresholds; it does not prove those values are authentic. Do not present its result as an issuer-verified credential. The separate V3 issuer-signature design remains in source/artifacts, but is not yet deployed or connected to the V2 UI.
 
 ## V3 issuer-attested contract (Preprod candidate)
 
@@ -87,11 +87,15 @@ npm run dev
 
 The application is fail-closed. It does not create a fake proof, fake transaction ID, in-memory user, or default contract state.
 
-The deployed Preprod verifier is configured in the browser and API defaults:
+The current V2 Preprod verifier is configured in the browser and API defaults. The address and initialized state were checked against Midnight's public Preprod indexer:
 
 ```text
-Contract: a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6
-Initialization transaction: 0044ac4d7ec9c41c79dbbf45385e5c1a70237693c1c6d03b1440103e0354c99d6f
+Contract (V2): cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7
+Deployment transaction (wallet-reported): 00f574451563634d432063718364d37e01272f35630b459165bca9583b466644be
+Deployment transaction (indexer hash): 9f0f4b37428ce349ea9fad90a925d1f8bd4b047b7f33e2eed5d9f7ef95db4e69
+Initialization transaction (wallet-reported): 00987804d532ec8a43b7e6c83bea701d6e813aad7af64f49e9189361e62c9c356f
+Initialization transaction (indexer hash): c2e287d779299ff489e36462e34e089d73299147d94e7e09e76af41035a755b3
+Indexed initialization: true; thresholds: score 700, income 5000000 cents, age 21
 V3 contract: NOT DEPLOYED — no Preprod contract address exists yet.
 ```
 
@@ -115,16 +119,16 @@ npm run ui
 
 Open the Vite URL (normally `http://localhost:5173`). Do not open `ui/index.html` directly: the Midnight client must be bundled by Vite.
 
-Set the following environment values in `.env` for the API server, and as environment variables in Vercel for a deployment:
+Set the following environment values in `.env` for a standalone API server:
 
 ```dotenv
 JWT_SECRET=a-long-random-secret
 MONGODB_URI=mongodb+srv://...
 MIDNIGHT_INDEXER_URL=https://indexer.preprod.midnight.network/api/v3/graphql
-CONTRACT_ADDRESS=a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6
+CONTRACT_ADDRESS=cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7
 ```
 
-Start the API locally with `npm run server`. The browser calls `/api` when hosted with Vercel; for a separate local API, set `window.__RENDER_API__` before loading the page.
+Use the `.env` value for the standalone Node/Render server. The Vercel API and browser bundle pin the verified address in source so a stale Vercel environment variable cannot make backend evidence checks disagree with the UI. Start the API locally with `npm run server`. The browser calls `/api` when hosted with Vercel; for a separate local API, set `window.__RENDER_API__` before loading the page.
 
 ## Wallet and circuit flow
 
@@ -147,21 +151,24 @@ npm run artifacts:update
 npm test -- --runInBand tests/zkcred-v3.test.ts
 ```
 
-The live browser/deployment helper still targets V2. Do not use that helper to deploy V3: the V3 initializer needs a real issuer public key and a V3-aware wallet adapter. Deploy V3 only after an issuer key has been provisioned and the V3 application flow has been integrated; verify its address and initialization transaction through the Preprod indexer before switching any app/API configuration. V2 remains the live fallback.
+The browser deployment helper targets the current threshold-only V2 source. Do not use that helper to deploy V3: the V3 initializer needs a real issuer public key and a V3-aware wallet adapter. Deploy V3 only after an issuer key has been provisioned and the V3 application flow has been integrated; verify its address and initialization transaction through the Preprod indexer before switching any app/API configuration. After deploying the updated V2, the helper stores the new address in the deploying browser; verify it on the Preprod indexer before updating the shared app/API configuration.
 
-### V2 deployment helper (current live contract)
+### V2 deployment helper (updated threshold-only contract)
 
-For the initial deployment, connect Lace in the local dApp, then run this from the browser developer console:
+Connect the selected Preprod wallet in the local dApp, then run this from the browser developer console. MidnightJS deploys the contract and invokes its `initialize` circuit as two transactions, so the wallet will ask for two approvals. The helper submits initialization immediately after deployment, but the SDK flow is not atomic: there is a short window in which another party could initialize the contract first. Do not treat this deployment path as front-run-proof.
 
 ```js
-await window.ZkCredMidnight.deploy({
-  minCreditScore: 700,
-  minAnnualIncome: 5_000_000,
-  minAge: 21,
-});
+await window.ZkCredMidnight.deploy(
+  {
+    minCreditScore: 700,
+    minAnnualIncome: 5_000_000,
+    minAge: 21,
+  },
+  "REPLACE_WITH_A_LONG_UNIQUE_BACKUP_PASSWORD",
+);
 ```
 
-Lace will display the real transaction for approval. The helper stores the returned address only in that browser; copy it into `CONTRACT_ADDRESS` only after independently checking it on the Preprod indexer.
+The helper requires a unique backup password of at least 12 characters, downloads an encrypted admin-key backup, and returns the contract address plus deployment and initialization transaction IDs. If deployment succeeds but initialization fails, the error includes the address and a retry command using `window.ZkCredMidnight.initializeDeployment(address, thresholds)`. The helper stores the returned address only in that browser; verify both transactions on the Preprod indexer before updating shared app/API configuration.
 
 ## Administrator threshold updates
 
@@ -175,11 +182,11 @@ npx tsc --noEmit
 npm run ui:build
 ```
 
-The suite covers private-witness boundaries, generated artifacts, runtime circuit execution, admin authorization, nullifier validation, and V3 issuer-signature rejection for modified attributes, the wrong holder, or the wrong application. GitHub Actions recompiles V3 with the pinned Preprod compiler and verifies checksums for both V2 and V3 artifacts, then runs tests, TypeScript checks, and the Vite production build; see [ci.yml](.github/workflows/ci.yml). The Compact 0.31.1 CLI is required locally when V3 source changes (`npm run compile`).
+The suite covers private-witness boundaries, generated artifacts, runtime threshold-circuit execution, admin authorization, nullifier validation, and V3 issuer-signature rejection for modified attributes, the wrong holder, or the wrong application. GitHub Actions recompiles V3 with the pinned Preprod compiler and verifies checksums for both V2 and V3 artifacts, then runs tests, TypeScript checks, and the Vite production build; see [ci.yml](.github/workflows/ci.yml). V2 source changes require Compact 0.31.0; V3 source changes require Compact 0.31.1 (`npm run compile`).
 
 ## Hosted deployment
 
-Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser bundle, WASM modules, and compiled proof assets. The `/api/*` rewrite targets `api/index.js`. Vercel does **not** host the prover: Lace provides the configured remote Preprod prover URI to the browser. The public contract address is compiled into the client and API defaults; `CONTRACT_ADDRESS` is an optional server-side override.
+Vercel builds `ui/dist` via `npm run ui:build`, including the Midnight browser bundle, WASM modules, and compiled proof assets. The `/api/*` rewrite targets `api/index.js`. Vercel does **not** host the prover: Lace provides the configured remote Preprod prover URI to the browser. The verified contract address is pinned in both the Vercel client and Vercel API so stale project environment variables cannot split the app across incompatible deployments; the standalone Node/Render server may still use `CONTRACT_ADDRESS` as an override.
 
 ## 📷 Application Screenshots & User Experience
 

@@ -14,7 +14,8 @@ const API_BASE = isLocalDev ? "/api" : ((typeof window !== "undefined" && window
 // Public, verified Midnight Preprod contract configuration. A visitor may
 // override it by deploying a newer verifier in their own browser; this is not
 // a synthetic fallback and is always checked against the live indexer.
-const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6";
+const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7";
+const PREVIOUS_V2_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6";
 const LEGACY_V1_CONTRACT_ADDRESS = "56e2bee56953f107b0a20496f64d7a08be62a58626e8fec8a0102c798217f16a";
 
 function generateDynamicHex(lenBytes = 32, prefix = "0x") {
@@ -36,7 +37,7 @@ const STATE = {
   // storage automatically so the V2 client is never used with V1 state.
   contractAddress: (() => {
     const stored = normalizeContractAddress(localStorage.getItem("zkcred_contract_address"));
-    if (stored === LEGACY_V1_CONTRACT_ADDRESS) {
+    if (stored === LEGACY_V1_CONTRACT_ADDRESS || stored === PREVIOUS_V2_CONTRACT_ADDRESS) {
       localStorage.setItem("zkcred_contract_address", DEPLOYED_PREPROD_CONTRACT_ADDRESS);
       return DEPLOYED_PREPROD_CONTRACT_ADDRESS;
     }

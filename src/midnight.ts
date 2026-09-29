@@ -27,8 +27,6 @@ export interface PrivateWitnessData {
   age: number;
   userSalt: Uint8Array;
   adminKey?: Uint8Array;
-  issuerKey?: Uint8Array;
-  credentialToken?: Uint8Array;
 }
 
 export interface MidnightProviders {
@@ -56,8 +54,6 @@ export function createWitnessCallbacks(privateData: PrivateWitnessData): Witness
     getPrivateAge: () => privateData.age,
     getPrivateSalt: () => privateData.userSalt,
     getPrivateAdminKey: () => privateData.adminKey ?? new Uint8Array(32),
-    getPrivateIssuerKey: () => privateData.issuerKey ?? new Uint8Array(32),
-    getPrivateCredentialToken: () => privateData.credentialToken ?? new Uint8Array(32),
   };
 }
 
@@ -106,7 +102,6 @@ export async function fetchLedgerStateFromIndexer(
     isEligible: ledger.isEligible,
     verificationCount: ledger.verificationCount,
     admin: ledger.admin,
-    issuerKeyHash: ledger.issuerKeyHash,
     initialized: ledger.initialized,
   };
 }

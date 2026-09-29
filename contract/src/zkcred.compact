@@ -14,11 +14,10 @@ import CompactStandardLibrary;
 // │   - creditScore           │      │  disclose(eligible)                │
 // │   - annualIncome          │      │         ↓                          │
 // │   - userSalt              │      │  PUBLIC LEDGER STATE               │
-// │   - issuerKey             │      │  - usedSaltNullifiers (Set)        │
-// │   - credentialToken       │      │  - eligibleNullifiers (Set)        │
+// │                              │      │  - usedSaltNullifiers (Set)        │
+// │                              │      │  - eligibleNullifiers (Set)        │
 // └───────────────────────────┘      │  - isEligible (last call, for UX)  │
 //                                    │  - admin (hash of admin key)       │
-//                                    │  - issuerKeyHash                   │
 //                                    │  - initialized (one-time guard)    │
 //                                    └────────────────────────────────────┘
 //
@@ -34,13 +33,12 @@ import CompactStandardLibrary;
 //   by initialize(). Any subsequent call asserts on !initialized and reverts.
 //
 // CREDENTIAL PROVENANCE LIMITATION:
-//   The hash/token checks below are NOT an issuer signature. They do not bind
-//   age, creditScore, or annualIncome to an issuer-authenticated record, and
-//   must not be treated as credential authenticity. Compact 0.31 does not
-//   expose a usable signature-verification circuit for this deployment.
-//   Application code must not award credential-authenticity badges from these
-//   checks. A future deployment needs a supported signature verifier and new
-//   generated artifacts before it can make that claim.
+//   V2 deliberately checks only user-supplied private values against public
+//   thresholds; it does NOT authenticate age, score, or income. Issuer
+//   signature verification is intentionally disabled. The prior hash/token
+//   prototype was not a signature verifier. V3's issuer-signature design
+//   remains in zkcred-v3.compact but requires a supported compiler/verifier,
+//   provisioned issuer key, and a separately deployed V3 contract.
 //
 // NULLIFIER SEMANTICS:
 //   usedSaltNullifiers — records every salt that has been used (replay guard).
@@ -70,10 +68,6 @@ export ledger usedSaltNullifiers: Set<Bytes<32>>;
 // Relying parties query this set to verify a specific user's eligibility
 // without depending on the mutable global isEligible flag.
 export ledger eligibleNullifiers: Set<Bytes<32>>;
-// issuerKeyHash: persistentHash([issuerSecret]) registered by the admin.
-// issuerKeyHash is a public issuer-key commitment. It does not authenticate
-// credential values without a signature verifier.
-export ledger issuerKeyHash: Bytes<32>;
 // initialized: one-time guard. False at deployment (Compact default = false).
 // Set to true by initialize(). Prevents re-initialization attacks.
 export ledger initialized: Boolean;
@@ -84,25 +78,16 @@ witness getPrivateAnnualIncome(): Uint<64>;
 witness getPrivateAge(): Uint<32>;
 witness getPrivateSalt(): Bytes<32>;
 witness getPrivateAdminKey(): Bytes<32>;
-// Prototype issuer witnesses. The secret-key equality/token checks below are
-// not a signature and do not bind the credential values to an issuer record.
-witness getPrivateIssuerKey(): Bytes<32>;
-// Prototype token: persistentHash([issuerKey, userSalt]); it does not bind the
-// age, score, or income values and must not be treated as an attestation.
-witness getPrivateCredentialToken(): Bytes<32>;
 
 // --- Constructor / Initializer ---
 // ONE-TIME ONLY: asserts !initialized. Reverts if called a second time.
 // adminKeyHash: public persistentHash([adminKey]) commitment. The secret admin
 // key is never passed as a circuit argument or disclosed in the transaction.
-// issuerKeyHashParam: admin provides persistentHash([issuerSecret]) to
-//   register the trusted credential issuer for this contract instance.
 export circuit initialize(
   creditScoreThreshold: Uint<32>,
   annualIncomeThreshold: Uint<64>,
   ageThreshold: Uint<32>,
-  adminKeyHash: Bytes<32>,
-  issuerKeyHashParam: Bytes<32>
+  adminKeyHash: Bytes<32>
 ): [] {
   // ONE-TIME GUARD: revert if already initialized.
   assert(!initialized, "ZkCred: Contract already initialized");
@@ -116,16 +101,12 @@ export circuit initialize(
   // Store the public commitment supplied by the deployer. The secret is kept
   // private in the deployer's browser and is never a public circuit argument.
   admin = disclose(adminKeyHash);
-  // Store the issuer key hash. Raw issuer secret is never stored on-chain.
-  issuerKeyHash = disclose(issuerKeyHashParam);
 }
 
 // --- Option 2 Core ZK Eligibility Gate Circuit ---
 // Evaluates Age, Credit Score, and Income inside PLONK ZK Circuit.
 // Discloses ONLY the boolean outcome and the salt nullifier. Raw credential
 // values (age, score, income) are never disclosed.
-// Prototype issuer-key/token consistency checks. These do not verify that the
-// private values came from an issuer-authenticated credential.
 export circuit verifyEligibility(): [] {
   // Retrieve private values from off-chain witnesses
   const creditScore: Uint<32> = getPrivateCreditScore();
@@ -133,23 +114,9 @@ export circuit verifyEligibility(): [] {
   const age: Uint<32> = getPrivateAge();
   const salt: Bytes<32> = getPrivateSalt();
 
-  // --- PROTOTYPE ISSUER COMMITMENT CHECKS (NOT CREDENTIAL AUTHENTICATION) ---
-  const issuerKey: Bytes<32> = getPrivateIssuerKey();
-  const credentialToken: Bytes<32> = getPrivateCredentialToken();
-
-  // (1) Check the issuer key against the registered public commitment.
-  const computedIssuerHash: Bytes<32> = persistentHash<Vector<1, Bytes<32>>>([issuerKey]);
-  assert(computedIssuerHash == issuerKeyHash,
-    "Credential not attested by registered trusted issuer");
-
-  // (2) Check the token binds this key to this salt. It does not bind the
-  //     private attribute values and is forgeable by anyone holding the key.
-  const expectedToken: Bytes<32> = persistentHash<Vector<2, Bytes<32>>>([
-    issuerKey,
-    salt
-  ]);
-  assert(expectedToken == credentialToken,
-    "Credential token does not match issuer attestation for this salt");
+  // Intentionally disabled from the V2 build: issuer verification is not
+  // supported by this pinned compiler deployment. The prior key-hash/token
+  // prototype was not a signature and did not authenticate these values.
 
   // Compute a domain-separated nullifier from the private salt.
   // NULLIFIER SEMANTICS: prevents replay of THIS specific salt commitment.

@@ -25,7 +25,7 @@ services:
       - key: GOOGLE_REDIRECT_URI
         value: https://zkcred-api.onrender.com/api/auth/google/callback
       - key: CONTRACT_ADDRESS
-        value: a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6
+        value: cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7
       - key: MIDNIGHT_INDEXER_URL
         value: https://indexer.preprod.midnight.network/api/v3/graphql
     healthCheckPath: /api/health

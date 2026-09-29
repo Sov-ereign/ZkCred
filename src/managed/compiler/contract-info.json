@@ -35,13 +35,6 @@
             "type-name": "Bytes",
             "length": 32
           }
-        },
-        {
-          "name": "issuerKeyHashParam",
-          "type": {
-            "type-name": "Bytes",
-            "length": 32
-          }
         }
       ],
       "result-type": {
@@ -168,24 +161,6 @@
         "type-name": "Bytes",
         "length": 32
       }
-    },
-    {
-      "name": "getPrivateIssuerKey",
-      "arguments": [
-      ],
-      "result type": {
-        "type-name": "Bytes",
-        "length": 32
-      }
-    },
-    {
-      "name": "getPrivateCredentialToken",
-      "arguments": [
-      ],
-      "result type": {
-        "type-name": "Bytes",
-        "length": 32
-      }
     }
   ],
   "contracts": [
@@ -271,18 +246,8 @@
       }
     },
     {
-      "name": "issuerKeyHash",
-      "index": 8,
-      "exported": true,
-      "storage": "Cell",
-      "type": {
-        "type-name": "Bytes",
-        "length": 32
-      }
-    },
-    {
       "name": "initialized",
-      "index": 9,
+      "index": 8,
       "exported": true,
       "storage": "Cell",
       "type": {

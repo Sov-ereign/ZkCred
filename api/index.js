@@ -23,8 +23,10 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 
 // Midnight Network config
-const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6";
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || DEPLOYED_PREPROD_CONTRACT_ADDRESS;
+const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "cef93529eef2b8b8e85cd013619267e25df14e496ac1ea2e937681e909b6abd7";
+// Keep the Vercel API on the same verifier deployment as the browser bundle;
+// a stale project env var must not silently point evidence checks at old keys.
+const CONTRACT_ADDRESS = DEPLOYED_PREPROD_CONTRACT_ADDRESS;
 const MIDNIGHT_INDEXER_URL = process.env.MIDNIGHT_INDEXER_URL || "https://indexer.preprod.midnight.network/api/v3/graphql";
 const PROOF_SERVER_URL = process.env.PROOF_SERVER_URL || "http://localhost:6300";
 
