@@ -64,10 +64,10 @@
 
       <!-- Action Items -->
       <div class="flex items-center gap-3">
-        <!-- Lace Wallet Connect -->
-        <button id="wallet-connect-btn" class="btn-wallet-connect" aria-label="Connect Midnight Lace Wallet">
+        <!-- Midnight wallet selection -->
+        <button id="wallet-connect-btn" class="btn-wallet-connect" aria-label="Choose a Midnight wallet">
           <span class="wallet-dot" id="wallet-dot"></span>
-          <span id="wallet-btn-text">Connect Lace</span>
+          <span id="wallet-btn-text">Connect Wallet</span>
         </button>
 
         <!-- Auth Button -->
@@ -108,7 +108,7 @@
       <div class="pt-6">
         <button id="mobile-wallet-connect-btn" class="btn-wallet-connect w-full justify-center !py-2.5">
           <span class="wallet-dot"></span>
-          <span id="mobile-wallet-btn-text">Connect Lace Wallet</span>
+          <span id="mobile-wallet-btn-text">Connect Wallet</span>
         </button>
       </div>
     </div>
@@ -686,7 +686,7 @@
           </div>
           <h2 id="profile-heading" class="text-2xl sm:text-3xl lg:text-4xl font-normal tracking-tight text-white">Your Privacy Profile</h2>
           <p class="text-xs sm:text-sm text-white/60 mt-1.5 max-w-xl">
-            Manage your connected Midnight Lace wallet and review on-chain proof results. Attribute values are not authenticated by a credential issuer.
+            Manage your connected Midnight wallet and review on-chain proof results. Attribute values are not authenticated by a credential issuer.
           </p>
         </div>
       </div>
@@ -701,7 +701,7 @@
               <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-black" id="profile-status-dot"></span>
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-white" id="profile-wallet-title">Lace Wallet Connected</h3>
+              <h3 class="text-lg font-semibold text-white" id="profile-wallet-title">Midnight Wallet Connected</h3>
               <div class="font-mono text-xs text-white/60 mt-0.5 break-all" id="profile-wallet-addr">Loading...</div>
             </div>
           </div>
@@ -885,19 +885,31 @@
 
   <!-- ─── Modals ──────────────────────────────────────────────────────── -->
 
+  <div id="wallet-picker-modal" class="modal-overlay" aria-hidden="true" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="wallet-picker-title">
+      <button type="button" class="modal-close" id="wallet-picker-cancel" aria-label="Cancel wallet selection">✕</button>
+      <div class="glass-badge-left !text-[10px] mb-3">Midnight DApp Connector</div>
+      <h3 id="wallet-picker-title" class="text-xl font-semibold text-white mb-2">Choose a wallet</h3>
+      <p class="text-xs sm:text-sm text-white/65 leading-relaxed mb-5">Select the wallet you want to connect to this app. The app will use only your selected wallet for this session.</p>
+      <div id="wallet-picker-options" class="space-y-2" role="list"></div>
+      <p class="mt-5 text-[10px] text-white/40">Only supported Midnight DApp Connector API versions are listed.</p>
+    </div>
+  </div>
+
   <!-- Lace Download Required Modal -->
   <div id="lace-download-modal" class="modal-overlay" aria-hidden="true" hidden>
     <div class="modal-card">
       <button class="modal-close" id="lace-modal-close" aria-label="Close">✕</button>
       <div class="glass-badge-left !text-[10px] mb-3">Extension Required</div>
-      <h3 class="text-xl font-semibold text-white mb-2">Midnight Lace Wallet Required</h3>
+      <h3 class="text-xl font-semibold text-white mb-2">Midnight Wallet Required</h3>
       <p class="text-xs sm:text-sm text-white/70 leading-relaxed mb-6">
-        Midnight Network smart contracts and zero-knowledge proof generation require the <strong>Midnight Lace Wallet</strong> browser extension. Install or unlock Lace, then select a Midnight Preprod account to proceed.
+        Install or unlock a supported Midnight wallet extension, then connect it on Preprod. Supported options include Lace and 1AM; update your wallet if it uses an unsupported connector API version.
       </p>
       <div class="flex items-center gap-3">
         <a href="https://www.lace.io/" target="_blank" rel="noopener noreferrer" class="btn-primary !py-2.5 !text-xs">
-          Download Lace Extension ↗
+          Lace ↗
         </a>
+        <a href="https://1am.xyz/" target="_blank" rel="noopener noreferrer" class="btn-secondary !py-2.5 !text-xs">1AM ↗</a>
         <button id="btn-retry-lace" class="btn-secondary !py-2.5 !text-xs">Retry Connection</button>
       </div>
     </div>

@@ -25,6 +25,7 @@ setNetworkId("preprod");
 (globalThis as any).Buffer = (globalThis as any).Buffer ?? NodeBuffer;
 
 type WitnessInput = { creditScore: number; annualIncome: number; age: number; userSalt: string; adminKey?: Uint8Array };
+type WalletChoice = { id: string; name: string; apiVersion: string; rdns: string; connector: InitialAPI };
 
 function normalizeContractAddress(address: string): string {
   const hex = address.replace(/^0x/i, "");
@@ -37,7 +38,7 @@ function normalizeContractAddress(address: string): string {
 function isContractAddress(address: string): boolean {
   return /^[0-9a-f]{64}$/i.test(String(address).replace(/^0x/i, ""));
 }
-type ActiveConnection = { api: ConnectedAPI; address: string; providers: any; walletName: string };
+type ActiveConnection = { api: ConnectedAPI; address: string; providers: any; walletName: string; walletId: string };
 
 let active: ActiveConnection | null = null;
 
@@ -115,31 +116,42 @@ async function loadAdminKey(contractAddress: string): Promise<Uint8Array | null>
 }
 
 
-function selectConnector(): InitialAPI {
-  const injected = window as any;
-  const midnightObj = injected.midnight ?? {};
-  // Midnight connectors inject strictly under window.midnight (e.g. mnLace).
-  // Do NOT include window.cardano.lace: that is Lace's Cardano CIP-30 interface,
-  // which causes Cardano wallet connection errors and auto-locks Lace on Midnight.
-  const candidates = [
-    midnightObj.mnLace,
-    midnightObj.lace,
-    ...Object.values(midnightObj),
-    injected.midnight,
-  ] as InitialAPI[];
-  const connector = candidates.find((candidate) => candidate && typeof candidate.connect === "function");
-  if (!connector) {
-    throw new Error("No Midnight DApp Connector was found. Unlock/update Midnight Lace, then retry.");
-  }
-  return connector;
+function listWalletChoices(): WalletChoice[] {
+  const midnightObj = (window as any).midnight;
+  if (!midnightObj || typeof midnightObj !== "object") return [];
+  return Object.entries(midnightObj)
+    .filter(([, connector]: [string, any]) => connector && typeof connector.connect === "function")
+    .map(([id, connector]: [string, any]) => ({
+      id,
+      name: typeof connector.name === "string" && connector.name.trim() ? connector.name.trim() : "Unnamed Midnight wallet",
+      apiVersion: typeof connector.apiVersion === "string" ? connector.apiVersion : "",
+      rdns: typeof connector.rdns === "string" ? connector.rdns : "",
+      connector: connector as InitialAPI,
+    }));
 }
 
-async function waitForConnector(timeoutMs = 7_500): Promise<InitialAPI> {
+async function waitForWalletChoices(timeoutMs = 7_500): Promise<WalletChoice[]> {
   const started = Date.now();
+  let previousIds = "";
+  let stableSince = 0;
   do {
-    try { return selectConnector(); } catch { await new Promise((resolve) => setTimeout(resolve, 150)); }
+    const choices = listWalletChoices();
+    if (choices.length) {
+      const ids = choices.map((choice) => choice.id).sort().join("|");
+      if (ids !== previousIds) {
+        previousIds = ids;
+        stableSince = Date.now();
+      } else if (Date.now() - stableSince >= 350) {
+        return choices;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
   } while (Date.now() - started < timeoutMs);
-  return selectConnector();
+  return listWalletChoices();
+}
+
+function supportsConnectorApiVersion(version: string): boolean {
+  return /^4\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version);
 }
 
 /**
@@ -239,12 +251,23 @@ async function buildProviders(api: ConnectedAPI, accountId: string) {
 
 let connectInFlight: Promise<{ address: string; walletName: string }> | null = null;
 
-async function connect(networkId = "preprod") {
-  if (active) return { address: active.address, walletName: active.walletName };
+async function connect(networkId = "preprod", walletId?: string) {
+  if (active) {
+    if (walletId && active.walletId !== walletId) throw new Error("Disconnect the current wallet before switching wallets.");
+    return { address: active.address, walletName: active.walletName, walletId: active.walletId };
+  }
   if (connectInFlight) return connectInFlight;
 
   connectInFlight = (async () => {
-    const connector = await waitForConnector();
+    const choices = await waitForWalletChoices();
+    if (!choices.length) throw new Error("No Midnight wallet DApp connector was found. Install or unlock Lace or 1AM, then retry.");
+    if (!walletId && choices.length > 1) throw new Error("More than one Midnight wallet is available. Select one before connecting.");
+    const selected = walletId ? choices.find((choice) => choice.id === walletId) : choices[0];
+    if (!selected) throw new Error("The selected Midnight wallet is no longer available. Refresh the wallet list and retry.");
+    if (!supportsConnectorApiVersion(selected.apiVersion)) {
+      throw new Error(`${selected.name} reports unsupported Midnight DApp Connector API version "${selected.apiVersion || "unknown"}"; this app requires version 4.x.`);
+    }
+    const connector = selected.connector;
     const api = await connector.connect(networkId);
     const shielded = await api.getShieldedAddresses();
     const shieldedAddress = typeof shielded === "string"
@@ -252,10 +275,10 @@ async function connect(networkId = "preprod") {
       : (shielded as any)?.shieldedAddress ?? (shielded as any)?.address;
     const unshielded = !shieldedAddress ? await api.getUnshieldedAddress?.() : undefined;
     const address = shieldedAddress ?? (unshielded as any)?.unshieldedAddress;
-    if (!address) throw new Error("Lace connected, but returned no Midnight address. Select a Midnight Preprod account in Lace and retry.");
+    if (!address) throw new Error(`${selected.name} connected, but returned no Midnight address. Select a Preprod account in that wallet and retry.`);
     const providers = await buildProviders(api, address);
-    active = { api, address, providers, walletName: connector.name ?? "Lace" };
-    return { address: active.address, walletName: active.walletName };
+    active = { api, address, providers, walletName: selected.name, walletId: selected.id } as ActiveConnection;
+    return { address: active.address, walletName: active.walletName, walletId: selected.id };
   })();
 
   try {
@@ -263,6 +286,11 @@ async function connect(networkId = "preprod") {
   } finally {
     connectInFlight = null;
   }
+}
+
+function disconnect() {
+  active = null;
+  connectInFlight = null;
 }
 
 async function submitEligibility(contractAddress: string, input: WitnessInput) {
@@ -546,7 +574,11 @@ async function importAdminKey(backupJson: string, backupPassword: string): Promi
 }
 
 (window as any).ZkCredMidnight = {
+  listWallets: async () => (await waitForWalletChoices())
+    .filter((wallet) => supportsConnectorApiVersion(wallet.apiVersion))
+    .map(({ connector: _connector, ...wallet }) => wallet),
   connect,
+  disconnect,
   deploy,
   getLedgerState,
   submitEligibility,

@@ -44,10 +44,13 @@ const STATE = {
   })(),
   isGenerating: false,
   walletConnected: false,
+  walletConnecting: false,
   walletAddress: null,
+  walletName: null,
   currentUser: JSON.parse(localStorage.getItem("zkcred_user") || "null"),
   authToken: localStorage.getItem("zkcred_auth_token") || null,
   onChainState: null, // populated from /api/contract/state
+  onChainStateError: null,
   userSalt: generateDynamicHex(32, "0x"), // ephemeral per-session salt
 };
 
@@ -283,6 +286,7 @@ async function fetchOnChainState() {
     }
     const data = await window.ZkCredMidnight?.getLedgerState(STATE.contractAddress);
     if (!data) throw new Error("Midnight client is not ready.");
+    STATE.onChainStateError = null;
     STATE.onChainState = data;
     // Update thresholds from live contract state
     if (!Number.isSafeInteger(data.minCreditScore) || !Number.isSafeInteger(Number(data.minAnnualIncome)) || !Number.isSafeInteger(data.minAge)) {
@@ -299,6 +303,7 @@ async function fetchOnChainState() {
     console.log("[Midnight] Live on-chain state loaded:", data);
     return data;
   } catch (err) {
+    STATE.onChainStateError = err instanceof Error ? err.message : String(err);
     console.warn("[Midnight] On-chain state fetch failed:", err.message);
     return null;
   }
@@ -369,7 +374,12 @@ async function generateProof() {
     // ── Step 1: Fetch live on-chain thresholds ──────────────────────────────
     setProofStatus("Fetching live thresholds from Midnight Indexer...");
     const onChainState = STATE.onChainState || await fetchOnChainState();
-    if (!onChainState) throw new Error("Cannot create a proof until the deployed contract state has been verified.");
+    if (!onChainState) {
+      if (/undefined or have mismatched verifier keys/i.test(STATE.onChainStateError || "")) {
+        throw new Error("The configured Preprod contract was deployed with different verifier keys than this app build. A new compatible V2 deployment is required before proofs can be generated; this check cannot be safely bypassed.");
+      }
+      throw new Error(`Cannot create a proof until the deployed contract state has been verified.${STATE.onChainStateError ? ` State check failed: ${STATE.onChainStateError}` : ""}`);
+    }
 
     // This is preview-only. The result shown after submission is re-read from
     // the finalized public contract state below.
@@ -629,7 +639,43 @@ function updateProfileState(eligible, txHash, age, score, income) {
   }
 }
 
-// ─── Lace Wallet Connector & Extension Check ──────────────────────────────────
+// ─── Midnight Wallet Connector & Extension Check ──────────────────────────────
+
+function chooseMidnightWallet(wallets) {
+  const modal = document.getElementById("wallet-picker-modal");
+  const list = document.getElementById("wallet-picker-options");
+  const cancel = document.getElementById("wallet-picker-cancel");
+  if (!modal || !list) throw new Error("Wallet selection dialog is unavailable.");
+  list.replaceChildren();
+  return new Promise((resolve) => {
+    const finish = (walletId) => {
+      closeModal(modal);
+      list.replaceChildren();
+      cancel?.removeEventListener("click", onCancel);
+      resolve(walletId);
+    };
+    const onCancel = () => finish(null);
+    cancel?.addEventListener("click", onCancel, { once: true });
+    const nameCounts = new Map();
+    for (const wallet of wallets) nameCounts.set(wallet.name, (nameCounts.get(wallet.name) || 0) + 1);
+    for (const wallet of wallets) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-left hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50";
+      const name = document.createElement("span");
+      name.className = "block text-sm font-semibold text-white";
+      name.textContent = wallet.name;
+      const details = document.createElement("span");
+      details.className = "mt-1 block break-all font-mono text-[10px] text-white/45";
+      const connectorId = nameCounts.get(wallet.name) > 1 ? ` · connector ${wallet.id.slice(0, 8)}` : "";
+      details.textContent = `API ${wallet.apiVersion || "unknown"}${wallet.rdns ? ` · ${wallet.rdns}` : ""}${connectorId}`;
+      button.append(name, details);
+      button.addEventListener("click", () => finish(wallet.id), { once: true });
+      list.appendChild(button);
+    }
+    openModal(modal);
+  });
+}
 
 function initWalletConnect() {
   const walletBtns = [
@@ -673,7 +719,7 @@ function initWalletConnect() {
       if (!STATE.currentUser) {
         if (authAlert) {
           authAlert.className = "auth-alert error";
-          authAlert.textContent = "Please sign in or create an account first to connect your Lace wallet.";
+          authAlert.textContent = "Please sign in or create an account first to connect a Midnight wallet.";
           authAlert.hidden = false;
         }
         openModal(authModal);
@@ -682,30 +728,47 @@ function initWalletConnect() {
 
       // If already connected, toggle disconnect
       if (STATE.walletConnected) {
+        window.ZkCredMidnight?.disconnect?.();
         STATE.walletConnected = false;
         STATE.walletAddress = null;
+        STATE.walletName = null;
+        STATE.onChainState = null;
 
         walletBtns.forEach((b) => b.classList.remove("connected"));
-        walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
+        walletTexts.forEach((t) => (t.textContent = "Connect Wallet"));
 
-        if (profileWalletTitle) profileWalletTitle.textContent = "Lace Wallet Disconnected";
+        if (profileWalletTitle) profileWalletTitle.textContent = "Midnight Wallet Disconnected";
         if (profileWalletAddr) profileWalletAddr.textContent = STATE.contractAddress;
         if (profileStatusDot) profileStatusDot.style.background = "var(--red-400)";
 
         trackVercelEvent("wallet_disconnected");
-        console.log("Lace Wallet disconnected.");
+        console.log("Midnight wallet disconnected.");
         return;
       }
 
-      walletTexts.forEach((t) => (t.textContent = "Connecting Lace..."));
+      if (STATE.walletConnecting) return;
+      STATE.walletConnecting = true;
+
+      walletTexts.forEach((t) => (t.textContent = "Choose Wallet..."));
 
       try {
-        // `ZkCredMidnight` polls the standard `window.midnight` connector map
-        // and calls InitialAPI.connect("preprod"); legacy provider fallbacks
-        // are intentionally not accepted.
-        const connection = await window.ZkCredMidnight?.connect("preprod");
-        if (!connection?.address) throw new Error("Midnight Lace did not provide a shielded address.");
+        const wallets = await window.ZkCredMidnight?.listWallets?.();
+        if (!wallets?.length) {
+          STATE.walletConnecting = false;
+          walletTexts.forEach((t) => (t.textContent = "Connect Wallet"));
+          openModal(laceModal);
+          return;
+        }
+        const walletId = await chooseMidnightWallet(wallets);
+        if (!walletId) {
+          STATE.walletConnecting = false;
+          walletTexts.forEach((t) => (t.textContent = "Connect Wallet"));
+          return;
+        }
+        const connection = await window.ZkCredMidnight?.connect("preprod", walletId);
+        if (!connection?.address) throw new Error(`${connection?.walletName || "Midnight wallet"} did not provide a shielded address.`);
         STATE.walletAddress = connection.address;
+        STATE.walletName = connection.walletName;
         STATE.walletConnected = true;
 
         if (STATE.authToken) {
@@ -730,9 +793,9 @@ function initWalletConnect() {
 
         const shortAddr = `${STATE.walletAddress.slice(0, 6)}...${STATE.walletAddress.slice(-4)}`;
         walletBtns.forEach((b) => b.classList.add("connected"));
-        walletTexts.forEach((t) => (t.textContent = `${shortAddr} (Connected)`));
+        walletTexts.forEach((t) => (t.textContent = `${connection.walletName}: ${shortAddr}`));
 
-        if (profileWalletTitle) profileWalletTitle.textContent = "Lace Wallet Connected";
+        if (profileWalletTitle) profileWalletTitle.textContent = `${connection.walletName} Connected`;
         if (profileWalletAddr) profileWalletAddr.textContent = STATE.walletAddress;
         if (profileStatusDot) profileStatusDot.style.background = "var(--green-400)";
 
@@ -742,12 +805,16 @@ function initWalletConnect() {
           updateEligibilityPreview();
           renderAdminControls();
         }
-        console.log(`Lace Wallet connected: ${STATE.walletAddress}`);
+        STATE.walletConnecting = false;
+        console.log(`${connection.walletName} connected: ${STATE.walletAddress}`);
       } catch (err) {
+        STATE.walletConnecting = false;
         console.error("Wallet connection failed:", err.message);
-        walletTexts.forEach((t) => (t.textContent = "Connect Lace Wallet"));
+        window.ZkCredMidnight?.disconnect?.();
+        walletTexts.forEach((t) => (t.textContent = "Connect Wallet"));
+        STATE.walletName = null;
         STATE.walletConnected = false;
-        openModal(laceModal);
+        setProofStatus(err instanceof Error ? err.message : "Midnight wallet connection failed.", true);
       }
     });
   });
@@ -1375,7 +1442,7 @@ function initThresholdControls() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!STATE.walletConnected) {
-      setProofStatus("Connect the administrator Lace wallet before updating thresholds.", true);
+      setProofStatus("Connect the administrator wallet before updating thresholds.", true);
       return;
     }
     const thresholds = {
