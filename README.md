@@ -18,11 +18,13 @@ ZkCred is a Midnight Compact dApp for proving an age, credit-score, and income t
 
 ## Privacy model
 
-The Compact contract has private witnesses for `age`, `creditScore`, `annualIncome`, and a 32-byte `salt`. The frontend closes over these values locally while the circuit is executed. They are not sent to the application API, indexer, or prover as JSON. Each successful proof stores a domain-separated, one-way salt nullifier in contract state; this prevents replay of the same credential secret without revealing the salt or making it reusable across protocols.
+The Compact contract has private witnesses for `age`, `creditScore`, `annualIncome`, and a 32-byte `salt`. The frontend closes over these values locally while the circuit is executed. They are not sent to the application API, indexer, or prover as JSON. Each successful proof stores a domain-separated salt nullifier in contract state; it prevents reuse of that same salt only. A fresh salt can be used again, and the nullifier does not prove credential authenticity.
 
 An observer can learn the contract thresholds, the final `isEligible` Boolean, the public verification counter, salt nullifiers, and transaction identifiers. An observer cannot learn the raw age, credit score, annual income, salt, or the circuit's private transcript.
 
 The contract source is [zkcred.compact](contract/src/zkcred.compact). Its generated ZKIR and proving keys are under `src/managed/` and are copied into the production web build.
+
+**Credential provenance limitation:** the current Compact 0.31 toolchain does not provide a usable issuer-signature verification circuit. The current issuer hash/token mechanism does not authenticate the age, credit-score, or income values. The proof therefore establishes only that the supplied values meet the thresholds; it must not be treated as proof that a credit bureau or other trusted issuer certified those values. The application records on-chain eligibility results but does not award credential-authenticity badges until issuer signatures are verifiable in-circuit.
 
 ## ⚡ ZK Proof Generation & Local Setup Guide
 

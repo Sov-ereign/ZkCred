@@ -390,22 +390,16 @@ async function generateProof() {
     const confirmedState = await fetchOnChainState();
     if (!confirmedState) throw new Error("Transaction submitted, but its finalized public contract state could not be verified.");
 
-    // AUTHORITATIVE ELIGIBILITY CHECK: use the nullifier set, NOT the global flag.
+    // AUTHORITATIVE ELIGIBILITY CHECK: use the per-call nullifier set, NOT the global flag.
     // isEligible is last-writer-wins — any subsequent verifyEligibility call by
     // another user will overwrite it. eligibleNullifiers.member(nullifier) is
     // bound to this specific call and cannot be overwritten by other users.
     setProofStatus("Verifying eligibility via on-chain nullifier set...");
-    let eligible = false;
-    try {
-      eligible = Boolean(
-        await window.ZkCredMidnight?.checkNullifierEligible?.(STATE.contractAddress, STATE.lastNullifier)
-      );
-    } catch (nullifierErr) {
-      // Graceful degradation: if the nullifier API is unavailable (e.g., wallet
-      // not connected for read), fall back to the global flag with a warning.
-      console.warn("[ZkCred] checkNullifierEligible unavailable, using global flag:", nullifierErr?.message);
-      eligible = Boolean(confirmedState.isEligible);
-    }
+    if (!result?.nullifierHex) throw new Error("The proof client did not return this call's nullifier.");
+    STATE.lastNullifier = result.nullifierHex;
+    const eligible = Boolean(
+      await window.ZkCredMidnight.checkNullifierEligible(STATE.contractAddress, result.nullifierHex)
+    );
 
     // The contract stores a domain-separated nullifier for this private salt.
     // Rotate after a confirmed call so a later proof cannot replay it.
@@ -464,6 +458,7 @@ async function generateProof() {
       contractAddress: STATE.contractAddress,
       circuit: "verifyEligibility",
       isEligible: eligible,
+      nullifierHex: result.nullifierHex,
       verificationCount: Number(confirmedState.verificationCount),
       transactionHash,
     });
@@ -621,15 +616,15 @@ function updateProfileState(eligible, txHash, age, score, income) {
   const incomePass = income >= STATE.minAnnualIncome;
 
   if (passAge) {
-    passAge.textContent = agePass ? `≥ ${STATE.minAge} Years Verified` : `Under-Age (${age} < ${STATE.minAge})`;
+    passAge.textContent = agePass ? `Input meets ≥ ${STATE.minAge}; issuer unverified` : `Input below ${STATE.minAge}`;
     passAge.className = `attr-val ${agePass ? "pass" : "fail"}`;
   }
   if (passCredit) {
-    passCredit.textContent = scorePass ? `≥ ${STATE.minCreditScore} Score Verified` : `Below Threshold (${score})`;
+    passCredit.textContent = scorePass ? `Input meets ≥ ${STATE.minCreditScore}; issuer unverified` : `Input below threshold`;
     passCredit.className = `attr-val ${scorePass ? "pass" : "fail"}`;
   }
   if (passIncome) {
-    passIncome.textContent = incomePass ? `≥ $50,000 Verified` : `Below Threshold`;
+    passIncome.textContent = incomePass ? `Input meets ≥ $50,000; issuer unverified` : `Input below threshold`;
     passIncome.className = `attr-val ${incomePass ? "pass" : "fail"}`;
   }
 }
@@ -828,16 +823,15 @@ function updateAuthUI() {
   }
 }
 
-function setCredentialBadge(id, statusId, verified) {
+function setCredentialBadge(id, statusId) {
   const badge = document.getElementById(id);
   const status = document.getElementById(statusId);
-  if (badge) badge.classList.toggle("locked", !verified);
-  if (status) status.textContent = verified ? "Verified" : "Locked";
+  if (badge) badge.classList.add("locked");
+  if (status) status.textContent = "Issuer verification unavailable";
 }
 
 function renderProfile(user = STATE.currentUser) {
   if (!user) return;
-  const credentials = user.verifiedCredentials || {};
   const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Unknown";
   const wallet = user.walletAddress || "Not connected";
 
@@ -872,9 +866,9 @@ function renderProfile(user = STATE.currentUser) {
   if (emailValue) emailValue.textContent = user.email || "—";
   if (emailVerified) emailVerified.textContent = user.emailVerified ? "Verified by Google" : "Password account";
   if (providerChip) providerChip.textContent = user.authProvider === "google" || user.googleId ? "Google account" : "Manual account";
-  setCredentialBadge("badge-credit", "status-credit", Boolean(credentials.creditScoreVerified));
-  setCredentialBadge("badge-income", "status-income", Boolean(credentials.incomeVerified));
-  setCredentialBadge("badge-age", "status-age", Boolean(credentials.ageVerified));
+  setCredentialBadge("badge-credit", "status-credit");
+  setCredentialBadge("badge-income", "status-income");
+  setCredentialBadge("badge-age", "status-age");
 }
 
 async function renderAdminControls() {
@@ -1213,26 +1207,27 @@ function initExportAttestation() {
   if (!exportBtn) return;
 
   exportBtn.addEventListener("click", async () => {
-    const attestation = {
+    const proofSummary = {
       protocol: "AegisID ZkCred",
       version: "Compact v0.23",
       network: "Midnight Preprod (testnet-02)",
       contractAddress: STATE.contractAddress,
       circuit: "verifyEligibility",
       disclosedOutcome: {
-        isEligible: STATE.lastEligibility ?? true,
+        isEligible: STATE.lastEligibility,
         verificationCount: STATE.verificationCount,
       },
+      credentialProvenance: "not verified by a trusted issuer",
       transactionHash: STATE.lastTxHash || "Not available until a real transaction is submitted",
       proofSystem: "PLONK ZK-SNARK",
-      witnessProtection: "100% Zero-Knowledge Witness (Age, Credit Score, Income shielded)",
+      witnessProtection: "Age, credit score, and income are private circuit inputs",
       indexerVerificationUrl: MIDNIGHT_INDEXER_GRAPHQL,
       timestamp: new Date().toISOString(),
     };
 
     try {
-      await navigator.clipboard.writeText(JSON.stringify(attestation, null, 2));
-      trackVercelEvent("attestation_exported");
+      await navigator.clipboard.writeText(JSON.stringify(proofSummary, null, 2));
+      trackVercelEvent("proof_summary_copied");
       if (exportToast) {
         exportToast.hidden = false;
         setTimeout(() => {

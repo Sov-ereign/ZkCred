@@ -12,6 +12,8 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
+const runtimePromise = import("@midnight-ntwrk/compact-runtime");
+const generatedLedgerPromise = import("../src/managed/contract/index.js");
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -259,7 +261,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     <html><body>
       <script>
         try {
-          window.opener && window.opener.postMessage(${JSON.stringify(payload)}, "*");
+          window.opener && window.opener.postMessage(${JSON.stringify(payload)}, ${JSON.stringify(process.env.FRONTEND_ORIGIN || "https://zk-cred.vercel.app")});
         } catch(e) {}
         setTimeout(() => window.close(), 200);
       </script>
@@ -385,12 +387,46 @@ app.put("/api/auth/wallet", authMiddleware, requireMongo, async (req, res) => {
 });
 
 /** POST /api/verifications */
+async function verifyEligibleNullifier(contractAddress, nullifierHex) {
+  if (!/^[0-9a-f]{64}$/i.test(String(nullifierHex || ""))) return false;
+  try {
+    const response = await fetch(MIDNIGHT_INDEXER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: "query($address:HexEncoded!){contractAction(address:$address){state}}",
+        variables: { address: contractAddress },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return false;
+    const json = await response.json();
+    const state = json?.data?.contractAction?.state;
+    if (json.errors?.length || typeof state !== "string" || !/^(?:[0-9a-f]{2})+$/i.test(state)) return false;
+    const [{ ContractState }, generated] = await Promise.all([runtimePromise, generatedLedgerPromise]);
+    const contractState = ContractState.deserialize(Buffer.from(state, "hex"));
+    const ledger = generated.ledger(contractState.data);
+    return Boolean(ledger.eligibleNullifiers.member(Buffer.from(nullifierHex, "hex")));
+  } catch (error) {
+    console.error("On-chain eligibility check failed:", error);
+    return false;
+  }
+}
+
 app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) => {
   await ensureMongoConnected();
   try {
-    const { contractAddress, circuit, isEligible, verificationCount, transactionHash } = req.body;
+    const { contractAddress, circuit, isEligible, verificationCount, transactionHash, nullifierHex } = req.body;
     if (!contractAddress || isEligible === undefined || !verificationCount || !transactionHash)
       return res.status(400).json({ error: "Missing verification parameters" });
+
+    let verifiedEligible = false;
+    if (Boolean(isEligible)) {
+      verifiedEligible = await verifyEligibleNullifier(contractAddress, nullifierHex);
+      if (!verifiedEligible) {
+        return res.status(403).json({ error: "On-chain eligibility was not confirmed; no eligibility badge was awarded." });
+      }
+    }
 
     if (isMongoConnected) {
       const record = await Verification.create({
@@ -398,24 +434,16 @@ app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) =>
         userEmail: req.user.email,
         contractAddress,
         circuit: circuit || "verifyEligibility",
-        isEligible: Boolean(isEligible),
+        isEligible: verifiedEligible,
         verificationCount: Number(verificationCount),
         transactionHash,
         timestamp: new Date(),
       });
 
-      if (Boolean(isEligible)) {
-        await User.findByIdAndUpdate(authenticatedUserId(req), {
-          $inc: { proofCount: 1 },
-          $set: {
-            "verifiedCredentials.creditScoreVerified": true,
-            "verifiedCredentials.incomeVerified": true,
-            "verifiedCredentials.ageVerified": true,
-          },
-        });
-      } else {
-        await User.findByIdAndUpdate(authenticatedUserId(req), { $inc: { proofCount: 1 } });
-      }
+      // The currently pinned Compact compiler has no usable issuer-signature
+      // verifier, so this proof does not establish credential provenance.
+      // Keep the audit record, but never set credential-authenticity badges.
+      await User.findByIdAndUpdate(authenticatedUserId(req), { $inc: { proofCount: 1 } });
 
       return res.json({ success: true, record });
     }

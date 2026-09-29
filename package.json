@@ -11,6 +11,8 @@
   "scripts": {
     "compile": "compact compile contract/src/zkcred.compact src/managed",
     "build": "tsc",
+    "pretest": "node scripts/verify-artifacts.js",
+    "prebuild": "node scripts/verify-artifacts.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit",
     "deploy": "tsx src/index.ts",
     "server": "node server/index.js",
@@ -21,7 +23,9 @@
     "dev:api": "node server/index.js",
     "dev:vercel": "vercel dev --listen 3000",
     "dev:local": "node server/local.js",
-    "vercel:deploy": "vercel --prod"
+    "vercel:deploy": "vercel --prod",
+    "artifacts:verify": "node scripts/verify-artifacts.js",
+    "artifacts:update": "node scripts/update-artifact-checksums.js"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "^0.16.0",

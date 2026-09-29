@@ -62,10 +62,10 @@ describe("ZkCred Compact privacy model", () => {
     expect(source).toContain("initialized = disclose(true)");
   });
 
-  test("enforces issuer authentication before threshold evaluation in contract source", async () => {
+  test("documents that prototype issuer hashes do not authenticate attribute values", async () => {
     const source = await readFile(contractPath, "utf8");
-    expect(source).toContain("computedIssuerHash == issuerKeyHash");
-    expect(source).toContain("expectedToken == credentialToken");
+    expect(source).toContain("must not be treated as credential authenticity");
+    expect(source).toContain("age, creditScore, or annualIncome to an issuer-authenticated record");
   });
 });
 
@@ -133,7 +133,7 @@ describe("Generated Compact runtime", () => {
     });
     const context = createCircuitContext(dummyContractAddress(), initial.currentZswapLocalState, initial.currentContractState, initial.currentPrivateState);
     const issuerKeyHash = (contract as any)._persistentHash_1([issuerKey]);
-    return contract.circuits.initialize(context, 700n, 5_000_000n, 21n, defaultAdminKey, issuerKeyHash).context;
+    return contract.circuits.initialize(context, 700n, 5_000_000n, 21n, (contract as any)._persistentHash_1([defaultAdminKey]), issuerKeyHash).context;
   }
 
   test("executes the actual eligibility circuit and rejects a replayed salt", () => {
@@ -155,7 +155,7 @@ describe("Generated Compact runtime", () => {
     const context = setupContract(contract);
     const issuerKeyHash = (contract as any)._persistentHash_1([defaultIssuerKey]);
     expect(() =>
-      contract.circuits.initialize(context, 700n, 5_000_000n, 21n, defaultAdminKey, issuerKeyHash)
+      contract.circuits.initialize(context, 700n, 5_000_000n, 21n, (contract as any)._persistentHash_1([defaultAdminKey]), issuerKeyHash)
     ).toThrow("ZkCred: Contract already initialized");
   });
 
@@ -217,7 +217,7 @@ describe("Relying-party nullifier validation", () => {
     });
     let ctx = createCircuitContext(dummyContractAddress(), initial.currentZswapLocalState, initial.currentContractState, initial.currentPrivateState);
     const issuerKeyHash = (contractA as any)._persistentHash_1([defaultIssuerKey]);
-    ctx = contractA.circuits.initialize(ctx, 700n, 5_000_000n, 21n, defaultAdminKey, issuerKeyHash).context;
+    ctx = contractA.circuits.initialize(ctx, 700n, 5_000_000n, 21n, (contractA as any)._persistentHash_1([defaultAdminKey]), issuerKeyHash).context;
     ctx = contractA.circuits.verifyEligibility(ctx).context;
 
     // Capture first user's nullifier presence
@@ -246,7 +246,7 @@ describe("Relying-party nullifier validation", () => {
     });
     let ctx = createCircuitContext(dummyContractAddress(), initial.currentZswapLocalState, initial.currentContractState, initial.currentPrivateState);
     const issuerKeyHash = (contract as any)._persistentHash_1([defaultIssuerKey]);
-    ctx = contract.circuits.initialize(ctx, 700n, 5_000_000n, 21n, defaultAdminKey, issuerKeyHash).context;
+    ctx = contract.circuits.initialize(ctx, 700n, 5_000_000n, 21n, (contract as any)._persistentHash_1([defaultAdminKey]), issuerKeyHash).context;
     ctx = contract.circuits.verifyEligibility(ctx).context;
 
     // Same user with a fresh salt — succeeds (demonstrates nullifier prevents same-salt only)

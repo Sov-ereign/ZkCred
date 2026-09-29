@@ -7,6 +7,8 @@
  * contains no synthetic transaction, proof, or deployment fallback.
  */
 import type { WitnessFunctions, LedgerState } from "./managed/index.js";
+import { ContractState } from "@midnight-ntwrk/compact-runtime";
+import { ledger as decodeGeneratedLedger } from "./managed/contract/index.js";
 
 export interface MidnightConfig {
   proofServerUrl: string;
@@ -63,9 +65,7 @@ export function createWitnessCallbacks(privateData: PrivateWitnessData): Witness
  * Strict raw indexer query. It deliberately throws on network, GraphQL, absent
  * contract, or malformed-state responses instead of inventing threshold data.
  *
- * Note: This function parses the Midnight GraphQL API's JSON-decoded response
- * fields. For binary ledger state decoding (SCALE codec), use the generated
- * CompiledOutput.ledger() binding in midnight-client.ts instead.
+ * Decode the serialized Compact state with the generated ledger binding.
  */
 export async function fetchLedgerStateFromIndexer(
   contractAddress: string,
@@ -89,21 +89,24 @@ export async function fetchLedgerStateFromIndexer(
   if (!response.ok) throw new Error(`Midnight Indexer HTTP error: ${response.status} ${response.statusText}`);
   const json = await response.json() as { data?: { contractAction?: Record<string, unknown> | null }; errors?: unknown[] };
   if (json.errors?.length) throw new Error(`Midnight Indexer GraphQL error: ${JSON.stringify(json.errors)}`);
-  const state = json.data?.contractAction;
-  if (!state) throw new Error(`Contract ${contractAddress} was not found on the Midnight Preprod Indexer.`);
-  const credit = Number(state.minCreditScore);
-  const income = BigInt(String(state.minAnnualIncome));
-  const age = Number(state.minAge);
-  const count = BigInt(String(state.verificationCount));
-  if (!Number.isSafeInteger(credit) || !Number.isSafeInteger(age)) throw new Error("Indexer returned malformed ZkCred contract state.");
+  const state = json.data?.contractAction?.state;
+  if (typeof state !== "string" || !/^(?:[0-9a-f]{2})+$/i.test(state)) {
+    throw new Error(`Contract ${contractAddress} was missing valid serialized state on the Midnight Preprod Indexer.`);
+  }
+  let ledger: ReturnType<typeof decodeGeneratedLedger>;
+  try {
+    ledger = decodeGeneratedLedger(ContractState.deserialize(Buffer.from(state, "hex")).data);
+  } catch (error) {
+    throw new Error(`Could not decode generated ZkCred ledger state: ${error instanceof Error ? error.message : String(error)}`);
+  }
   return {
-    minCreditScore: credit,
-    minAnnualIncome: income,
-    minAge: age,
-    isEligible: Boolean(state.isEligible),
-    verificationCount: count,
-    admin: typeof state.admin === "string" ? new TextEncoder().encode(state.admin) : new Uint8Array(32),
-    issuerKeyHash: typeof state.issuerKeyHash === "string" ? new TextEncoder().encode(state.issuerKeyHash) : new Uint8Array(32),
-    initialized: Boolean(state.initialized ?? true),
+    minCreditScore: Number(ledger.minCreditScore),
+    minAnnualIncome: ledger.minAnnualIncome,
+    minAge: Number(ledger.minAge),
+    isEligible: ledger.isEligible,
+    verificationCount: ledger.verificationCount,
+    admin: ledger.admin,
+    issuerKeyHash: ledger.issuerKeyHash,
+    initialized: ledger.initialized,
   };
 }

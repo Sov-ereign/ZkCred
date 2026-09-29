@@ -17,6 +17,7 @@ import { deployContract, findDeployedContract, submitCallTx } from "@midnight-nt
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
 import { Buffer as NodeBuffer } from "buffer";
 import * as CompiledOutput from "../src/managed/contract/index.js";
+import { persistentHashVec1, persistentHashVec2 } from "../src/managed/index.js";
 
 // The official Midnight SDK requires this global before constructing a
 // compiled contract, transaction, or provider. This client is Preprod-only.
@@ -141,7 +142,17 @@ async function waitForConnector(timeoutMs = 7_500): Promise<InitialAPI> {
   return selectConnector();
 }
 
-function compiledContract(input?: WitnessInput) {
+/**
+ * Builds a CompiledContract with witness callbacks closed over the provided
+ * input. The optional `initWitnesses` object supplies the extra private witnesses
+ * needed during the `initialize` circuit execution (adminKey, issuerKey,
+ * credentialToken) so that they are available in the same atomic context as
+ * the deploy + initialize transaction.
+ */
+function compiledContract(
+  input?: WitnessInput,
+  initWitnesses?: { adminKey: Uint8Array; issuerKey?: Uint8Array; credentialToken?: Uint8Array },
+) {
   const witnessInput = input ?? {
     creditScore: 0,
     annualIncome: 0,
@@ -155,7 +166,11 @@ function compiledContract(input?: WitnessInput) {
     getPrivateAnnualIncome: (context: any) => [context.privateState, BigInt(witnessInput.annualIncome)],
     getPrivateAge: (context: any) => [context.privateState, BigInt(witnessInput.age)],
     getPrivateSalt: (context: any) => [context.privateState, saltBytes(witnessInput.userSalt)],
-    getPrivateAdminKey: (context: any) => [context.privateState, witnessInput.adminKey ?? new Uint8Array(32)],
+    getPrivateAdminKey: (context: any) => [context.privateState, initWitnesses?.adminKey ?? witnessInput.adminKey ?? new Uint8Array(32)],
+    // Issuer witnesses: provided when needed (verifyEligibility or initialize).
+    // Zeroed values will fail the on-chain issuerKeyHash assertion intentionally.
+    getPrivateIssuerKey: (context: any) => [context.privateState, initWitnesses?.issuerKey ?? new Uint8Array(32)],
+    getPrivateCredentialToken: (context: any) => [context.privateState, initWitnesses?.credentialToken ?? new Uint8Array(32)],
   };
   return CompiledContract.make<any>("ZkCred", CompiledOutput.Contract).pipe(
     CompiledContract.withWitnesses(witnesses as any),
@@ -265,7 +280,14 @@ async function submitEligibility(contractAddress: string, input: WitnessInput) {
     contractAddress: deployed.deployTxData.public.contractAddress,
     circuitId: "verifyEligibility" as any,
   } as any);
-  return { transactionId: String((tx as any).txId ?? (tx as any).public?.txId ?? "") };
+  const salt = saltBytes(input.userSalt);
+  const domainTag = new Uint8Array(32);
+  domainTag.set(new TextEncoder().encode("zkcred:eligibility:nullifier:v1"));
+  const nullifier = persistentHashVec2(domainTag, salt);
+  return {
+    transactionId: String((tx as any).txId ?? (tx as any).public?.txId ?? ""),
+    nullifierHex: bytesToHex(nullifier),
+  };
 }async function updateThresholds(contractAddress: string, thresholds: { minCreditScore: number; minAnnualIncome: number; minAge: number }) {
   if (!active) throw new Error("Connect Midnight Lace before updating thresholds.");
   const adminKey = await loadAdminKey(contractAddress);
@@ -339,42 +361,106 @@ async function checkNullifierEligible(contractAddress: string, nullifierHex: str
  * deliberately interactive: Lace selects funds, signs, and submits the
  * transaction. The returned address is saved only in this browser until the
  * operator verifies it and configures CONTRACT_ADDRESS for the hosted API.
+ *
+ * ATOMICITY: deploy + initialize are composed into a SINGLE transaction by
+ * passing `initialArgs` to `deployContract`. This eliminates the race window
+ * where the contract existed on-chain with `initialized = false`, which an
+ * attacker could exploit to front-run the initializer and register their own
+ * admin key and thresholds.
+ *
+ * ADMIN KEY BACKUP: immediately after deployment this function triggers an
+ * encrypted JSON backup download using a user-supplied password. If this step
+ * is skipped and the browser session ends, the admin key is irrecoverable
+ * (localStorage is cleared or the sessionStorage-derived PBKDF2 key rotates).
  */
 async function deploy(
   thresholds: { minCreditScore: number; minAnnualIncome: number; minAge: number },
   issuerKeyHash?: Uint8Array,
+  backupPassword?: string,
 ) {
   if (!active) throw new Error("Connect Midnight Lace before deployment.");
   if (![thresholds.minCreditScore, thresholds.minAnnualIncome, thresholds.minAge].every(Number.isSafeInteger)) {
     throw new Error("Deployment thresholds must be safe integers.");
   }
+
+  // Generate a fresh 32-byte admin key (never touches the network).
   const adminKey = new Uint8Array(32);
   crypto.getRandomValues(adminKey);
-  // If no issuer key hash is provided, generate a placeholder (can be updated later).
+
+  // If no issuer key hash is provided, use a zero hash as placeholder.
+  // The admin must call updateThresholds (or redeploy) once the real issuer
+  // key hash is known.
   const issuerHash = issuerKeyHash ?? new Uint8Array(32);
-  const contract = compiledContract();
-  // Compact 0.23 emits `initialize` as the constructor circuit. The current
-  // midnight-js runtime creates the contract state first, then invokes that
-  // circuit through the deployed call interface; passing args to
-  // deployContract would incorrectly feed them to initialState().
+
+  // Build a compiled contract with all witnesses closed over, including the
+  // admin key that the initialize circuit will use as a private witness.
+  const contract = compiledContract(
+    undefined,
+    { adminKey, issuerKey: new Uint8Array(32), credentialToken: new Uint8Array(32) },
+  );
+
+  // ATOMIC DEPLOY + INITIALIZE:
+  // Pass the constructor `args` supported by MidnightJS. Deploy executes the
+  // Compact initializer in the deployment transaction, so no uninitialized
+  // contract is exposed between deployment and initialization.
+  // This replaces the previous two-transaction pattern (deployContract() then
+  // callTx.initialize()) that created a front-runnable initialization window.
   const deployed = await deployContract(active.providers, {
     compiledContract: contract,
     privateStateId: "zkcred-private-state",
     initialPrivateState: {},
+    args: [
+        BigInt(thresholds.minCreditScore),
+        BigInt(thresholds.minAnnualIncome),
+        BigInt(thresholds.minAge),
+        persistentHashVec1(adminKey),
+        issuerHash,
+    ],
   } as any);
-  const initialized = await deployed.callTx.initialize(
-    BigInt(thresholds.minCreditScore),
-    BigInt(thresholds.minAnnualIncome),
-    BigInt(thresholds.minAge),
-    adminKey,
-    issuerHash,
-  );
+
   const address = normalizeContractAddress(String(deployed.deployTxData.public.contractAddress));
   localStorage.setItem("zkcred_contract_address", address);
+
+  // Persist the admin key (encrypted with a PBKDF2+AES-GCM key derived from
+  // the session secret) so it is available within this browser session.
   await saveAdminKey(address, adminKey);
+
+  // ── Auto-backup admin key ────────────────────────────────────────────────
+  // When a backupPassword is provided, immediately produce an encrypted JSON
+  // backup and trigger a browser download. This is the ONLY cross-session
+  // recovery path for the admin key. If the session ends without a backup,
+  // updateThresholds becomes permanently unavailable for this deployment.
+  if (backupPassword) {
+    try {
+      const backupJson = await exportAdminKey(address, backupPassword);
+      const blob = new Blob([backupJson], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `zkcred-admin-backup-${address.slice(0, 8)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn("[deploy] Admin key backup failed — export manually before closing this tab:", err);
+    }
+  } else {
+    // Emit a console warning so developers are not silently left without a backup.
+    console.warn(
+      "[ZkCred] IMPORTANT: No backupPassword supplied to deploy(). " +
+      "Call exportAdminKey() now and save the result before closing this tab. " +
+      "The admin key cannot be recovered after the browser session ends.",
+    );
+  }
+
   return {
     contractAddress: address,
-    transactionId: String((initialized as any).txId ?? (initialized as any).public?.txId ?? deployed.deployTxData.public.txId ?? ""),
+    transactionId: String(
+      (deployed as any).deployTxData?.public?.txId ??
+      (deployed as any).txId ??
+      "",
+    ),
   };
 }
 

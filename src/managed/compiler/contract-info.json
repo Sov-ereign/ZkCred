@@ -30,7 +30,14 @@
           }
         },
         {
-          "name": "adminAddress",
+          "name": "adminKeyHash",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "issuerKeyHashParam",
           "type": {
             "type-name": "Bytes",
             "length": 32
@@ -97,6 +104,23 @@
       "result-type": {
         "type-name": "Boolean"
       }
+    },
+    {
+      "name": "checkNullifierEligible",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "nullifier",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Boolean"
+      }
     }
   ],
   "witnesses": [
@@ -138,6 +162,24 @@
     },
     {
       "name": "getPrivateAdminKey",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "getPrivateIssuerKey",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "getPrivateCredentialToken",
       "arguments": [
       ],
       "result type": {
@@ -216,6 +258,35 @@
       "type": {
         "type-name": "Bytes",
         "length": 32
+      }
+    },
+    {
+      "name": "eligibleNullifiers",
+      "index": 7,
+      "exported": true,
+      "storage": "Set",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "issuerKeyHash",
+      "index": 8,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "initialized",
+      "index": 9,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Boolean"
       }
     }
   ]

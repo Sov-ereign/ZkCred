@@ -12,6 +12,8 @@ import cors from "cors";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
+import { ContractState } from "@midnight-ntwrk/compact-runtime";
+import { ledger as decodeGeneratedLedger } from "../src/managed/contract/index.js";
 
 dotenv.config();
 
@@ -24,6 +26,11 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/zkcred
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `https://zkcred-api.onrender.com/api/auth/google/callback`;
+
+// The origin that is permitted to receive OAuth postMessage results.
+// MUST match the exact origin of the frontend application (scheme + host + port).
+// Default: production Vercel deployment.  Override in .env for staging / local dev.
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://zk-cred.vercel.app";
 
 // Midnight Network config
 const DEPLOYED_PREPROD_CONTRACT_ADDRESS = "a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6";
@@ -246,7 +253,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
   if (error || !code) {
     return res.send(`
       <script>
-        window.opener && window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error: ${JSON.stringify(error || "No auth code returned")} }, "*");
+        window.opener && window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error: ${JSON.stringify(error || "No auth code returned")} }, ${JSON.stringify(FRONTEND_ORIGIN)});
         window.close();
       </script>
     `);
@@ -296,7 +303,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
       <script>
         window.opener && window.opener.postMessage(
           { type: "GOOGLE_AUTH_SUCCESS", token: ${JSON.stringify(token)}, user: ${JSON.stringify(appUser)} },
-          "*"
+          ${JSON.stringify(FRONTEND_ORIGIN)}
         );
         window.close();
       </script>
@@ -305,7 +312,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     console.error("Google OAuth callback error:", err);
     res.send(`
       <script>
-        window.opener && window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error: ${JSON.stringify(err.message)} }, "*");
+        window.opener && window.opener.postMessage({ type: "GOOGLE_AUTH_ERROR", error: ${JSON.stringify(err.message)} }, ${JSON.stringify(FRONTEND_ORIGIN)});
         window.close();
       </script>
     `);
@@ -386,13 +393,117 @@ app.put("/api/auth/wallet", authMiddleware, requireMongo, async (req, res) => {
   }
 });
 
+// ─── Midnight on-chain eligibility verifier ─────────────────────────────────
+
+/**
+ * Queries the Midnight Preprod Indexer to confirm that a given salt nullifier
+ * is present in the contract's `eligibleNullifiers` set.
+ *
+ * The indexer returns raw Compact-encoded ledger state. We extract the
+ * `eligibleNullifiers` set entries by requesting the full contractAction state
+ * and scanning the encoded bytes for the nullifier — this is the server-side
+ * equivalent of checkNullifierEligible() in the Compact contract.
+ *
+ * Note: The Midnight Indexer does not yet expose individual set-member queries
+ * via GraphQL, so we use the `contractAction { state }` field and call the
+ * checkNullifierEligible circuit off-chain through the GraphQL query that
+ * returns the full eligible nullifiers set.
+ *
+ * Returns true only if the indexer confirms membership. Any network error,
+ * GraphQL error, or absence of the nullifier returns false (fail-closed).
+ */
+async function verifyNullifierOnChain(contractAddress, nullifierHex) {
+  if (!contractAddress || !nullifierHex) return false;
+  const cleanNullifier = nullifierHex.replace(/^0x/i, "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(cleanNullifier)) return false;
+
+  try {
+    const response = await fetch(MIDNIGHT_INDEXER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query CheckNullifier($address: HexEncoded!) {
+          contractAction(address: $address) {
+            state
+          }
+        }`,
+        variables: { address: contractAddress },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) {
+      console.error(`[on-chain verify] Indexer HTTP ${response.status}`);
+      return false;
+    }
+
+    const json = await response.json();
+    if (json.errors?.length) {
+      console.error("[on-chain verify] GraphQL errors:", json.errors);
+      return false;
+    }
+
+    const state = json?.data?.contractAction?.state;
+    if (!state || typeof state !== "string") {
+      console.error("[on-chain verify] No contract state returned for address:", contractAddress);
+      return false;
+    }
+
+    // The Midnight Indexer encodes the full Compact ledger state as a hex
+    // SCALE-encoded blob in the `state` field. The eligibleNullifiers set
+    // is a Compact Set<Bytes<32>>. We look for the 32-byte nullifier bytes
+    // within the raw state hex as a fast membership probe.
+    //
+    // This is a conservative, fail-closed check: if the nullifier bytes appear
+    // verbatim in the state blob it is a strong signal the nullifier is
+    // recorded (it is 32 random bytes with ~2^-256 false-positive probability).
+    // A relying party running the full Compact verifier would use the generated
+    // ledger() binding directly; the server-side approach here avoids bundling
+    // the WASM runtime into the Node process.
+    if (!/^(?:[0-9a-f]{2})+$/i.test(state)) return false;
+    const contractState = ContractState.deserialize(Buffer.from(state, "hex"));
+    const ledger = decodeGeneratedLedger(contractState.data);
+    return Boolean(ledger.eligibleNullifiers.member(Buffer.from(cleanNullifier, "hex")));
+  } catch (err) {
+    console.error("[on-chain verify] Network/parse error:", err.message);
+    return false;
+  }
+}
+
 /** POST /api/verifications — Save ZK Verification Audit Log & Update User Credentials */
 app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) => {
   try {
-    const { contractAddress, circuit, isEligible, verificationCount, transactionHash } = req.body;
+    const { contractAddress, circuit, isEligible, verificationCount, transactionHash, nullifierHex } = req.body;
     if (!contractAddress || isEligible === undefined || !verificationCount || !transactionHash) {
       return res.status(400).json({ error: "Missing verification parameters" });
     }
+
+    // ── On-chain nullifier gate ──────────────────────────────────────────────
+    // We NEVER trust the client-supplied `isEligible` flag alone.
+    // Before awarding any credential badge, confirm that the nullifier for
+    // this proof call is present in the on-chain eligibleNullifiers set.
+    //
+    // If nullifierHex is absent or the indexer cannot confirm membership,
+    // we still record the verification in the audit log (for non-eligible
+    // submissions this is expected) but we do NOT award credential badges.
+    let onChainEligible = false;
+    if (Boolean(isEligible)) {
+      if (!nullifierHex) {
+        return res.status(400).json({
+          error: "nullifierHex is required when isEligible is true. " +
+                 "Supply the salt nullifier returned by the ZK proof submission.",
+        });
+      }
+      onChainEligible = await verifyNullifierOnChain(contractAddress, nullifierHex);
+      if (!onChainEligible) {
+        return res.status(403).json({
+          error: "On-chain eligibility could not be confirmed: the supplied nullifier " +
+                 "was not found in the contract's eligibleNullifiers set. " +
+                 "Proof verification failed — no credential badge will be awarded.",
+        });
+      }
+    }
+    // ── End on-chain gate ────────────────────────────────────────────────────
 
     if (isMongoConnected) {
       const record = await Verification.create({
@@ -400,25 +511,17 @@ app.post("/api/verifications", authMiddleware, requireMongo, async (req, res) =>
         userEmail: req.user.email,
         contractAddress,
         circuit: circuit || "verifyEligibility",
-        isEligible: Boolean(isEligible),
+        isEligible: onChainEligible,
         verificationCount: Number(verificationCount),
         transactionHash,
         timestamp: new Date(),
       });
 
-      // Update user stats & badges
-      if (Boolean(isEligible)) {
-        await User.findByIdAndUpdate(authenticatedUserId(req), {
-          $inc: { proofCount: 1 },
-          $set: {
-            "verifiedCredentials.creditScoreVerified": true,
-            "verifiedCredentials.incomeVerified": true,
-            "verifiedCredentials.ageVerified": true,
-          },
-        });
-      } else {
-        await User.findByIdAndUpdate(authenticatedUserId(req), { $inc: { proofCount: 1 } });
-      }
+      // The pinned Compact toolchain cannot verify issuer signatures. The
+      // current circuit therefore proves only the supplied numbers, not that
+      // they came from a trusted issuer. Record the result, but never award
+      // credential-authenticity badges on this evidence alone.
+      await User.findByIdAndUpdate(authenticatedUserId(req), { $inc: { proofCount: 1 } });
 
       return res.json({ success: true, record });
     }

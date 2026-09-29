@@ -15,7 +15,7 @@ export type ImpureCircuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminAddress_0: Uint8Array,
+             adminKeyHash_0: Uint8Array,
              issuerKeyHashParam_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
@@ -23,6 +23,8 @@ export type ImpureCircuits<PS> = {
                    newMinAnnualIncome_0: bigint,
                    newMinAge_0: bigint): __compactRuntime.CircuitResults<PS, []>;
   getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, boolean>;
+  checkNullifierEligible(context: __compactRuntime.CircuitContext<PS>,
+                         nullifier_0: Uint8Array): __compactRuntime.CircuitResults<PS, boolean>;
 }
 
 export type ProvableCircuits<PS> = {
@@ -30,7 +32,7 @@ export type ProvableCircuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminAddress_0: Uint8Array,
+             adminKeyHash_0: Uint8Array,
              issuerKeyHashParam_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
@@ -38,6 +40,8 @@ export type ProvableCircuits<PS> = {
                    newMinAnnualIncome_0: bigint,
                    newMinAge_0: bigint): __compactRuntime.CircuitResults<PS, []>;
   getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, boolean>;
+  checkNullifierEligible(context: __compactRuntime.CircuitContext<PS>,
+                         nullifier_0: Uint8Array): __compactRuntime.CircuitResults<PS, boolean>;
 }
 
 export type PureCircuits = {
@@ -48,7 +52,7 @@ export type Circuits<PS> = {
              creditScoreThreshold_0: bigint,
              annualIncomeThreshold_0: bigint,
              ageThreshold_0: bigint,
-             adminAddress_0: Uint8Array,
+             adminKeyHash_0: Uint8Array,
              issuerKeyHashParam_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
   verifyEligibility(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
   updateThresholds(context: __compactRuntime.CircuitContext<PS>,
@@ -56,6 +60,8 @@ export type Circuits<PS> = {
                    newMinAnnualIncome_0: bigint,
                    newMinAge_0: bigint): __compactRuntime.CircuitResults<PS, []>;
   getEligibilityStatus(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, boolean>;
+  checkNullifierEligible(context: __compactRuntime.CircuitContext<PS>,
+                         nullifier_0: Uint8Array): __compactRuntime.CircuitResults<PS, boolean>;
 }
 
 export type Ledger = {
@@ -65,14 +71,20 @@ export type Ledger = {
   readonly isEligible: boolean;
   readonly verificationCount: bigint;
   readonly admin: Uint8Array;
-  readonly issuerKeyHash: Uint8Array;
-  readonly initialized: boolean;
   usedSaltNullifiers: {
     isEmpty(): boolean;
     size(): bigint;
     member(elem_0: Uint8Array): boolean;
     [Symbol.iterator](): Iterator<Uint8Array>
   };
+  eligibleNullifiers: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(elem_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<Uint8Array>
+  };
+  readonly issuerKeyHash: Uint8Array;
+  readonly initialized: boolean;
 }
 
 export type ContractReferenceLocations = any;

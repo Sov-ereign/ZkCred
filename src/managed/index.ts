@@ -10,6 +10,8 @@
  * DO NOT EDIT MANUALLY — re-run `compact compile` to regenerate.
  */
 
+import { Contract } from "./contract/index.js";
+
 // Re-export everything from the real compiler output
 export type {
   Witnesses,
@@ -25,6 +27,56 @@ export {
   contractReferenceLocations,
   pureCircuits,
 } from "./contract/index.js";
+
+// ---------------------------------------------------------------------------
+// persistentHash wrappers — MUST be used instead of raw SHA-256 whenever
+// off-chain code needs to reproduce a hash that the Compact circuit verifies.
+//
+// The Compact compiler emits two private helper methods on Contract:
+//   _persistentHash_0(inputs: [Bytes<32>, Bytes<32>]): Bytes<32>  — Vec<2>
+//   _persistentHash_1(inputs: [Bytes<32>])         : Bytes<32>  — Vec<1>
+//
+// These call __compactRuntime.persistentHash with the exact descriptor the
+// circuit uses, so they are guaranteed to match the on-chain assertion.
+// ---------------------------------------------------------------------------
+
+/** A singleton contract instance used only for hash computations. */
+const _hashContract = new Contract({
+  getPrivateCreditScore: (..._: any[]) => undefined as any,
+  getPrivateAnnualIncome: (..._: any[]) => undefined as any,
+  getPrivateAge: (..._: any[]) => undefined as any,
+  getPrivateSalt: (..._: any[]) => undefined as any,
+  getPrivateAdminKey: (..._: any[]) => undefined as any,
+  getPrivateIssuerKey: (..._: any[]) => undefined as any,
+  getPrivateCredentialToken: (..._: any[]) => undefined as any,
+});
+
+/**
+ * Computes `persistentHash<Vector<2, Bytes<32>>>([a, b])`.
+ *
+ * Used by the circuit to compute:
+ *   - `credentialToken = persistentHash([issuerKey, salt])`
+ *   - `saltNullifier   = persistentHash([domainTag, salt])`
+ *
+ * Off-chain callers MUST use this function instead of SHA-256 to produce
+ * values that will pass the on-chain assertion.
+ */
+export function persistentHashVec2(a: Uint8Array, b: Uint8Array): Uint8Array {
+  return (_hashContract as any)._persistentHash_0([a, b]) as Uint8Array;
+}
+
+/**
+ * Computes `persistentHash<Vector<1, Bytes<32>>>([a])`.
+ *
+ * Used by the circuit to compute:
+ *   - `issuerKeyHash = persistentHash([issuerKey])`
+ *   - `adminKeyHash  = persistentHash([adminKey])`
+ *
+ * Off-chain callers MUST use this function instead of SHA-256.
+ */
+export function persistentHashVec1(a: Uint8Array): Uint8Array {
+  return (_hashContract as any)._persistentHash_1([a]) as Uint8Array;
+}
 
 /**
  * LedgerState — maps to the generated Ledger type for use across the codebase.
