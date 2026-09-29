@@ -17,7 +17,7 @@ jobs:
       - name: Setup pinned Compact compiler
         uses: midnightntwrk/setup-compact-action@v1
         with:
-          compact-version: '0.31.0'
+          compact-version: '0.31.1'
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -30,7 +30,7 @@ jobs:
 
       - name: Recompile contract from source
         run: |
-          compact compile contract/src/zkcred.compact src/managed
+          compact compile contract/src/zkcred-v3.compact src/managed-v3
           if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
             echo "Committed bindings or proof assets do not reproduce from the pinned Compact compiler."
             git status --short --untracked-files=all
@@ -47,6 +47,11 @@ jobs:
           test -s src/managed/zkir/initialize.bzkir
           test -s src/managed/zkir/verifyEligibility.bzkir
           test -s src/managed/zkir/updateThresholds.bzkir
+          test -f contract/src/zkcred-v3.compact
+          test -f contract/src/schnorr.compact
+          test -s src/managed-v3/contract/index.js
+          test -s src/managed-v3/keys/verifyEligibility.prover
+          test -s src/managed-v3/zkir/verifyEligibility.bzkir
 
       - name: Pin and verify Compact artifact checksums
         run: |

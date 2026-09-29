@@ -1,0 +1,166 @@
+pragma language_version 0.23.0;
+import CompactStandardLibrary;
+import "schnorr" prefix Schnorr_;
+
+// ZkCred V3: issuer-signed, holder-bound, application-scoped eligibility.
+// V2 remains deployed and unchanged. V3 uses Compact 0.31.1 / ledger 8 for
+// Preprod compatibility; do not deploy until the issuer key and V3 UI flow
+// have been configured and verified.
+
+export ledger minCreditScore: Uint<32>;
+export ledger minAnnualIncome: Uint<64>;
+export ledger minAge: Uint<32>;
+export ledger isEligible: Boolean; // UI-only: reflects the latest call.
+export ledger verificationCount: Uint<64>;
+export ledger admin: Bytes<32>; // persistentHash([admin secret]), never the raw key.
+export ledger usedSaltNullifiers: Set<Bytes<32>>;
+export ledger eligibleNullifiers: Set<Bytes<32>>;
+export ledger trustedIssuerKey: JubjubPoint;
+export ledger initialized: Boolean;
+
+witness getPrivateCreditScore(): Uint<32>;
+witness getPrivateAnnualIncome(): Uint<64>;
+witness getPrivateAge(): Uint<32>;
+witness getPrivateSalt(): Bytes<32>;
+witness getPrivateHolderSecret(): Bytes<32>;
+witness getPrivateCredentialSignature(): Schnorr_SchnorrSignature;
+witness getPrivateAdminKey(): Bytes<32>;
+
+// Holder binding is generated locally from a secret known only to the holder.
+// The holder gives this opaque commitment to the issuer; it is signed together
+// with the attributes and relying-party application id.
+export pure circuit holderBinding(holderSecret: Bytes<32>): Field {
+  const commitment: Bytes<32> = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "zkcred:v3:holder-binding"),
+    holderSecret
+  ]);
+  return transientHash<Bytes<32>>(commitment);
+}
+
+export pure circuit eligibilityNullifier(
+  salt: Bytes<32>,
+  holderSecret: Bytes<32>,
+  applicationId: Bytes<32>
+): Bytes<32> {
+  const holderCommitment: Bytes<32> = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "zkcred:v3:holder-binding"),
+    holderSecret
+  ]);
+  return persistentHash<Vector<4, Bytes<32>>>([
+    pad(32, "zkcred:v3:eligibility-nullifier"),
+    salt,
+    holderCommitment,
+    applicationId
+  ]);
+}
+
+export pure circuit attestationMessage(
+  creditScore: Uint<32>,
+  annualIncome: Uint<64>,
+  age: Uint<32>,
+  boundHolder: Field,
+  applicationId: Bytes<32>
+): Vector<5, Field> {
+  return [
+    creditScore as Field,
+    annualIncome as Field,
+    age as Field,
+    boundHolder,
+    transientHash<Bytes<32>>(applicationId)
+  ];
+}
+
+export pure circuit schnorrChallenge(
+  annX: Field,
+  annY: Field,
+  issuerKeyX: Field,
+  issuerKeyY: Field,
+  message: Vector<5, Field>
+): Field {
+  return Schnorr_schnorrChallenge<5>(annX, annY, issuerKeyX, issuerKeyY, message);
+}
+
+export circuit initialize(
+  creditScoreThreshold: Uint<32>,
+  annualIncomeThreshold: Uint<64>,
+  ageThreshold: Uint<32>,
+  adminKeyHash: Bytes<32>,
+  issuerPublicKey: JubjubPoint
+): [] {
+  assert(!initialized, "ZkCred V3: Contract already initialized");
+  assert(issuerPublicKey != default<JubjubPoint>, "ZkCred V3: Issuer key cannot be the identity point");
+  initialized = disclose(true);
+  minCreditScore = disclose(creditScoreThreshold);
+  minAnnualIncome = disclose(annualIncomeThreshold);
+  minAge = disclose(ageThreshold);
+  admin = disclose(adminKeyHash);
+  trustedIssuerKey = disclose(issuerPublicKey);
+  isEligible = disclose(false);
+  verificationCount = disclose(0 as Uint<64>);
+}
+
+// `applicationId` must be the relying party's registered 32-byte context.
+// The issuer signature covers all attributes, the holder binding, and this
+// application id. The resulting nullifier is also scoped to holder+application.
+export circuit verifyEligibility(applicationId: Bytes<32>): [] {
+  const creditScore: Uint<32> = getPrivateCreditScore();
+  const annualIncome: Uint<64> = getPrivateAnnualIncome();
+  const age: Uint<32> = getPrivateAge();
+  const salt: Bytes<32> = getPrivateSalt();
+  const holderSecret: Bytes<32> = getPrivateHolderSecret();
+  const signature: Schnorr_SchnorrSignature = getPrivateCredentialSignature();
+  const boundHolder: Field = holderBinding(holderSecret);
+
+  const signedClaims: Vector<5, Field> = attestationMessage(
+    creditScore,
+    annualIncome,
+    age,
+    boundHolder,
+    applicationId
+  );
+
+  // Signature verification is performed inside the ZK circuit. Neither the
+  // signature nor its signed message is written to public ledger state.
+  Schnorr_schnorrVerify<5>(signedClaims, signature, trustedIssuerKey);
+
+  const nullifier: Bytes<32> = disclose(eligibilityNullifier(salt, holderSecret, applicationId));
+  assert(!usedSaltNullifiers.member(nullifier), "Credential salt already used for this holder and application");
+
+  const meetsScore: Boolean = creditScore >= minCreditScore;
+  const meetsIncome: Boolean = annualIncome >= minAnnualIncome;
+  const meetsAge: Boolean = age >= minAge;
+  const eligible: Boolean = meetsScore && meetsIncome && meetsAge;
+
+  usedSaltNullifiers.insert(nullifier);
+  if (disclose(eligible)) {
+    eligibleNullifiers.insert(disclose(nullifier));
+  }
+  isEligible = disclose(eligible);
+  verificationCount = disclose((verificationCount + (1 as Uint<64>)) as Uint<64>);
+}
+
+export circuit updateThresholds(
+  newMinCreditScore: Uint<32>,
+  newMinAnnualIncome: Uint<64>,
+  newMinAge: Uint<32>
+): [] {
+  const callerKey: Bytes<32> = getPrivateAdminKey();
+  assert(
+    persistentHash<Vector<1, Bytes<32>>>([callerKey]) == admin,
+    "Unauthorized: caller is not authorized admin"
+  );
+  minCreditScore = disclose(newMinCreditScore);
+  minAnnualIncome = disclose(newMinAnnualIncome);
+  minAge = disclose(newMinAge);
+  isEligible = disclose(false);
+}
+
+export circuit checkNullifierEligible(nullifier: Bytes<32>): Boolean {
+  return disclose(eligibleNullifiers.member(disclose(nullifier)));
+}
+
+// Keep an explicitly non-authoritative display query for compatibility with
+// simple UIs; relying parties must use checkNullifierEligible(nullifier).
+export circuit getEligibilityStatus(): Boolean {
+  return disclose(isEligible);
+}

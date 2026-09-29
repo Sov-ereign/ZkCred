@@ -33,7 +33,10 @@ function filesUnder(directory) {
 }
 const artifacts = [
   "contract/src/zkcred.compact",
+  "contract/src/zkcred-v3.compact",
+  "contract/src/schnorr.compact",
   ...filesUnder("src/managed").filter((rel) => rel !== "src/managed/.artifact-checksums"),
+  ...filesUnder("src/managed-v3"),
 ].sort();
 
 const lines = [];

@@ -9,7 +9,8 @@
   ],
   "type": "module",
   "scripts": {
-    "compile": "compact compile contract/src/zkcred.compact src/managed",
+    "compile": "compact compile contract/src/zkcred-v3.compact src/managed-v3",
+    "compile:v3": "compact compile contract/src/zkcred-v3.compact src/managed-v3",
     "build": "tsc",
     "pretest": "node scripts/verify-artifacts.js",
     "prebuild": "node scripts/verify-artifacts.js",
