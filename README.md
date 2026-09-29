@@ -92,7 +92,10 @@ The deployed Preprod verifier is configured in the browser and API defaults:
 ```text
 Contract: a95f0d061323e6c1568e39344bcbae6d559e58c4bd6df335dc5c20de81a6f2b6
 Initialization transaction: 0044ac4d7ec9c41c79dbbf45385e5c1a70237693c1c6d03b1440103e0354c99d6f
+V3 contract: NOT DEPLOYED — no Preprod contract address exists yet.
 ```
+
+V3 cannot be assigned a genuine contract address until it is initialized in a Preprod deployment transaction. That deployment requires a real issuer public key and Lace authorization. Compiling the V3 source does not create an on-chain address; no placeholder or simulated address is listed here.
 
 The app verifies the contract and every submitted transaction through Midnight Preprod's GraphQL indexer before showing a success state. A visitor can override the address only by deploying another compatible contract through Lace; no unverified address is trusted.
 
